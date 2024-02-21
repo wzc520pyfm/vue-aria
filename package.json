@@ -1,12 +1,22 @@
 {
   "name": "nev-ui",
+  "private": true,
   "version": "0.0.1",
   "description": "",
+  "keywords": [],
+  "author": "wzc520pyfm",
+  "license": "MIT",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "wzc520pyfm",
-  "license": "MIT"
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4"
+  },
+  "engines": {
+    "node": ">=18.x",
+    "pnpm": ">=8.x"
+  },
+  "packageManager": "pnpm@8.14.1"
 }
