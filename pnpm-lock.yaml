@@ -15,6 +15,20 @@ importers:
         specifier: ^5.1.4
         version: 5.1.4
 
+  packages/@components/button: {}
+
+  packages/@interactions/use-hover: {}
+
+  packages/@vue-aria-components/button: {}
+
+  packages/@vue-aria/button: {}
+
+  packages/components:
+    dependencies:
+      '@nev-ui/button':
+        specifier: workspace:^
+        version: link:../@components/button
+
 packages:
 
   /@esbuild/aix-ppc64@0.19.12:
