@@ -6,7 +6,6 @@
   "keywords": [],
   "author": "wzc520pyfm",
   "license": "MIT",
-  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
