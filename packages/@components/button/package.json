@@ -1,0 +1,15 @@
+{
+  "name": "@nev-ui/button",
+  "version": "0.0.1",
+  "description": "Button",
+  "main": "src/index.ts",
+  "keywords": ["button"],
+  "author": "wzc520pyfm",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
