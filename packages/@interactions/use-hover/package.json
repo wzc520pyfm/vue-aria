@@ -1,0 +1,15 @@
+{
+  "name": "@nev-ui/use-hover",
+  "version": "0.0.1",
+  "description": "Hooks for handling hover interaction",
+  "main": "src/index.ts",
+  "keywords": ["hover", "hooks"],
+  "author": "wzc520pyfm",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
