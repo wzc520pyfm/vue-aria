@@ -1,4 +1,4 @@
-import Button from './button.vue';
+import Button from './button.vue'
 
 // todo: need with install function and prefix, refer element-plus
-export { Button };
+export {Button}
