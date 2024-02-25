@@ -18,6 +18,9 @@
     "format:check": "prettier --check packages/**/**/src --cache",
     "format:write": "prettier --write packages/**/**/src --cache",
     "prepare": "husky install",
+    "clean": "pnpm clean:node-modules && pnpm clean:lock && pnpm install --hoist",
+    "clean:node-modules": "rimraf ./apps/**/node_modules && rimraf ./packages/**/**/node_modules && rm -rf ./node_modules",
+    "clean:lock": "rm ./pnpm-lock.yaml",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
