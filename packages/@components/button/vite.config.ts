@@ -41,7 +41,6 @@ export default defineConfig({
         assetFileNames: (chunkInfo) => {
           return chunkInfo.name as string
         },
-        banner: '"use client";',
       },
     },
   },
