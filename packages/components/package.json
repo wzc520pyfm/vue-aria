@@ -2,14 +2,15 @@
   "name": "@nev-ui/vue",
   "version": "0.0.1",
   "description": "",
-  "main": "src/index.ts",
   "keywords": [],
-  "author": "wzc520pyfm",
   "license": "MIT",
+  "author": "wzc520pyfm",
+  "main": "src/index.ts",
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
+    "build": "vite build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
