@@ -1,9 +1,9 @@
-import MyButton from './Button.vue'
+import {Button} from '../src'
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories
 export default {
-  title: 'Example/Button',
-  component: MyButton,
+  title: 'Components/Button',
+  component: Button,
   tags: ['autodocs'],
   argTypes: {
     backgroundColor: {
