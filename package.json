@@ -9,7 +9,9 @@
   "author": "wzc520pyfm",
   "scripts": {
     "cz": "czg",
-    "build": "pnpm -r --filter !@nev-ui/storybook build",
+    "build": "pnpm -r --filter !@nev-ui/storybook --filter !@nev-ui/docs build",
+    "build:sb": "pnpm --filter @nev-ui/storybook build",
+    "build:docs": "pnpm --filter @nev-ui/docs build",
     "lint": "pnpm lint:pkg && pnpm lint:docs",
     "lint:fix": "pnpm lint:pkg-fix && pnpm lint:docs-fix",
     "lint:pkg": "eslint -c .eslintrc.json ./packages/**/**/*.{vue,ts}",
