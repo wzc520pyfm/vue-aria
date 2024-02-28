@@ -10,10 +10,16 @@
     "access": "public"
   },
   "scripts": {
-    "build": "vite build",
+    "build": "tsup src --dts",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "vue": ">=3.4.0"
   },
   "dependencies": {
     "@nev-ui/button": "workspace:^"
+  },
+  "devDependencies": {
+    "vue": "^3.4.19"
   }
 }
