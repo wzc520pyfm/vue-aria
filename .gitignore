@@ -7,3 +7,7 @@ node_modules
 # production
 dist/
 storybook-static
+
+# debug
+packages/**/*.backup
+packages/**/*.backup.ts

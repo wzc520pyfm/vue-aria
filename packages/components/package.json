@@ -11,6 +11,8 @@
   },
   "scripts": {
     "build": "tsup src --dts",
+    "prepack": "clean-package",
+    "postpack": "clean-package restore",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "peerDependencies": {
@@ -20,6 +22,8 @@
     "@nev-ui/button": "workspace:^"
   },
   "devDependencies": {
+    "clean-package": "^2.2.0",
     "vue": "^3.4.19"
-  }
+  },
+  "clean-package": "../../clean-package.config.json"
 }
