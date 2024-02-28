@@ -27,6 +27,12 @@ export default defineConfig({
       name: '@nev-ui/button',
       formats: ['es', 'cjs', 'umd'],
       entry: resolve(__dirname, 'src/index.ts'),
+      fileName: (type) => {
+        if (type === 'es') return 'index.mjs'
+        if (type === 'cjs') return 'index.js'
+        if (type === 'umd') return 'index.umd.js'
+        return 'index.js'
+      },
     },
     target: 'es2019',
     rollupOptions: {
