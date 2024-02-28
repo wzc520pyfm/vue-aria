@@ -28,6 +28,7 @@ export default defineConfig({
       formats: ['es', 'cjs', 'umd'],
       entry: resolve(__dirname, 'src/index.ts'),
     },
+    target: 'es2019',
     rollupOptions: {
       // make sure to externalize deps that shouldn't be bundled
       // into your library (Vue)
