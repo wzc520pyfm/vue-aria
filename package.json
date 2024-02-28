@@ -9,6 +9,9 @@
   "author": "wzc520pyfm",
   "scripts": {
     "cz": "czg",
+    "dev": "pnpm dev:sb && pnpm dev:docs",
+    "dev:sb": "pnpm --filter @nev-ui/storybook dev",
+    "dev:docs": "pnpm --filter @nev-ui/docs dev",
     "build": "pnpm -r --filter !@nev-ui/storybook --filter !@nev-ui/docs build",
     "build:sb": "pnpm --filter @nev-ui/storybook build",
     "build:docs": "pnpm --filter @nev-ui/docs build",
