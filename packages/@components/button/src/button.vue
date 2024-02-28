@@ -9,37 +9,30 @@ defineOptions({
   name: 'MyButton',
 })
 
-const emits = defineEmits(['click'])
+interface IProps {
+  label: string
+  primary?: boolean
+  size?: 'small' | 'medium' | 'large'
+  backgroundColor?: string
+}
 
-const props = defineProps({
-  label: {
-    type: String,
-    required: true,
-  },
-  primary: {
-    type: Boolean,
-    default: false,
-  },
-  size: {
-    type: String,
-    validator(value: string) {
-      return ['small', 'medium', 'large'].includes(value)
-    },
-  },
-  backgroundColor: {
-    type: String,
-  },
-})
+interface IEmits {
+  (e: 'click'): void
+}
+
+const emits = defineEmits<IEmits>()
+
+const {label, primary = false, size, backgroundColor} = defineProps<IProps>()
 
 const classes = computed(() => ({
   'storybook-button': true,
-  'storybook-button--primary': props.primary,
-  'storybook-button--secondary': !props.primary,
-  [`storybook-button--${props.size || 'medium'}`]: true,
+  'storybook-button--primary': primary,
+  'storybook-button--secondary': !primary,
+  [`storybook-button--${size || 'medium'}`]: true,
 }))
 
 const style = computed(() => ({
-  backgroundColor: props.backgroundColor,
+  backgroundColor,
 }))
 
 const onClick = () => {
