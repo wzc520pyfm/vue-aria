@@ -1,0 +1,17 @@
+{
+  "name": "@nev-ui/preset",
+  "version": "0.0.1",
+  "description": "",
+  "keywords": [],
+  "license": "MIT",
+  "author": "wzc520pyfm",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@nev-ui/preset-button": "workspace:^",
+    "@nev-ui/preset-system": "workspace:^",
+    "@unocss/core": "^0.58.5"
+  }
+}

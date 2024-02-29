@@ -1,0 +1,16 @@
+{
+  "name": "@nev-ui/preset-system",
+  "version": "0.0.1",
+  "description": "",
+  "keywords": [],
+  "license": "MIT",
+  "author": "wzc520pyfm",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@unocss/core": "^0.58.5",
+    "@unocss/preset-mini": "^0.58.5"
+  }
+}

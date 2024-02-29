@@ -144,6 +144,24 @@ importers:
 
   packages/@interactions/use-hover: {}
 
+  packages/@preset/button:
+    dependencies:
+      '@nev-ui/preset-system':
+        specifier: workspace:^
+        version: link:../system
+      '@unocss/core':
+        specifier: ^0.58.5
+        version: 0.58.5
+
+  packages/@preset/system:
+    dependencies:
+      '@unocss/core':
+        specifier: ^0.58.5
+        version: 0.58.5
+      '@unocss/preset-mini':
+        specifier: ^0.58.5
+        version: 0.58.5
+
   packages/@vue-aria-components/button: {}
 
   packages/@vue-aria/button: {}
@@ -160,6 +178,18 @@ importers:
       vue:
         specifier: ^3.4.19
         version: 3.4.19(typescript@5.3.3)
+
+  packages/preset:
+    dependencies:
+      '@nev-ui/preset-button':
+        specifier: workspace:^
+        version: link:../@preset/button
+      '@nev-ui/preset-system':
+        specifier: workspace:^
+        version: link:../@preset/system
+      '@unocss/core':
+        specifier: ^0.58.5
+        version: 0.58.5
 
   packages/storybook:
     dependencies:
@@ -5165,6 +5195,32 @@ packages:
       hookable: 5.5.3
       unhead: 1.8.10
       vue: 3.4.19(typescript@5.3.3)
+    dev: false
+
+  /@unocss/core@0.58.5:
+    resolution: {integrity: sha512-qbPqL+46hf1/UelQOwUwpAuvm6buoss43DPYHOPdfNJ+NTWkSpATQMF0JKT04QE0QRQbHNSHdMe9ariG+IIlCw==}
+    dev: false
+
+  /@unocss/extractor-arbitrary-variants@0.58.5:
+    resolution: {integrity: sha512-KJQX0OJKzy4YjJo09h2la2Q+cn5IJ1JdyPVJJkzovHnv7jSBWzsfct+bj/6a+SJ4p4JBIqEJz3M/qxHv4EPJyA==}
+    dependencies:
+      '@unocss/core': 0.58.5
+    dev: false
+
+  /@unocss/preset-mini@0.58.5:
+    resolution: {integrity: sha512-WqD31fKUAN28OCUOyi1uremmLk0eTMqtCizjbbXsY/DP6RKYUT7trFAtppTcHWFhSQcknb4FURfAZppACsTVQQ==}
+    dependencies:
+      '@unocss/core': 0.58.5
+      '@unocss/extractor-arbitrary-variants': 0.58.5
+      '@unocss/rule-utils': 0.58.5
+    dev: false
+
+  /@unocss/rule-utils@0.58.5:
+    resolution: {integrity: sha512-w0sGJoeUGwMWLVFLEE9PDiv/fQcQqZnTIIQLYNCjTdqXDRlwTp9ACW0h47x/hAAIXdOtEOOBuTfjGD79GznUmA==}
+    engines: {node: '>=14'}
+    dependencies:
+      '@unocss/core': 0.58.5
+      magic-string: 0.30.7
     dev: false
 
   /@vercel/nft@0.24.4:
