@@ -7,6 +7,7 @@ const getPackages = (packagePath) => fg.sync('*', {cwd: packagePath, onlyDirecto
 const scopes = [
   ...getPackages('packages').filter((name) => !name.startsWith('@')),
   ...getPackages('internal'),
+  'playground',
   'doc',
   'project',
   'core',
