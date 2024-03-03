@@ -20,8 +20,12 @@
   "peerDependencies": {
     "vue": ">=3.4.0"
   },
+  "dependencies": {
+    "@nev-ui/preset-button": "workspace:^"
+  },
   "devDependencies": {
     "clean-package": "^2.2.0",
+    "unocss": "^0.58.5",
     "vue": "^3.4.19"
   },
   "clean-package": "../../../clean-package.config.json"
