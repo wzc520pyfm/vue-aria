@@ -11,6 +11,7 @@
   },
   "scripts": {
     "build": "tsup src --dts",
+    "build:fast": "tsup src",
     "prepack": "clean-package",
     "postpack": "clean-package restore",
     "test": "echo \"Error: no test specified\" && exit 1"
