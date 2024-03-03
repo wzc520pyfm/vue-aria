@@ -5,7 +5,7 @@ defineOptions({ name: 'PlayRepl' })
 </script>
 
 <template>
-  <Button class="w-15 h-8">Button</Button>
+  <Button label="Button" />
 </template>
 
 <style scoped></style>
