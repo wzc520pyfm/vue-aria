@@ -2,16 +2,18 @@
 import {setup, Preview} from '@storybook/vue3'
 import './style.css'
 
+import 'virtual:uno.css'
+
 setup((app) => {})
 
-const decorators: Preview["decorators"] = [
+const decorators: Preview['decorators'] = [
   (story) => ({
     components: {story},
     template: '<story />',
   }),
 ]
 
-const parameters: Preview["parameters"] = {
+const parameters: Preview['parameters'] = {
   actions: {argTypesRegex: '^on[A-Z].*'},
   controls: {
     matchers: {

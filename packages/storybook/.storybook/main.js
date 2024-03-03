@@ -1,3 +1,6 @@
+import { mergeConfig } from 'vite';
+import UnoCSS from 'unocss/vite'
+
 /** @type { import('@storybook/vue3-vite').StorybookConfig } */
 const config = {
   stories: [
@@ -16,6 +19,18 @@ const config = {
   framework: {
     name: '@storybook/vue3-vite',
     options: {},
+  },
+  async viteFinal(config, { configType }) {
+    if (configType === 'DEVELOPMENT') {
+      // Your development configuration goes here
+    }
+    if (configType === 'PRODUCTION') {
+      // Your production configuration goes here.
+    }
+    return mergeConfig(config, {
+      // Your environment configuration here
+      plugins: [UnoCSS()],
+    });
   },
   docs: {
     autodocs: 'tag',

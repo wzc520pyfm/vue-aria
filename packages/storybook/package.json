@@ -17,6 +17,7 @@
     "build": "storybook build"
   },
   "dependencies": {
+    "@nev-ui/preset": "workspace:^",
     "vue": "^3.4.19"
   },
   "devDependencies": {
@@ -32,6 +33,7 @@
     "react-dom": "^18.2.0",
     "storybook": "^7.6.17",
     "storybook-dark-mode": "^3.0.3",
+    "unocss": "^0.58.5",
     "vite": "^5.1.4"
   }
 }
