@@ -6,6 +6,7 @@ defineOptions({ name: 'PlayRepl' })
 
 <template>
   <Button label="Button" />
+  <button class="btn">Button2</button>
 </template>
 
 <style scoped></style>
