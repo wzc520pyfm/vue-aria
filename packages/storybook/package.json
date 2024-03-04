@@ -21,6 +21,7 @@
     "vue": "^3.4.19"
   },
   "devDependencies": {
+    "@nev-ui/shared": "workspace:^",
     "@storybook/addon-a11y": "^7.6.17",
     "@storybook/addon-essentials": "^7.6.17",
     "@storybook/addon-interactions": "^7.6.17",
