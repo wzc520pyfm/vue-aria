@@ -9,4 +9,9 @@ export default defineConfig<Theme>({
       /* preset options */
     }),
   ],
+  configDeps: [
+    '../../preset/dist/index.js',
+    '../../@preset/system/dist/index.js',
+    '../../@preset/button/dist/index.js',
+  ],
 }) as UserConfig<Theme>
