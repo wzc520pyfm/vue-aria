@@ -12,6 +12,7 @@
     "access": "public"
   },
   "scripts": {
+    "stub": "vite build --watch",
     "build": "vite build",
     "prepack": "clean-package",
     "postpack": "clean-package restore",

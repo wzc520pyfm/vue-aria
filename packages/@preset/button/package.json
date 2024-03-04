@@ -7,6 +7,7 @@
   "author": "wzc520pyfm",
   "main": "src/index.ts",
   "scripts": {
+    "stub": "pnpm build:fast --watch",
     "build": "tsup src --dts",
     "build:fast": "tsup src",
     "test": "echo \"Error: no test specified\" && exit 1"

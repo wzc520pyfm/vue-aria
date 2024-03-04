@@ -10,6 +10,7 @@
     "access": "public"
   },
   "scripts": {
+    "stub": "pnpm build:fast --watch",
     "build": "tsup src --dts",
     "build:fast": "tsup src",
     "prepack": "clean-package",
