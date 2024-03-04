@@ -1,15 +1,12 @@
 import {resolve} from 'node:path'
-import fs from 'fs-extra'
+import {getSubDirNames} from '@nev-ui/shared'
 import {defineConfig} from 'unocss'
 import {presetNevUIButton} from '@nev-ui/preset-button'
 import type {UserConfig} from 'unocss'
 import type {Theme} from '@nev-ui/preset-button'
 
 const presetDir = resolve(__dirname, '../../@preset')
-const presetNames = fs
-  .readdirSync(presetDir, {withFileTypes: true})
-  .filter((d) => d.isDirectory())
-  .map((d) => d.name)
+const presetNames = getSubDirNames(presetDir)
 
 export default defineConfig<Theme>({
   presets: [
