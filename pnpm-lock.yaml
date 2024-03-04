@@ -20,6 +20,12 @@ importers:
       '@nev-ui/eslint-config':
         specifier: workspace:^
         version: link:internal/eslint-config
+      '@types/fs-extra':
+        specifier: ^11.0.4
+        version: 11.0.4
+      '@types/node':
+        specifier: ^20.11.10
+        version: 20.11.20
       '@vitejs/plugin-vue':
         specifier: ^5.0.4
         version: 5.0.4(vite@5.1.4)(vue@3.4.19)
@@ -41,6 +47,9 @@ importers:
       fast-glob:
         specifier: ^3.3.2
         version: 3.3.2
+      fs-extra:
+        specifier: ^11.2.0
+        version: 11.2.0
       husky:
         specifier: ^9.0.11
         version: 9.0.11
@@ -4877,7 +4886,7 @@ packages:
       ts-dedent: 2.2.0
       type-fest: 2.19.0
       vue: 3.4.19(typescript@5.3.3)
-      vue-component-type-helpers: 2.0.3
+      vue-component-type-helpers: 2.0.4
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -5060,6 +5069,13 @@ packages:
     resolution: {integrity: sha512-frsJrz2t/CeGifcu/6uRo4b+SzAwT4NYCVPu1GN8IB9XTzrpPkGuV0tmh9mN+/L0PklAlsC3u5Fxt0ju00LXIw==}
     dev: true
 
+  /@types/fs-extra@11.0.4:
+    resolution: {integrity: sha512-yTbItCNreRooED33qjunPthRcSjERP1r4MqCZc7wv0u2sUkzTFp45tgUfS5+r7FrZPdmCCNflLhVSP/o+SemsQ==}
+    dependencies:
+      '@types/jsonfile': 6.1.4
+      '@types/node': 20.11.20
+    dev: true
+
   /@types/graceful-fs@4.1.9:
     resolution: {integrity: sha512-olP3sd1qOEe5dXTSaFvQG+02VdRXcdytWLAZsAq1PecU8uqQAhkrnbli7DagjtXKW/Bl7YJbUsa8MPcuc8LHEQ==}
     dependencies:
@@ -5106,6 +5122,12 @@ packages:
   /@types/json5@0.0.29:
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
     dev: false
+
+  /@types/jsonfile@6.1.4:
+    resolution: {integrity: sha512-D5qGUYwjvnNNextdU59/+fI+spnwtTFmyQP0h+PfIOSkNfpU6AOICUOkm4i0OnSk+NyjdPJrxCDro0sJsWlRpQ==}
+    dependencies:
+      '@types/node': 20.11.20
+    dev: true
 
   /@types/lodash@4.14.202:
     resolution: {integrity: sha512-OvlIYQK9tNneDlS0VN54LLd5uiPCBOp7gS5Z0f1mjoJYBrtStzgmJBxONW3U6OZqdtNzZPmn9BS/7WI7BFFcFQ==}
@@ -15210,8 +15232,8 @@ packages:
     resolution: {integrity: sha512-0vOfAtI67UjeO1G6UiX5Kd76CqaQ67wrRZiOe7UAb9Jm6GzlUr/fC7CV90XfwapJRjpCMaZFhv1V0ajWRmE9Dg==}
     dev: true
 
-  /vue-component-type-helpers@2.0.3:
-    resolution: {integrity: sha512-dVPXmrwul+lLt2ErNqwfIGTWkZoPQjlarFx5pwXnCwdJ80ZaJ2nmqtt3KcUgVaKBwBQBpJqOlJPaMxICBay+Cg==}
+  /vue-component-type-helpers@2.0.4:
+    resolution: {integrity: sha512-IFZ8rjfV1zWf1LOMPfmMaHe28zZfo5w2NyZxCqeqLGT3CGur0Y9+R3/bvX400tqVukuzf8mLw2fOvGTyXKPWjg==}
     dev: true
 
   /vue-demi@0.14.7(vue@3.4.19):
