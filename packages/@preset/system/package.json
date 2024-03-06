@@ -10,10 +10,13 @@
     "stub": "pnpm build:fast --watch",
     "build": "tsup src --dts",
     "build:fast": "tsup src",
+    "prepack": "clean-package",
+    "postpack": "clean-package restore",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@unocss/core": "^0.58.5",
     "@unocss/preset-mini": "^0.58.5"
-  }
+  },
+  "clean-package": "../../../clean-package.config.json"
 }
