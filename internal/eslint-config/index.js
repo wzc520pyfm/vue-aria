@@ -19,7 +19,6 @@ module.exports = defineConfig({
     'plugin:markdown/recommended',
     'plugin:vue/vue3-recommended',
     'plugin:@typescript-eslint/recommended',
-    '@unocss',
     'prettier',
   ],
   settings: {
@@ -287,8 +286,5 @@ module.exports = defineConfig({
     'unicorn/prefer-string-trim-start-end': 'error',
     'unicorn/prefer-type-error': 'error',
     'unicorn/throw-new-error': 'error',
-
-    // unocss
-    '@unocss/blocklist': 'warn',
   },
 })
