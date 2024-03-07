@@ -11,6 +11,7 @@
     "isolatedModules": true,
     "noFallthroughCasesInSwitch": true,
     "jsx": "preserve",
+    "jsxImportSource": "vue",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
