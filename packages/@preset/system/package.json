@@ -18,5 +18,8 @@
     "@unocss/core": "^0.58.5",
     "@unocss/preset-mini": "^0.58.5"
   },
+  "devDependencies": {
+    "unocss": "^0.58.5"
+  },
   "clean-package": "../../../clean-package.config.json"
 }
