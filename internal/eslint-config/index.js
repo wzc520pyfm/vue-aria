@@ -2,7 +2,7 @@
  * Part of this code is taken from @element-plus/element-plus package ❤️
  */
 
-const { defineConfig } = require('eslint-define-config')
+const {defineConfig} = require('eslint-define-config')
 
 module.exports = defineConfig({
   env: {
@@ -19,11 +19,12 @@ module.exports = defineConfig({
     'plugin:markdown/recommended',
     'plugin:vue/vue3-recommended',
     'plugin:@typescript-eslint/recommended',
+    '@unocss',
     'prettier',
   ],
   settings: {
     'import/resolver': {
-      node: { extensions: ['.js', '.mjs', '.ts', '.d.ts', '.tsx'] },
+      node: {extensions: ['.js', '.mjs', '.ts', '.d.ts', '.tsx']},
     },
   },
   overrides: [
@@ -95,7 +96,7 @@ module.exports = defineConfig({
           },
           {
             pathPattern: '^(?:dev|peer|optional|bundled)?[Dd]ependencies$',
-            order: { type: 'asc' },
+            order: {type: 'asc'},
           },
         ],
       },
@@ -139,27 +140,17 @@ module.exports = defineConfig({
   ],
   rules: {
     // js/ts
-    camelcase: ['error', { properties: 'never' }],
-    'no-console': ['warn', { allow: ['error'] }],
+    camelcase: ['error', {properties: 'never'}],
+    'no-console': ['warn', {allow: ['error']}],
     'no-debugger': 'warn',
-    'no-constant-condition': ['error', { checkLoops: false }],
+    'no-constant-condition': ['error', {checkLoops: false}],
     'no-restricted-syntax': ['error', 'LabeledStatement', 'WithStatement'],
     'no-return-await': 'error',
     'no-var': 'error',
-    'no-empty': ['error', { allowEmptyCatch: true }],
-    'prefer-const': [
-      'warn',
-      { destructuring: 'all', ignoreReadBeforeAssign: true },
-    ],
-    'prefer-arrow-callback': [
-      'error',
-      { allowNamedFunctions: false, allowUnboundThis: true },
-    ],
-    'object-shorthand': [
-      'error',
-      'always',
-      { ignoreConstructors: false, avoidQuotes: true },
-    ],
+    'no-empty': ['error', {allowEmptyCatch: true}],
+    'prefer-const': ['warn', {destructuring: 'all', ignoreReadBeforeAssign: true}],
+    'prefer-arrow-callback': ['error', {allowNamedFunctions: false, allowUnboundThis: true}],
+    'object-shorthand': ['error', 'always', {ignoreConstructors: false, avoidQuotes: true}],
     'prefer-rest-params': 'error',
     'prefer-spread': 'error',
     'prefer-template': 'error',
@@ -195,11 +186,8 @@ module.exports = defineConfig({
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-non-null-asserted-optional-chain': 'off',
-    '@typescript-eslint/consistent-type-imports': [
-      'error',
-      { disallowTypeAnnotations: false },
-    ],
-    '@typescript-eslint/ban-ts-comment': ['off', { 'ts-ignore': false }],
+    '@typescript-eslint/consistent-type-imports': ['error', {disallowTypeAnnotations: false}],
+    '@typescript-eslint/ban-ts-comment': ['off', {'ts-ignore': false}],
 
     // vue
     'vue/no-v-html': 'off',
@@ -230,16 +218,7 @@ module.exports = defineConfig({
     'import/order': [
       'error',
       {
-        groups: [
-          'builtin',
-          'external',
-          'internal',
-          'parent',
-          'sibling',
-          'index',
-          'object',
-          'type',
-        ],
+        groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'object', 'type'],
 
         pathGroups: [
           {
@@ -268,7 +247,7 @@ module.exports = defineConfig({
     'import/named': 'off',
 
     // eslint-plugin-eslint-comments
-    'eslint-comments/disable-enable-pair': ['error', { allowWholeFile: true }],
+    'eslint-comments/disable-enable-pair': ['error', {allowWholeFile: true}],
 
     // unicorn
     'unicorn/custom-error-definition': 'error',
@@ -308,5 +287,8 @@ module.exports = defineConfig({
     'unicorn/prefer-string-trim-start-end': 'error',
     'unicorn/prefer-type-error': 'error',
     'unicorn/throw-new-error': 'error',
+
+    // unocss
+    '@unocss/blocklist': 'warn',
   },
 })
