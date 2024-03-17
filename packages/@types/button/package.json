@@ -1,0 +1,15 @@
+{
+  "name": "@nev-ui/types-aria-button",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "license": "MIT",
+  "author": "wzc520pyfm",
+  "main": "src/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
