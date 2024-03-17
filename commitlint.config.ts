@@ -12,6 +12,7 @@ const scopes = [
   'project',
   'core',
   'ci',
+  'lib',
   'dev',
   'vscode',
   'other',
