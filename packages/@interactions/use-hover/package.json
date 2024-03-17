@@ -2,14 +2,26 @@
   "name": "@nev-ui/use-hover",
   "version": "0.0.1",
   "description": "Hooks for handling hover interaction",
-  "main": "src/index.ts",
-  "keywords": ["hover", "hooks"],
-  "author": "wzc520pyfm",
+  "keywords": [
+    "hover",
+    "hooks"
+  ],
   "license": "MIT",
+  "author": "wzc520pyfm",
+  "main": "src/index.ts",
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "vue": ">=3.4.0"
+  },
+  "dependencies": {
+    "@nev-ui/types-shared": "workspace:^"
+  },
+  "devDependencies": {
+    "vue": "^3.4.21"
   }
 }
