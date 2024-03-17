@@ -1,7 +1,7 @@
 import {resolve} from 'node:path'
-import {getSubDirNames} from '@nev-ui/shared'
 import {defineConfig} from 'unocss'
 import {presetNevUI} from '@nev-ui/preset'
+import {getSubDirNames} from '../../lib'
 import type {UserConfig} from 'unocss'
 import type {Theme} from '@nev-ui/preset'
 

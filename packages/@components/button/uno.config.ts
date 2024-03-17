@@ -1,7 +1,7 @@
 import {resolve} from 'node:path'
-import {getSubDirNames} from '@nev-ui/shared'
 import {defineConfig} from 'unocss'
 import {presetNevUIButton} from '@nev-ui/preset-button'
+import {getSubDirNames} from '../../../lib'
 import type {UserConfig} from 'unocss'
 import type {Theme} from '@nev-ui/preset-button'
 
@@ -14,6 +14,11 @@ export default defineConfig<Theme>({
       /* preset options */
     }),
   ],
+  content: {
+    pipeline: {
+      include: [/\.(ts|vue)($|\?)/],
+    },
+  },
   configDeps: [
     '../../preset/dist/index.js',
     ...presetNames.map((name) => `../../@preset/${name}/dist/index.js`),
