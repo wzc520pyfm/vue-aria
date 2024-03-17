@@ -1,0 +1,21 @@
+{
+  "name": "@nev-ui/types-shared",
+  "version": "0.0.1",
+  "description": "",
+  "types": "src/index.d.ts",
+  "keywords": [],
+  "license": "MIT",
+  "author": "wzc520pyfm",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "vue": ">=3.4.0"
+  },
+  "devDependencies": {
+    "vue": "^3.4.21"
+  }
+}

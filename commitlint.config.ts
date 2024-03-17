@@ -13,6 +13,7 @@ const scopes = [
   'core',
   'ci',
   'lib',
+  'types',
   'dev',
   'vscode',
   'other',
