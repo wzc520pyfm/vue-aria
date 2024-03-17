@@ -2,14 +2,30 @@
   "name": "@nev-ui/use-aria-button",
   "version": "0.0.1",
   "description": "Button",
-  "main": "src/index.ts",
-  "keywords": ["button"],
-  "author": "wzc520pyfm",
+  "keywords": [
+    "button"
+  ],
   "license": "MIT",
+  "author": "wzc520pyfm",
+  "main": "src/index.ts",
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
+    "stub": "pnpm build:fast --watch",
+    "build": "tsup src --dts",
+    "build:fast": "tsup src",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "vue": ">=3.4.0"
+  },
+  "dependencies": {
+    "@nev-ui/shared": "workspace:^",
+    "@nev-ui/types-aria-button": "workspace:^",
+    "@nev-ui/use-hover": "workspace:^"
+  },
+  "devDependencies": {
+    "vue": "^3.4.21"
   }
 }
