@@ -5,8 +5,8 @@ defineOptions({ name: 'PlayRepl' })
 </script>
 
 <template>
-  <Button label="Button" />
-  <button class="btn">Button2</button>
+  <Button>Button</Button>
+  <button class="btn btn-primary">Button2</button>
 </template>
 
 <style scoped></style>
