@@ -1,15 +1,28 @@
+import {type MaybeRef, computed, reactive, toRefs} from 'vue'
 import type {ButtonProps} from './button'
 
 export interface UseButtonUno extends Pick<ButtonProps, 'size' | 'color' | 'radius'> {}
 
-export function useButtonUno(props: UseButtonUno) {
-  const {size, color, radius} = props
+type PropMaybeRef<T> =
+  | {
+      [P in keyof T]?: MaybeRef<T[P]>
+    }
+  | T
+
+/**
+ * Get the uno class of button
+ * @param props - Component props or refs
+ * @todo - support getter
+ */
+export function useButtonUno(props: PropMaybeRef<UseButtonUno>) {
+  const {size, color, radius} = toRefs(reactive(props))
+
   return {
-    buttonCls: [
+    buttonCls: computed(() => [
       'btn', // base
-      `btn-${size}`, // size
-      `btn-${color}`, // color
-      `btn-rounded-${radius}`, // radius
-    ],
+      `btn-${size?.value}`, // size
+      `btn-${color?.value}`, // color
+      `btn-rounded-${radius?.value}`, // radius
+    ]),
   }
 }

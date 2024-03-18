@@ -22,13 +22,13 @@ defineOptions({
 const emits = defineEmits<ButtonEmits>()
 const props = defineProps<ButtonProps>()
 
-// bem系统提供dom层级的css划分
+// Provides css layer
 const bem = useBEM('button')
 
-// 必要的渲染属性和事件由 useButton 提供
+// Provides rendering properties and events
 const {Component, size, color, radius, getButtonProps, getButtonEvents} = useButton(props, emits)
 
-// 基于unocss的class由另一套逻辑系统提供，它基于已知的属性进行class的生成
+// Provides uno class
 const {buttonCls} = useButtonUno({size, color, radius})
 </script>
 
