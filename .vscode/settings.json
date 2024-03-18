@@ -1,3 +1,13 @@
 {
-  "cSpell.words": ["commitlint", "Nuxt", "postpack", "Prefixs", "pyfm", "tsup", "unocss"]
+  "cSpell.words": [
+    "commitlint",
+    "hoverend",
+    "hoverstart",
+    "Nuxt",
+    "postpack",
+    "Prefixs",
+    "pyfm",
+    "tsup",
+    "unocss"
+  ]
 }
