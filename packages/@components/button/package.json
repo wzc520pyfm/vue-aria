@@ -30,7 +30,7 @@
     "@nev-ui/shared": "workspace:^",
     "clean-package": "^2.2.0",
     "unocss": "^0.58.5",
-    "vue": "^3.4.19"
+    "vue": "^3.4.21"
   },
   "clean-package": "../../../clean-package.config.json"
 }
