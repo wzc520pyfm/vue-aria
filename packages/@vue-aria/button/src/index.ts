@@ -1,3 +1,3 @@
-export {useButton} from './useButton'
+export {useButton} from './use-button'
 
-export type {UseButtonProps, UseButtonEmits} from './useButton'
+export type {UseButtonProps, UseButtonEmits} from './use-button'

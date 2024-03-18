@@ -1,11 +1,11 @@
-import {unref} from 'vue'
+import {toValue} from 'vue'
 import {useHover} from '@nev-ui/use-hover'
 import {dataAttr, mergeProps} from '@nev-ui/shared'
+import {withButtonDefault} from './with-button-default'
 import type {AriaButtonProps} from '@nev-ui/types-aria-button'
 
 export interface UseButtonProps extends AriaButtonProps {
-  // there props's type need to weaken
-  as?: string
+  as?: string // should be weaken
   type?: string // should be provided as native attr
   size?: 'sm' | 'md' | 'lg'
   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
@@ -17,21 +17,24 @@ export interface UseButtonEmits {
   (e: 'click'): void
 }
 
+/**
+ * Hook for headless button
+ * @param props - Button props
+ * @param emits - Button emits
+ */
 export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
-  const {as, type = 'button', size = 'md', color = 'default', radius, isDisabled} = props
+  const {Component, type, size, color, radius, isDisabled} = withButtonDefault(props)
 
-  const Component = as || 'button'
-
-  const {isHovered, hoverProps} = useHover({isDisabled})
+  const {isHovered, hoverProps} = useHover({isDisabled: isDisabled?.value})
   const additionalProps = {
-    type,
+    type: type?.value,
   }
   const onClick = () => {
     emits('click')
   }
   const getButtonProps = () => ({
-    'data-hover': dataAttr(unref(isHovered)),
-    ...mergeProps(additionalProps, unref(hoverProps)),
+    'data-hover': dataAttr(toValue(isHovered)),
+    ...mergeProps(additionalProps, toValue(hoverProps)),
   })
   const getButtonEvents = () => ({
     click: onClick,
