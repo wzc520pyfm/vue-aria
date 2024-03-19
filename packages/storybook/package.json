@@ -18,23 +18,24 @@
   },
   "dependencies": {
     "@nev-ui/preset": "workspace:^",
-    "vue": "^3.4.19"
+    "vue": "^3.4.21"
   },
   "devDependencies": {
+    "@chromatic-com/storybook": "^1.2.23",
     "@nev-ui/shared": "workspace:^",
-    "@storybook/addon-a11y": "^7.6.17",
-    "@storybook/addon-essentials": "^7.6.17",
-    "@storybook/addon-interactions": "^7.6.17",
-    "@storybook/addon-links": "^7.6.17",
-    "@storybook/blocks": "^7.6.17",
-    "@storybook/test": "^7.6.17",
-    "@storybook/vue3": "^7.6.17",
-    "@storybook/vue3-vite": "^7.6.17",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "storybook": "^7.6.17",
-    "storybook-dark-mode": "^3.0.3",
-    "unocss": "^0.58.5",
-    "vite": "^5.1.4"
+    "@storybook/addon-a11y": "^8.0.0",
+    "@storybook/addon-essentials": "^8.0.0",
+    "@storybook/addon-interactions": "^8.0.0",
+    "@storybook/addon-links": "^8.0.0",
+    "@storybook/blocks": "^8.0.0",
+    "@storybook/builder-vite": "^8.0.0",
+    "@storybook/test": "^8.0.0",
+    "@storybook/vue3": "^8.0.0",
+    "@storybook/vue3-vite": "^8.0.0",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "storybook": "^8.0.0",
+    "storybook-dark-mode": "^4.0.0",
+    "unocss": "^0.58.6",
+    "vite": "^5.1.6"
   }
 }

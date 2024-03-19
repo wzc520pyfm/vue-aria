@@ -1,5 +1,4 @@
-/** @type { import('@storybook/vue3').Preview } */
-import {setup, Preview} from '@storybook/vue3'
+import {setup, type Preview} from '@storybook/vue3'
 import './style.css'
 
 import 'virtual:uno.css'
