@@ -1,6 +1,7 @@
 {
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
+    "moduleResolution": "bundler",
     "baseUrl": "."
   },
   "include": ["src", "index.ts"]
