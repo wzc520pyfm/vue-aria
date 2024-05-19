@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "@unocss/core": "^0.58.5",
-    "@unocss/preset-mini": "^0.58.5"
+    "@unocss/preset-mini": "^0.58.5",
+    "ohcolor": "^0.0.9"
   },
   "devDependencies": {
     "unocss": "^0.58.5"
