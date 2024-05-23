@@ -19,7 +19,9 @@ const changeSize = () => {
 </script>
 
 <template>
+  <Button :as="as" :size="size" :color="color" :radius="radius" isDisabled>Button</Button>
   <Button :as="as" :size="size" :color="color" :radius="radius">Button</Button>
+  <Button :as="as" :size="size" :color="color" :radius="radius" fullWidth>Button</Button>
   <button class="btn btn-primary" @click="changeSize">Button2</button>
 </template>
 
