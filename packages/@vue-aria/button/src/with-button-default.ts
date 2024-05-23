@@ -21,6 +21,7 @@ export function withButtonDefault(props: UseButtonProps) {
   const color = computed(() => props.color ?? BUTTON_DEFAULT.color)
   const radius = computed(() => props.radius ?? BUTTON_DEFAULT.radius)
   const isDisabled = computed(() => props.isDisabled)
+  const fullWidth = computed(() => props.fullWidth)
 
   return {
     as,
@@ -30,5 +31,6 @@ export function withButtonDefault(props: UseButtonProps) {
     color,
     radius,
     isDisabled,
+    fullWidth,
   }
 }

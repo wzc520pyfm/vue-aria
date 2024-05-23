@@ -11,6 +11,7 @@ export interface UseButtonProps extends AriaButtonProps {
   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
   radius?: 'none' | 'sm' | 'md' | 'lg' | 'full'
   isDisabled?: boolean
+  fullWidth?: boolean
 }
 
 export interface UseButtonEmits {
@@ -23,7 +24,7 @@ export interface UseButtonEmits {
  * @param emits - Button emits
  */
 export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
-  const {Component, type, size, color, radius, isDisabled} = withButtonDefault(props)
+  const {Component, type, size, color, radius, isDisabled, fullWidth} = withButtonDefault(props)
 
   const {isHovered, hoverProps} = useHover({isDisabled: isDisabled?.value})
   const additionalProps = {
@@ -45,6 +46,8 @@ export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
     size,
     color,
     radius,
+    isDisabled,
+    fullWidth,
     getButtonProps,
     getButtonEvents,
   }
