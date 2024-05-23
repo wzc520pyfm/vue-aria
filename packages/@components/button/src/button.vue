@@ -26,10 +26,11 @@ const props = defineProps<ButtonProps>()
 const bem = useBEM('button')
 
 // Provides rendering properties and events
-const {Component, size, color, radius, getButtonProps, getButtonEvents} = useButton(props, emits)
+const {Component, size, color, radius, isDisabled, fullWidth, getButtonProps, getButtonEvents} =
+  useButton(props, emits)
 
 // Provides uno class
-const {buttonCls} = useButtonUno({size, color, radius})
+const {buttonCls} = useButtonUno({size, color, radius, isDisabled, fullWidth})
 </script>
 
 <style scoped></style>
