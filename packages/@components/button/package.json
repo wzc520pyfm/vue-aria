@@ -23,7 +23,8 @@
   },
   "dependencies": {
     "@nev-ui/aria-button": "workspace:^",
-    "@nev-ui/preset-button": "workspace:^"
+    "@nev-ui/preset-button": "workspace:^",
+    "@nev-ui/utilities-vue": "workspace:^"
   },
   "devDependencies": {
     "clean-package": "^2.2.0",
