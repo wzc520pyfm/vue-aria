@@ -30,6 +30,7 @@ export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
     emits('click')
   }
   const getButtonProps = () => ({
+    'data-disabled': dataAttr(toValue(isDisabled)),
     'data-hover': dataAttr(toValue(isHovered)),
     ...mergeProps(additionalProps, toValue(hoverProps)),
   })
