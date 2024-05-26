@@ -1,5 +1,8 @@
-import type {UseButtonEmits, UseButtonProps} from '@nev-ui/use-aria-button'
+import type {
+  ButtonEmits as AriaButtonEmits,
+  ButtonProps as AriaButtonProps,
+} from '@nev-ui/aria-button'
 
-export interface ButtonProps extends UseButtonProps {}
+export interface ButtonProps extends AriaButtonProps {}
 
-export interface ButtonEmits extends UseButtonEmits {}
+export interface ButtonEmits extends AriaButtonEmits {}

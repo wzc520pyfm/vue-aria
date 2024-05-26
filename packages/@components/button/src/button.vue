@@ -1,33 +1,24 @@
 <template>
-  <component
-    :is="Component"
-    :class="[bem.b(), ...buttonCls]"
-    v-bind="{...getButtonProps()}"
-    v-on="{...getButtonEvents()}"
-  >
-    <slot />
-  </component>
+  <component :is="h(Button, $attrs, $slots)" :class="[...buttonCls]" />
 </template>
 
 <script setup lang="ts">
-import {useBEM} from '@nev-ui/utilities-bem'
-import {useButton} from '@nev-ui/use-aria-button'
+import {h, toRefs} from 'vue'
+import {Button} from '@nev-ui/aria-button'
 import {useButtonUno} from './use-button-uno'
-import type {ButtonEmits, ButtonProps} from './button'
+import type {ButtonProps} from './button'
 
 defineOptions({
-  name: 'MyButton',
+  name: 'Button2',
 })
 
-const emits = defineEmits<ButtonEmits>()
-const props = defineProps<ButtonProps>()
+const props = withDefaults(defineProps<ButtonProps>(), {
+  size: 'md',
+  color: 'default',
+  radius: 'md',
+})
 
-// Provides css layer
-const bem = useBEM('button')
-
-// Provides rendering properties and events
-const {Component, size, color, radius, isDisabled, fullWidth, getButtonProps, getButtonEvents} =
-  useButton(props, emits)
+const {size, color, radius, isDisabled, fullWidth} = toRefs(props)
 
 // Provides uno class
 const {buttonCls} = useButtonUno({size, color, radius, isDisabled, fullWidth})

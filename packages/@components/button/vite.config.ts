@@ -12,7 +12,7 @@ export default defineConfig({
   plugins: [
     vue(),
     vueJsx(),
-    UnoCSS(),
+    UnoCSS(), // FIXME: trigger type error
     dts({
       tsconfigPath: 'tsconfig.json',
       cleanVueFileName: true,

@@ -22,15 +22,13 @@
     "vue": ">=3.4.0"
   },
   "dependencies": {
-    "@nev-ui/preset-button": "workspace:^",
-    "@nev-ui/use-aria-button": "workspace:^",
-    "@nev-ui/utilities-bem": "workspace:^"
+    "@nev-ui/aria-button": "workspace:^",
+    "@nev-ui/preset-button": "workspace:^"
   },
   "devDependencies": {
-    "@nev-ui/shared": "workspace:^",
     "clean-package": "^2.2.0",
-    "unocss": "^0.58.5",
-    "vue": "^3.4.21"
+    "unocss": "^0.58.9",
+    "vue": "^3.4.27"
   },
   "clean-package": "../../../clean-package.config.json"
 }
