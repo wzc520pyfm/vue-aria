@@ -1,6 +1,6 @@
 <template>
   <component
-    :is="h(Button, {...$attrs, isDisabled, ...toValues(otherProps), ...emits}, $slots)"
+    :is="h(Button, {isDisabled, ...mergeProps($attrs, toValues(otherProps), emits)}, $slots)"
     :class="[...buttonCls]"
   />
 </template>
@@ -9,6 +9,7 @@
 import {h, toRefs} from 'vue'
 import {Button} from '@nev-ui/aria-button'
 import {toValues} from '@nev-ui/utilities-vue'
+import {mergeProps} from '@nev-ui/shared'
 import {useButtonUno} from './use-button-uno'
 import {BUTTON_DEFAULT} from './button'
 import type {ButtonEmits, ButtonProps} from './button'

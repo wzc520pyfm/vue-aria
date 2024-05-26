@@ -150,6 +150,9 @@ importers:
       '@nev-ui/preset-button':
         specifier: workspace:^
         version: link:../../@preset/button
+      '@nev-ui/shared':
+        specifier: workspace:^
+        version: link:../../@utilities/shared
       '@nev-ui/utilities-vue':
         specifier: workspace:^
         version: link:../../@utilities/vue
