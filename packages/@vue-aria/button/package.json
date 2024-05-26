@@ -26,6 +26,6 @@
     "@nev-ui/use-hover": "workspace:^"
   },
   "devDependencies": {
-    "vue": "^3.4.21"
+    "vue": "^3.4.27"
   }
 }

@@ -17,7 +17,7 @@
   "dependencies": {
     "@nev-ui/preset-button": "workspace:^",
     "@nev-ui/preset-system": "workspace:^",
-    "@unocss/core": "^0.58.5"
+    "@unocss/core": "^0.58.9"
   },
   "clean-package": "../../../clean-package.config.json"
 }
