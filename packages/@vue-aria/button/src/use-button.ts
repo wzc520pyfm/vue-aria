@@ -7,11 +7,7 @@ import type {AriaButtonProps} from '@nev-ui/types-aria-button'
 export interface UseButtonProps extends AriaButtonProps {
   as?: string // should be weaken
   type?: string // should be provided as native attr
-  size?: 'sm' | 'md' | 'lg'
-  color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
-  radius?: 'none' | 'sm' | 'md' | 'lg' | 'full'
   isDisabled?: boolean
-  fullWidth?: boolean
 }
 
 export interface UseButtonEmits {
@@ -24,7 +20,7 @@ export interface UseButtonEmits {
  * @param emits - Button emits
  */
 export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
-  const {Component, type, size, color, radius, isDisabled, fullWidth} = withButtonDefault(props)
+  const {Component, type, isDisabled} = withButtonDefault(props)
 
   const {isHovered, hoverProps} = useHover({isDisabled: isDisabled?.value})
   const additionalProps = {
@@ -43,11 +39,7 @@ export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
 
   return {
     Component,
-    size,
-    color,
-    radius,
     isDisabled,
-    fullWidth,
     getButtonProps,
     getButtonEvents,
   }
