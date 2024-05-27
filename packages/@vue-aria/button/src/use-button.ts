@@ -1,4 +1,4 @@
-import {toValue} from 'vue'
+import {computed, toValue} from 'vue'
 import {useHover} from '@nev-ui/use-hover'
 import {dataAttr, mergeProps} from '@nev-ui/shared'
 import {withButtonDefault} from './with-button-default'
@@ -23,7 +23,7 @@ export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
   const {Component, type, isDisabled} = withButtonDefault(props)
 
   const {isHovered, hoverProps} = useHover({isDisabled: isDisabled?.value})
-  const additionalProps =
+  const additionalProps = computed(() =>
     Component.value === 'button'
       ? {
           type: type.value,
@@ -39,14 +39,16 @@ export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
           'aria-disabled':
             !isDisabled || Component.value === 'input' ? undefined : isDisabled.value,
           // rel: Component.value === 'a' ? rel : undefined,
-        }
+        },
+  )
+
   const onClick = () => {
     emits('click')
   }
   const getButtonProps = () => ({
     'data-disabled': dataAttr(toValue(isDisabled)),
     'data-hover': dataAttr(toValue(isHovered)),
-    ...mergeProps(additionalProps, toValue(hoverProps)),
+    ...mergeProps(toValue(additionalProps), toValue(hoverProps)),
   })
   const getButtonEvents = () => ({
     click: onClick,
