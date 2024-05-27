@@ -23,9 +23,23 @@ export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
   const {Component, type, isDisabled} = withButtonDefault(props)
 
   const {isHovered, hoverProps} = useHover({isDisabled: isDisabled?.value})
-  const additionalProps = {
-    type: type?.value,
-  }
+  const additionalProps =
+    Component.value === 'button'
+      ? {
+          type: type.value,
+          disabled: isDisabled.value,
+        }
+      : {
+          role: 'button',
+          tabIndex: isDisabled ? undefined : 0,
+          // href: Component.value === 'a' && isDisabled ? undefined : href,
+          // target: Component.value === 'a' ? target : undefined,
+          type: Component.value === 'input' ? type.value : undefined,
+          disabled: Component.value === 'input' ? isDisabled.value : undefined,
+          'aria-disabled':
+            !isDisabled || Component.value === 'input' ? undefined : isDisabled.value,
+          // rel: Component.value === 'a' ? rel : undefined,
+        }
   const onClick = () => {
     emits('click')
   }
