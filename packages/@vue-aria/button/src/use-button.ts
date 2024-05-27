@@ -22,7 +22,7 @@ export interface UseButtonEmits {
 export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
   const {Component, type, isDisabled} = withButtonDefault(props)
 
-  const {isHovered, hoverProps} = useHover({isDisabled: isDisabled?.value})
+  const {isHovered, hoverProps} = useHover({isDisabled: isDisabled.value})
   const additionalProps = computed(() =>
     Component.value === 'button'
       ? {
