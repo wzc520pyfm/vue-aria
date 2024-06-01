@@ -10,6 +10,18 @@ export default defineConfig({
   presets: [
     presetNevUI({
       /* preset options */
+      theme: {
+        // only for custom theme test
+        olive: {
+          extend: 'dark',
+          colors: {
+            primary: {
+              DEFAULT: '#BEF264',
+              foreground: '#000000',
+            },
+          },
+        },
+      }
     })
   ],
   configDeps: [
