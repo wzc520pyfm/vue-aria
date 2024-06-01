@@ -5,9 +5,10 @@ export const buttonShortcuts: Record<string, string> = {
   'btn-sm': 'px-3 min-w-16 h-8 text-xs gap-2 rounded-sm',
   'btn-md': 'px-4 min-w-20 h-10 text-sm gap-2 rounded-md',
   'btn-lg': 'px-6 min-w-24 h-12 text-base gap-3 rounded-lg',
-  // color and hover should has a system
-  'btn-default': 'bg-#d4d4d8 text-#11181C data-[hover=true]:bg-#d4d4d8/40',
-  'btn-primary': 'bg-#006FEE text-#FFFFFF data-[hover=true]:bg-#006FEE/20',
+  // color and hover should has a system, should extends opacity-hover from preset system to instead opacity-90
+  'btn-default': 'bg-default text-default-foreground data-[hover=true]:opacity-90',
+  'btn-primary': 'bg-primary text-primary-foreground data-[hover=true]:opacity-90',
+  'btn-secondary': 'bg-secondary text-secondary-foreground data-[hover=true]:opacity-90',
   // more colors
   // ...
   'btn-rounded-none': 'rounded-none',
