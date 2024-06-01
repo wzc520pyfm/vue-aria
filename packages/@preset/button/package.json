@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "@nev-ui/preset-system": "workspace:^",
-    "@unocss/core": "^0.58.9"
+    "@unocss/core": "^0.58.9",
+    "deepmerge": "^4.3.1"
   },
   "devDependencies": {
     "unocss": "^0.58.9"
