@@ -3,4 +3,4 @@ packages:
   - "packages/**/**"
   - internal/*
   - lib
-  - playground
+  - play

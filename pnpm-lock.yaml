@@ -371,7 +371,7 @@ importers:
         specifier: ^5.2.11
         version: 5.2.11(@types/node@20.12.12)
 
-  playground:
+  play:
     dependencies:
       '@nev-ui/preset':
         specifier: workspace:^
@@ -403,7 +403,7 @@ importers:
         version: 20.1.4
       '@types/jsdom':
         specifier: ^21.1.6
-        version: 21.1.6
+        version: 21.1.7
       '@types/node':
         specifier: ^20.12.12
         version: 20.12.12
@@ -5403,8 +5403,8 @@ packages:
       '@types/node': 20.12.12
     dev: false
 
-  /@types/jsdom@21.1.6:
-    resolution: {integrity: sha512-/7kkMsC+/kMs7gAYmmBR9P0vGTnOoLhQhyhQJSlXGI5bzTHp6xdo0TtKWQAsz6pmSAeVqKSbqeyP6hytqr9FDw==}
+  /@types/jsdom@21.1.7:
+    resolution: {integrity: sha512-yOriVnggzrnQ3a9OKOCxaVuSug3w3/SbOj5i7VwXWZEyUNl3bLF9V3MfxGbZKuwqJOQyRfqXyROBB1CoZLFWzA==}
     dependencies:
       '@types/node': 20.12.12
       '@types/tough-cookie': 4.0.5
@@ -5568,7 +5568,7 @@ packages:
       ignore: 5.3.1
       natural-compare: 1.4.0
       semver: 7.6.2
-      ts-api-utils: 1.3.0(typescript@5.3.3)
+      ts-api-utils: 1.2.1(typescript@5.3.3)
       typescript: 5.3.3
     transitivePeerDependencies:
       - supports-color
@@ -5704,7 +5704,7 @@ packages:
       '@typescript-eslint/utils': 6.21.0(eslint@8.57.0)(typescript@5.3.3)
       debug: 4.3.4(supports-color@8.1.1)
       eslint: 8.57.0
-      ts-api-utils: 1.3.0(typescript@5.3.3)
+      ts-api-utils: 1.2.1(typescript@5.3.3)
       typescript: 5.3.3
     transitivePeerDependencies:
       - supports-color
@@ -5761,7 +5761,7 @@ packages:
       is-glob: 4.0.3
       minimatch: 9.0.3
       semver: 7.6.2
-      ts-api-utils: 1.3.0(typescript@5.3.3)
+      ts-api-utils: 1.2.1(typescript@5.3.3)
       typescript: 5.3.3
     transitivePeerDependencies:
       - supports-color
@@ -6557,7 +6557,7 @@ packages:
       '@vue/compiler-dom': 3.4.27
       '@vue/shared': 3.4.27
       computeds: 0.0.1
-      minimatch: 9.0.3
+      minimatch: 9.0.4
       muggle-string: 0.3.1
       path-browserify: 1.0.1
       typescript: 5.3.3
@@ -6577,7 +6577,7 @@ packages:
       '@vue/compiler-dom': 3.4.27
       '@vue/shared': 3.4.27
       computeds: 0.0.1
-      minimatch: 9.0.3
+      minimatch: 9.0.4
       muggle-string: 0.3.1
       path-browserify: 1.0.1
       typescript: 5.4.5
@@ -6684,7 +6684,7 @@ packages:
       '@types/web-bluetooth': 0.0.20
       '@vueuse/metadata': 10.10.0
       '@vueuse/shared': 10.10.0(vue@3.4.27)
-      vue-demi: 0.14.7(vue@3.4.27)
+      vue-demi: 0.14.8(vue@3.4.27)
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
@@ -6697,7 +6697,7 @@ packages:
   /@vueuse/shared@10.10.0(vue@3.4.27):
     resolution: {integrity: sha512-2aW33Ac0Uk0U+9yo3Ypg9s5KcR42cuehRWl7vnUHadQyFvCktseyxxEPBi1Eiq4D2yBGACOnqLZpx1eMc7g5Og==}
     dependencies:
-      vue-demi: 0.14.7(vue@3.4.27)
+      vue-demi: 0.14.8(vue@3.4.27)
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
@@ -11012,11 +11012,6 @@ packages:
 
   /js-tokens@8.0.3:
     resolution: {integrity: sha512-UfJMcSJc+SEXEl9lH/VLHSZbThQyLpw1vLO1Lb+j4RWDvG3N2f7yj3PVQA3cmkTBNldJ9eFnM+xEXxHIXrYiJw==}
-    dev: false
-
-  /js-tokens@9.0.0:
-    resolution: {integrity: sha512-WriZw1luRMlmV3LGJaR6QOJjWwgLUTf89OwT2lUOyjX2dJGBwgmIkbcz+7WFZjrZM635JOIR517++e/67CP9dQ==}
-    dev: true
 
   /js-yaml@4.1.0:
     resolution: {integrity: sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==}
@@ -12906,7 +12901,7 @@ packages:
       '@vue/devtools-api': 6.6.1
       typescript: 5.3.3
       vue: 3.4.27(typescript@5.3.3)
-      vue-demi: 0.14.7(vue@3.4.27)
+      vue-demi: 0.14.8(vue@3.4.27)
     dev: false
 
   /pirates@4.0.6:
@@ -14745,13 +14740,6 @@ packages:
     resolution: {integrity: sha512-f9vHgsCWBq2ugHAkGMiiYY+AYG0D/cbloKKg0nhaaaSNsujdGIpVXCNsrJpCKr5M0f4aI31mr13UjY6GAuXCKA==}
     dependencies:
       js-tokens: 8.0.3
-    dev: false
-
-  /strip-literal@2.1.0:
-    resolution: {integrity: sha512-Op+UycaUt/8FbN/Z2TWPBLge3jWrP3xj10f3fnYxf052bKuS3EKs1ZQcVGjnEMdsNVAM+plXRdmjrZ/KgG3Skw==}
-    dependencies:
-      js-tokens: 9.0.0
-    dev: true
 
   /stylehacks@6.0.3(postcss@8.4.38):
     resolution: {integrity: sha512-KzBqjnqktc8/I0ERCb+lGq06giF/JxDbw2r9kEVhen9noHeIDRtMWUp9r62sOk+/2bbX6sFG1GhsS7ToXG0PEg==}
@@ -15075,7 +15063,6 @@ packages:
       typescript: '>=4.2.0'
     dependencies:
       typescript: 5.3.3
-    dev: false
 
   /ts-api-utils@1.3.0(typescript@5.3.3):
     resolution: {integrity: sha512-UQMIo7pb8WRomKR1/+MFVLTroIvDVtMX3K6OUir8ynLyzB8Jeriont2bTAtmNPa1ekAgN7YPDyf6V+ygrdU+eQ==}
@@ -16107,7 +16094,7 @@ packages:
       pathe: 1.1.2
       picocolors: 1.0.1
       std-env: 3.7.0
-      strip-literal: 2.1.0
+      strip-literal: 2.0.0
       tinybench: 2.8.0
       tinypool: 0.8.4
       vite: 5.2.12(@types/node@20.12.12)
@@ -16193,8 +16180,8 @@ packages:
     resolution: {integrity: sha512-cN3f1aTxxKo4lzNeQAkVopswuImUrb5Iurll9Gaw5cqpnbTAxtEMM1mgi6ou4X79OCyqYv1U1mzBHJkzmiK82w==}
     dev: true
 
-  /vue-demi@0.14.7(vue@3.4.27):
-    resolution: {integrity: sha512-EOG8KXDQNwkJILkx/gPcoL/7vH+hORoBaKgGe+6W7VFMvCYJfmF2dGbvgDroVnI8LU7/kTu8mbjRZGBU1z9NTA==}
+  /vue-demi@0.14.8(vue@3.4.27):
+    resolution: {integrity: sha512-Uuqnk9YE9SsWeReYqK2alDI5YzciATE0r2SkA6iMAtuXvNTMNACJLJEXNXaEy94ECuBe4Sk6RzRU80kjdbIo1Q==}
     engines: {node: '>=12'}
     hasBin: true
     requiresBuild: true
