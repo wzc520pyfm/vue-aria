@@ -1,15 +1,15 @@
 import {definePreset} from '@unocss/core'
-import {presetMini} from '@unocss/preset-mini'
+import presetWind from '@unocss/preset-wind'
 import presetTheme from 'unocss-preset-theme'
 import {all as deepMergeAll} from 'deepmerge'
 import {get, omit} from 'radash'
 import {nevui} from './plugin'
 import type {Theme} from './plugin'
-import type {PresetMiniOptions} from '@unocss/preset-mini'
+import type {PresetWindOptions} from '@unocss/preset-wind'
 
 export type {Theme}
 
-export interface PresetNevUISystemOptions extends PresetMiniOptions {
+export interface PresetNevUISystemOptions extends PresetWindOptions {
   theme?: Record<string, Theme>
 }
 
@@ -24,7 +24,7 @@ export const presetNevUISystem = definePreset((options: PresetNevUISystemOptions
   }
 
   return deepMergeAll([
-    presetMini(options),
+    presetWind(options),
     presetTheme<Theme>({prefix: '--nevui', theme: otherTheme}),
     preset,
   ])

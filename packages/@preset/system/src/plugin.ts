@@ -3,7 +3,7 @@ import forEach from 'lodash.foreach'
 import deepMerge from 'deepmerge'
 import {semanticColors} from './colors'
 import {isBaseTheme} from './utils/theme'
-import type {Theme as PresetMiniTheme} from '@unocss/preset-mini'
+import type {Theme as PresetMiniTheme} from '@unocss/preset-wind'
 
 export interface Theme extends PresetMiniTheme {
   extend?: string
