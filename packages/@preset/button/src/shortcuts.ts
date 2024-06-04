@@ -9,7 +9,9 @@ export const buttonShortcuts: Record<string, string> = {
   'btn-default': 'bg-default text-default-foreground data-[hover=true]:opacity-90',
   'btn-primary': 'bg-primary text-primary-foreground data-[hover=true]:opacity-90',
   'btn-secondary': 'bg-secondary text-secondary-foreground data-[hover=true]:opacity-90',
-  // more colors
+  'btn-success': 'bg-success text-success-foreground data-[hover=true]:opacity-90',
+  'btn-warning': 'bg-warning text-warning-foreground data-[hover=true]:opacity-90',
+  'btn-danger': 'bg-danger text-danger-foreground data-[hover=true]:opacity-90',
   // ...
   // rounded sm/md/lg should be provider by theme
   'btn-rounded-none': 'rounded-none',
