@@ -11,6 +11,7 @@ export const buttonShortcuts: Record<string, string> = {
   'btn-secondary': 'bg-secondary text-secondary-foreground data-[hover=true]:opacity-90',
   // more colors
   // ...
+  // rounded sm/md/lg should be provider by theme
   'btn-rounded-none': 'rounded-none',
   'btn-rounded-sm': 'rounded-sm',
   'btn-rounded-md': 'rounded-md',
@@ -19,6 +20,11 @@ export const buttonShortcuts: Record<string, string> = {
   'btn-full': 'w-full',
   // should extends opacity-disabled from preset system to instead opacity-50
   'btn-disabled': 'opacity-50 pointer-events-none',
+  // duration should be provider by theme
+  'btn-animation':
+    'data-[pressed=true]:scale-[0.97] transition duration-250 motion-reduce:transition-none',
+  // should be provider as common option
+  'non-animation': '!transition-none',
 }
 
 export function getButtonSafeList() {
