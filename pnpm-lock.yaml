@@ -177,6 +177,16 @@ importers:
         specifier: ^3.4.27
         version: 3.4.27(typescript@5.4.5)
 
+  packages/@interactions/use-press:
+    dependencies:
+      '@nev-ui/types-shared':
+        specifier: workspace:^
+        version: link:../../@types/shared
+    devDependencies:
+      vue:
+        specifier: ^3.4.27
+        version: 3.4.27(typescript@5.4.5)
+
   packages/@preset/button:
     dependencies:
       '@nev-ui/preset-system':
@@ -277,6 +287,9 @@ importers:
       '@nev-ui/use-hover':
         specifier: workspace:^
         version: link:../../@interactions/use-hover
+      '@nev-ui/use-press':
+        specifier: workspace:^
+        version: link:../../@interactions/use-press
     devDependencies:
       vue:
         specifier: ^3.4.27
