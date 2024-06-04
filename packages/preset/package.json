@@ -6,6 +6,9 @@
   "license": "MIT",
   "author": "wzc520pyfm",
   "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "stub": "pnpm build:fast --watch",
     "build": "tsup src --dts",
