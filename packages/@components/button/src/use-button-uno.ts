@@ -1,4 +1,5 @@
-import {type MaybeRef, computed, reactive, toRefs} from 'vue'
+import {computed, toValue} from 'vue'
+import type {MaybeRefOrGetter} from 'vue'
 import type {ButtonProps} from './button'
 
 export interface UseButtonUno
@@ -7,30 +8,28 @@ export interface UseButtonUno
     'size' | 'color' | 'radius' | 'isDisabled' | 'fullWidth' | 'disableAnimation'
   > {}
 
-type PropMaybeRef<T> =
-  | {
-      [P in keyof T]?: MaybeRef<T[P]>
-    }
-  | T
+type PropMaybeRefOrGetter<T> = {
+  [P in keyof T]?: MaybeRefOrGetter<T[P]>
+}
 
 /**
  * Get the uno class of button
  * @param props - Component props or refs
  * @todo - support getter
  */
-export function useButtonUno(props: PropMaybeRef<UseButtonUno>) {
-  const {size, color, radius, isDisabled, fullWidth, disableAnimation} = toRefs(reactive(props))
+export function useButtonUno(props: PropMaybeRefOrGetter<UseButtonUno> = {}) {
+  const {size, color, radius, isDisabled, fullWidth, disableAnimation} = props
 
   return {
     buttonCls: computed(() => [
       'btn', // base
-      `btn-${size?.value}`, // size
-      `btn-${color?.value}`, // color
-      `btn-rounded-${radius?.value}`, // radius
-      {'btn-full': fullWidth?.value}, // fullWidth
-      {'btn-disabled': isDisabled?.value}, // disabled
-      {'btn-animation': !disableAnimation?.value},
-      {'non-animation': disableAnimation?.value},
+      `btn-${toValue(size)}`, // size
+      `btn-${toValue(color)}`, // color
+      `btn-rounded-${toValue(radius)}`, // radius
+      {'btn-full': toValue(fullWidth)}, // fullWidth
+      {'btn-disabled': toValue(isDisabled)}, // disabled
+      {'btn-animation': !toValue(disableAnimation)},
+      {'non-animation': toValue(disableAnimation)},
     ]),
   }
 }
