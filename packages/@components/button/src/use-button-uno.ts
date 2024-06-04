@@ -2,7 +2,10 @@ import {type MaybeRef, computed, reactive, toRefs} from 'vue'
 import type {ButtonProps} from './button'
 
 export interface UseButtonUno
-  extends Pick<ButtonProps, 'size' | 'color' | 'radius' | 'isDisabled' | 'fullWidth'> {}
+  extends Pick<
+    ButtonProps,
+    'size' | 'color' | 'radius' | 'isDisabled' | 'fullWidth' | 'disableAnimation'
+  > {}
 
 type PropMaybeRef<T> =
   | {
@@ -16,7 +19,7 @@ type PropMaybeRef<T> =
  * @todo - support getter
  */
 export function useButtonUno(props: PropMaybeRef<UseButtonUno>) {
-  const {size, color, radius, isDisabled, fullWidth} = toRefs(reactive(props))
+  const {size, color, radius, isDisabled, fullWidth, disableAnimation} = toRefs(reactive(props))
 
   return {
     buttonCls: computed(() => [
@@ -26,6 +29,8 @@ export function useButtonUno(props: PropMaybeRef<UseButtonUno>) {
       `btn-rounded-${radius?.value}`, // radius
       {'btn-full': fullWidth?.value}, // fullWidth
       {'btn-disabled': isDisabled?.value}, // disabled
+      {'btn-animation': !disableAnimation?.value},
+      {'non-animation': disableAnimation?.value},
     ]),
   }
 }

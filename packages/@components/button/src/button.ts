@@ -8,6 +8,7 @@ export interface ButtonProps extends AriaButtonProps {
   color?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
   radius?: 'none' | 'sm' | 'md' | 'lg' | 'full'
   fullWidth?: boolean
+  disableAnimation?: boolean
 }
 
 export const BUTTON_DEFAULT = {
