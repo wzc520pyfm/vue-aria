@@ -1,5 +1,6 @@
 import {computed, toValue} from 'vue'
 import {useHover} from '@nev-ui/use-hover'
+import {usePress} from '@nev-ui/use-press'
 import {dataAttr, mergeProps} from '@nev-ui/shared'
 import {withButtonDefault} from './with-button-default'
 import type {AriaButtonProps} from '@nev-ui/types-aria-button'
@@ -23,6 +24,7 @@ export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
   const {Component, type, isDisabled} = withButtonDefault(props)
 
   const {isHovered, hoverProps} = useHover({isDisabled: isDisabled.value})
+  const {isPressed, pressProps} = usePress({isDisabled: isDisabled.value})
   const additionalProps = computed(() =>
     Component.value === 'button'
       ? {
@@ -48,7 +50,8 @@ export function useButton(props: UseButtonProps, emits: UseButtonEmits) {
   const getButtonProps = () => ({
     'data-disabled': dataAttr(toValue(isDisabled)),
     'data-hover': dataAttr(toValue(isHovered)),
-    ...mergeProps(toValue(additionalProps), toValue(hoverProps)),
+    'data-pressed': dataAttr(toValue(isPressed)),
+    ...mergeProps(toValue(additionalProps), toValue(hoverProps), toValue(pressProps)),
   })
   const getButtonEvents = () => ({
     click: onClick,
