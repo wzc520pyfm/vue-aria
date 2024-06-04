@@ -13,6 +13,11 @@
     "access": "public"
   },
   "scripts": {
+    "stub": "pnpm build:fast --watch",
+    "build": "tsup src --dts",
+    "build:fast": "tsup src",
+    "prepack": "clean-package",
+    "postpack": "clean-package restore",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "peerDependencies": {
@@ -23,5 +28,6 @@
   },
   "devDependencies": {
     "vue": "^3.4.27"
-  }
+  },
+  "clean-package": "../../../clean-package.config.json"
 }
