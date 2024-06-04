@@ -10,6 +10,7 @@
 </template>
 
 <script setup lang="ts">
+import {toRefs} from 'vue'
 import {useBEM} from '@nev-ui/utilities-bem'
 import {useButton} from '@nev-ui/use-aria-button'
 import type {ButtonEmits, ButtonProps} from './button'
@@ -25,7 +26,7 @@ const props = defineProps<ButtonProps>()
 const bem = useBEM('button')
 
 // Provides rendering properties and events
-const {Component, getButtonProps, getButtonEvents} = useButton(props, emits)
+const {Component, getButtonProps, getButtonEvents} = useButton(toRefs(props), emits)
 </script>
 
 <style scoped></style>
