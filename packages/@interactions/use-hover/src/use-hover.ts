@@ -1,10 +1,17 @@
-import {computed, onMounted, reactive, ref, watchEffect} from 'vue'
-import type {ToRefs} from 'vue'
-import type {DOMAttributes, FocusableElement, HoverEvents, PointerType} from '@nev-ui/types-shared'
+import {computed, onMounted, reactive, ref, toValue, watchEffect} from 'vue'
+import type {MaybeRefOrGetter, ToRefs} from 'vue'
+import type {
+  PointerType as BasePointerType,
+  DOMAttributes,
+  FocusableElement,
+  HoverEvents,
+} from '@nev-ui/types-shared'
+
+type PointerType = Extract<BasePointerType, 'touch' | 'mouse' | 'pen'>
 
 export interface HoverProps extends HoverEvents {
   /** Whether the hover events should be disabled. */
-  isDisabled?: boolean
+  isDisabled?: MaybeRefOrGetter<boolean>
 }
 
 export interface HoverResult {
@@ -16,7 +23,7 @@ export interface HoverResult {
 interface HoverState {
   isHovered: boolean
   ignoreEmulatedMouseEvents: boolean
-  pointerType: Omit<PointerType, 'touch'>
+  pointerType: PointerType | ''
   target: FocusableElement | null
 }
 
@@ -74,7 +81,7 @@ function setupGlobalTouchEvents() {
  * Handles pointer hover interactions for an element. Normalizes behavior
  * across browsers and platforms, and ignores emulated mouse events on touch devices.
  */
-export function useHover(props: HoverProps): ToRefs<HoverResult> {
+export function useHover(props: HoverProps = {}): ToRefs<HoverResult> {
   const {onHoverStart, onHoverChange, onHoverEnd, isDisabled} = props
 
   const isHovered = ref(false)
@@ -92,7 +99,7 @@ export function useHover(props: HoverProps): ToRefs<HoverResult> {
   const triggerHoverStart = (event: Event, pointerType: PointerType) => {
     state.pointerType = pointerType
     if (
-      isDisabled ||
+      toValue(isDisabled) ||
       pointerType === 'touch' ||
       state.isHovered ||
       (event.currentTarget instanceof Element &&
@@ -105,17 +112,13 @@ export function useHover(props: HoverProps): ToRefs<HoverResult> {
     const target = event.currentTarget as FocusableElement
     state.target = target
 
-    if (onHoverStart) {
-      onHoverStart({
-        type: 'hoverstart',
-        target,
-        pointerType,
-      })
-    }
+    onHoverStart?.({
+      type: 'hoverstart',
+      target,
+      pointerType,
+    })
 
-    if (onHoverChange) {
-      onHoverChange(true)
-    }
+    onHoverChange?.(true)
 
     isHovered.value = true
   }
@@ -130,17 +133,14 @@ export function useHover(props: HoverProps): ToRefs<HoverResult> {
 
     state.isHovered = false
     const target = event.currentTarget as FocusableElement
-    if (onHoverEnd) {
-      onHoverEnd({
-        type: 'hoverend',
-        target,
-        pointerType,
-      })
-    }
 
-    if (onHoverChange) {
-      onHoverChange(false)
-    }
+    onHoverEnd?.({
+      type: 'hoverend',
+      target,
+      pointerType,
+    })
+
+    onHoverChange?.(false)
 
     isHovered.value = false
   }
@@ -158,7 +158,7 @@ export function useHover(props: HoverProps): ToRefs<HoverResult> {
 
       _hoverProps.onPointerleave = (e) => {
         if (
-          !isDisabled &&
+          !toValue(isDisabled) &&
           e.currentTarget instanceof Element &&
           e.currentTarget.contains(e.target as Element)
         ) {
@@ -180,7 +180,7 @@ export function useHover(props: HoverProps): ToRefs<HoverResult> {
 
       _hoverProps.onMouseleave = (e) => {
         if (
-          !isDisabled &&
+          !toValue(isDisabled) &&
           e.currentTarget instanceof Element &&
           e.currentTarget.contains(e.target as Element)
         ) {
@@ -194,7 +194,7 @@ export function useHover(props: HoverProps): ToRefs<HoverResult> {
   watchEffect(() => {
     // Call the triggerHoverEnd as soon as isDisabled changes to true
     // Safe to call triggerHoverEnd, it will early return if we aren't currently hovering
-    if (isDisabled) {
+    if (toValue(isDisabled)) {
       triggerHoverEnd({currentTarget: state.target} as Event, state.pointerType as PointerType)
     }
   })
