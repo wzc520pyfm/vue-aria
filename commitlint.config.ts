@@ -8,6 +8,7 @@ const scopes = [
   ...getPackages('packages').filter((name) => !name.startsWith('@')),
   ...getPackages('internal'),
   'playground',
+  'play',
   'doc',
   'project',
   'core',
