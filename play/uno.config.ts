@@ -9,11 +9,21 @@ const presetNames = getSubDirNames(presetDir)
 export default defineConfig({
   presets: [
     presetNevUI({
+      layout: {},
       /* preset options */
       theme: {
         // only for custom theme test
         olive: {
           extend: 'dark',
+          layout: {
+            borderRadius: {
+              DEFAULT: '0px',
+              sm: '0px',
+              md: '0px',
+              lg: '0px',
+              full: '9999px',
+            },
+          },
           colors: {
             primary: {
               DEFAULT: '#BEF264',

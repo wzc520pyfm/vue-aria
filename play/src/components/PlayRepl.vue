@@ -5,16 +5,16 @@ import { ref } from 'vue'
 defineOptions({ name: 'PlayRepl' })
 
 const as = ref<ButtonProps['as']>('button')
-const size = ref<ButtonProps['size']>('sm')
+const size = ref<ButtonProps['size']>('md')
 const color = ref<ButtonProps['color']>('primary')
-const radius = ref<ButtonProps['radius']>('lg')
+const radius = ref<ButtonProps['radius']>('md')
 
 const changeSize = () => {
   console.log('changeSize', size.value)
   as.value = as.value === 'button' ? 'a' : 'button'
-  size.value = size.value === 'sm' ? 'md' : 'sm'
+  size.value = size.value === 'md' ? 'sm' : 'md'
   color.value = color.value === 'primary' ? 'default' : 'primary'
-  radius.value = radius.value === 'lg' ? 'full' : 'lg'
+  radius.value = radius.value === 'md' ? 'full' : 'md'
 }
 </script>
 
