@@ -4,13 +4,15 @@ import presetTheme from 'unocss-preset-theme'
 import {all as deepMergeAll} from 'deepmerge'
 import {get, omit} from 'radash'
 import {nevui} from './plugin'
+import type {Preset} from '@unocss/core'
+import type {ConfigTheme, ConfigThemes, LayoutTheme} from './types'
 import type {Theme} from './plugin'
-import type {PresetWindOptions} from '@unocss/preset-wind'
 
-export type {Theme}
+export {ConfigTheme as Theme, ConfigThemes as Themes, LayoutTheme as Layout}
 
-export interface PresetNevUISystemOptions extends PresetWindOptions {
-  theme?: Record<string, Theme>
+export interface PresetNevUISystemOptions {
+  layout?: LayoutTheme
+  theme?: ConfigThemes
 }
 
 export const presetNevUISystem = definePreset((options: PresetNevUISystemOptions = {}) => {
@@ -23,7 +25,7 @@ export const presetNevUISystem = definePreset((options: PresetNevUISystemOptions
     // and other custom configurations
   }
 
-  return deepMergeAll([
+  return deepMergeAll<Preset<Theme>>([
     presetWind(options),
     presetTheme<Theme>({prefix: '--nevui', theme: otherTheme}),
     preset,

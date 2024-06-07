@@ -3,44 +3,65 @@ import forEach from 'lodash.foreach'
 import deepMerge from 'deepmerge'
 import {semanticColors} from './colors'
 import {isBaseTheme} from './utils/theme'
-import type {Theme as PresetMiniTheme} from '@unocss/preset-wind'
+import {darkLayout, defaultLayout, lightLayout} from './default-layout'
+import type {Theme} from '@unocss/preset-wind'
+import type {ConfigThemes, DefaultThemeType, LayoutTheme} from './types'
 
-export interface Theme extends PresetMiniTheme {
-  extend?: string
-}
+export {Theme}
 
 interface NevUIPlugin {
   // userTheme
-  theme?: Record<string, Theme>
-  defaultExtendTheme?: 'light' | 'dark'
+  theme?: ConfigThemes
+  defaultExtendTheme?: DefaultThemeType
+  layout?: LayoutTheme
 }
 
 export const nevui = (config: NevUIPlugin = {}) => {
-  const {theme: themeObject = {}, defaultExtendTheme = 'light'} = config
+  const {theme: themeObject = {}, defaultExtendTheme = 'light', layout: userLayout} = config
 
   const userLightColors = get(themeObject, 'light.colors', {})
   const userDarkColors = get(themeObject, 'dark.colors', {})
-  // TODO: merge more default config
+
+  const defaultLayoutObj =
+    userLayout && typeof userLayout === 'object'
+      ? deepMerge(defaultLayout, userLayout)
+      : defaultLayout
+
+  const baseLayouts = {
+    light: {
+      ...defaultLayoutObj,
+      ...lightLayout,
+    },
+    dark: {
+      ...defaultLayoutObj,
+      ...darkLayout,
+    },
+  }
 
   // get other theme from the config different from light and dark
   const otherTheme = omit(themeObject, ['light', 'dark']) || {}
 
-  forEach(otherTheme, ({extend, colors}, themeName) => {
+  forEach(otherTheme, ({extend, colors, layout}, themeName) => {
     const baseTheme = extend && isBaseTheme(extend) ? extend : defaultExtendTheme
 
-    // TODO: just merge the colors for now
     if (colors && typeof colors === 'object') {
       otherTheme[themeName].colors = deepMerge(semanticColors[baseTheme], colors)
+    }
+    if (layout && typeof layout === 'object') {
+      otherTheme[themeName] = {
+        ...deepMerge(extend ? baseLayouts[extend] : defaultLayoutObj, layout),
+        colors: otherTheme[themeName].colors,
+      }
     }
   })
 
   const light: Theme = {
-    ...get(themeObject, 'light', {}),
+    ...deepMerge(baseLayouts.light, get(themeObject, 'light.layout', {})),
     colors: deepMerge(semanticColors.light, userLightColors),
   }
 
   const dark: Theme = {
-    ...get(themeObject, 'dark', {}),
+    ...deepMerge(baseLayouts.dark, get(themeObject, 'dark.layout', {})),
     colors: deepMerge(semanticColors.dark, userDarkColors),
   }
 
