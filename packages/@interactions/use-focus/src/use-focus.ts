@@ -1,4 +1,4 @@
-import {type MaybeRefOrGetter, type ToRefs, computed} from 'vue'
+import {type MaybeRefOrGetter, type ToRefs, computed, toValue} from 'vue'
 import {getOwnerDocument} from '@nev-ui/shared'
 import {useSyntheticBlurEvent} from './util'
 import type {DOMAttributes, FocusEvents} from '@nev-ui/types-shared'
@@ -49,10 +49,10 @@ export function useFocus(props: FocusProps = {}): ToRefs<FocusResult> {
 
   const focusProps = computed(() => {
     const _focusProps: DOMAttributes = {}
-    if (!isDisabled && (onFocusProp || onFocusChange || onBlurProp)) {
+    if (!toValue(isDisabled) && (onFocusProp || onFocusChange || onBlurProp)) {
       _focusProps.onFocus = onFocus
     }
-    if (!isDisabled && (onBlurProp || onFocusChange)) {
+    if (!toValue(isDisabled) && (onBlurProp || onFocusChange)) {
       _focusProps.onBlur = onBlur
     }
 
