@@ -1,8 +1,11 @@
 import {definePreset} from '@unocss/core'
 import presetWind from '@unocss/preset-wind'
-import presetTheme from 'unocss-preset-theme'
+// waiting for fix
+// import presetTheme from 'unocss-preset-theme'
 import {all as deepMergeAll} from 'deepmerge'
 import {get, omit} from 'radash'
+// TODO: temporary solution, the `unocss-preset-theme` has bug
+import presetTheme from './pre-theme'
 import {nevui} from './plugin'
 import type {Preset} from '@unocss/core'
 import type {ConfigTheme, ConfigThemes, DefaultThemeType, LayoutTheme} from './types'
