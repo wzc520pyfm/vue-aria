@@ -5,7 +5,7 @@ import {all as deepMergeAll} from 'deepmerge'
 import {get, omit} from 'radash'
 import {nevui} from './plugin'
 import type {Preset} from '@unocss/core'
-import type {ConfigTheme, ConfigThemes, LayoutTheme} from './types'
+import type {ConfigTheme, ConfigThemes, DefaultThemeType, LayoutTheme} from './types'
 import type {Theme} from './plugin'
 
 export {ConfigTheme as Theme, ConfigThemes as Themes, LayoutTheme as Layout}
@@ -13,21 +13,31 @@ export {ConfigTheme as Theme, ConfigThemes as Themes, LayoutTheme as Layout}
 export interface PresetNevUISystemOptions {
   layout?: LayoutTheme
   theme?: ConfigThemes
+  defaultTheme?: DefaultThemeType
 }
 
 export const presetNevUISystem = definePreset((options: PresetNevUISystemOptions = {}) => {
-  const {theme} = nevui(options)
-  const lightTheme = get(theme, 'light', {})
-  const otherTheme = omit(theme, ['light']) || {}
+  const {defaultTheme: defaultThemeType = 'light', ...otherOptions} = options
+  const {theme} = nevui(otherOptions)
+
+  const defaultTheme = get(theme, defaultThemeType, {})
+  const otherTheme = omit(theme, [defaultThemeType]) || {}
   const preset = {
     name: '@nev-ui/preset-system',
-    theme: lightTheme,
+    theme: defaultTheme,
     // and other custom configurations
   }
 
   return deepMergeAll<Preset<Theme>>([
-    presetWind(options),
-    presetTheme<Theme>({prefix: '--nevui', theme: otherTheme}),
+    presetWind(),
+    presetTheme<Theme>({
+      prefix: '--nevui',
+      theme: otherTheme,
+      selectors: {
+        [defaultThemeType]: `:root, .${defaultThemeType}`,
+        ...Object.fromEntries(Object.keys(otherTheme).map((name) => [name, `.${name}`])),
+      },
+    }),
     preset,
   ])
 })
