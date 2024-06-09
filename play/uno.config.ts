@@ -9,6 +9,7 @@ const presetNames = getSubDirNames(presetDir)
 export default defineConfig({
   presets: [
     presetNevUI({
+      // defaultTheme: 'dark', // for test
       layout: {},
       /* preset options */
       theme: {
