@@ -7,7 +7,6 @@ import type {AriaButtonProps} from '@nev-ui/types-aria-button'
 
 export interface UseButtonProps extends AriaButtonProps {
   as?: string // should be weaken
-  type?: string // should be provided as native attr
   isDisabled?: boolean
 }
 
