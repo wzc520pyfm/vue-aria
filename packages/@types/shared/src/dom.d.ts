@@ -1,31 +1,10 @@
-import type {HTMLAttributes} from 'vue'
+import type {Component, HTMLAttributes} from 'vue'
 import type {AriaRole} from './aria'
 
-/** All html element. Welcome to add. */
-export type ElementType =
-  | 'div'
-  | 'span'
-  | 'p'
-  | 'a'
-  | 'input'
-  | 'button'
-  | 'img'
-  | 'form'
-  | 'h1'
-  | 'h2'
-  | 'h3'
-  | 'h4'
-  | 'h5'
-  | 'h6'
-  | 'ul'
-  | 'li'
-  | 'table'
-  | 'tr'
-  | 'td'
-  | 'th'
-  | 'tbody'
-  | 'thead'
-  | 'tfoot'
+export type As = ElementType | Component
+
+/** All html element and vue component. */
+export type ElementType = keyof HTMLElementTagNameMap | Component
 
 /** Any focusable element, including both HTML and SVG elements. */
 export interface FocusableElement extends HTMLElement, SVGElement {}
