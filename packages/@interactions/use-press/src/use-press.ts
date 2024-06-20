@@ -1,12 +1,18 @@
 import {computed, ref, toValue} from 'vue'
-import type {DOMAttributes, PressEvents} from '@nev-ui/types-shared'
-import type {MaybeRefOrGetter, ToRefs} from 'vue'
+import type {
+  DOMAttributes,
+  EventHandlers,
+  PressEvent as IPressEvent,
+  PointerType,
+  PressEvents,
+} from '@nev-ui/types-shared'
+import type {Events, MaybeRefOrGetter, ToRefs} from 'vue'
 
 export interface PressProps extends PressEvents {
   /** Whether the target is in a controlled press state (e.g. an overlay it triggers is open). */
   isPressed?: MaybeRefOrGetter<boolean>
   /** Whether the press events should be disabled. */
-  isDisabled?: boolean
+  isDisabled?: MaybeRefOrGetter<boolean>
 }
 
 export interface PressResult {
@@ -14,6 +20,45 @@ export interface PressResult {
   isPressed: boolean
   /** Props to spread on the target element. */
   pressProps: DOMAttributes
+  /** Events to spread on the target element. */
+  pressEvents: DOMAttributes
+}
+
+interface EventBase {
+  currentTarget: EventTarget | null
+  shiftKey: boolean
+  ctrlKey: boolean
+  metaKey: boolean
+  altKey: boolean
+}
+
+class PressEvent implements IPressEvent {
+  type: IPressEvent['type']
+  pointerType: PointerType
+  target: Element
+  shiftKey: boolean
+  ctrlKey: boolean
+  metaKey: boolean
+  altKey: boolean
+  #shouldStopPropagation = true
+
+  constructor(type: IPressEvent['type'], pointerType: PointerType, originalEvent: EventBase) {
+    this.type = type
+    this.pointerType = pointerType
+    this.target = originalEvent.currentTarget as Element
+    this.shiftKey = originalEvent.shiftKey
+    this.metaKey = originalEvent.metaKey
+    this.ctrlKey = originalEvent.ctrlKey
+    this.altKey = originalEvent.altKey
+  }
+
+  continuePropagation() {
+    this.#shouldStopPropagation = false
+  }
+
+  get shouldStopPropagation() {
+    return this.#shouldStopPropagation
+  }
 }
 
 /**
@@ -23,45 +68,80 @@ export interface PressResult {
  */
 // TODO
 export function usePress(props: PressProps = {}): ToRefs<PressResult> {
-  const {isPressed: isPressedProp, isDisabled} = props
+  const {
+    onPress,
+    onPressChange,
+    onPressStart,
+    onPressEnd,
+    isPressed: isPressedProp,
+    isDisabled,
+  } = props
   const isPressed = ref(false)
 
-  const triggerPressStart = () => {
+  // TODO: remove pointerType default value
+  const triggerPressStart = (originalEvent: EventBase, pointerType: PointerType = 'mouse') => {
     if (toValue(isDisabled)) {
       return false
     }
+    if (onPressStart) {
+      const event = new PressEvent('pressstart', pointerType, originalEvent)
+      onPressStart(event)
+    }
+
+    onPressChange?.(true)
+
     isPressed.value = true
   }
 
-  const triggerPressEnd = () => {
+  const triggerPressEnd = (
+    originalEvent: EventBase,
+    // TODO: remove pointerType default value
+    pointerType: PointerType = 'mouse',
+    wasPressed = true,
+  ) => {
+    if (onPressEnd) {
+      const event = new PressEvent('pressend', pointerType, originalEvent)
+      onPressEnd(event)
+    }
+
+    onPressChange?.(false)
+
     isPressed.value = false
+
+    if (onPress && wasPressed && toValue(isDisabled)) {
+      const event = new PressEvent('press', pointerType, originalEvent)
+      onPress(event)
+    }
   }
 
-  const pressProps = computed(() => {
-    const _pressProps: DOMAttributes = {}
+  const pressProps = computed<DOMAttributes>(() => ({}))
+
+  const pressEvents = computed(() => {
+    const _pressEvents: EventHandlers<Events> = {}
     if (typeof PointerEvent !== 'undefined') {
-      _pressProps.onPointerdown = () => {
-        triggerPressStart()
+      _pressEvents.onPointerdown = (e) => {
+        triggerPressStart(e)
       }
 
-      _pressProps.onPointerup = () => {
-        triggerPressEnd()
+      _pressEvents.onPointerup = (e) => {
+        triggerPressEnd(e)
       }
     } else {
-      _pressProps.onMousedown = () => {
-        triggerPressStart()
+      _pressEvents.onMousedown = (e) => {
+        triggerPressStart(e)
       }
 
-      _pressProps.onMouseup = () => {
-        triggerPressEnd()
+      _pressEvents.onMouseup = (e) => {
+        triggerPressEnd(e)
       }
     }
 
-    return _pressProps
+    return _pressEvents
   })
 
   return {
     isPressed: computed(() => toValue(isPressedProp) || isPressed.value),
     pressProps,
+    pressEvents,
   }
 }
