@@ -13,7 +13,7 @@ export default defineConfig({
     vueJsx(),
     dts({
       tsconfigPath: 'tsconfig.json',
-      cleanVueFileName: true,
+      // cleanVueFileName: true,
       exclude: ['src/__test__/**'],
     }),
   ],
