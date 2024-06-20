@@ -15,7 +15,7 @@ export default defineConfig({
     UnoCSS(), // FIXME: trigger type error
     dts({
       tsconfigPath: 'tsconfig.json',
-      cleanVueFileName: true,
+      // cleanVueFileName: true,
       exclude: ['src/__test__/**'],
     }),
   ],
