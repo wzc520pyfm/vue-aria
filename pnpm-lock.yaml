@@ -250,7 +250,11 @@ importers:
         specifier: ^0.58.9
         version: 0.58.9(postcss@8.4.38)(vite@5.2.12)
 
-  packages/@types/button: {}
+  packages/@types/button:
+    devDependencies:
+      '@nev-ui/types-shared':
+        specifier: workspace:^
+        version: link:../shared
 
   packages/@types/shared:
     devDependencies:
