@@ -167,6 +167,19 @@ importers:
         specifier: ^3.4.27
         version: 3.4.27(typescript@5.4.5)
 
+  packages/@interactions/use-focus:
+    dependencies:
+      '@nev-ui/shared':
+        specifier: workspace:^
+        version: link:../../@utilities/shared
+      '@nev-ui/types-shared':
+        specifier: workspace:^
+        version: link:../../@types/shared
+    devDependencies:
+      vue:
+        specifier: ^3.4.27
+        version: 3.4.27(typescript@5.4.5)
+
   packages/@interactions/use-hover:
     dependencies:
       '@nev-ui/types-shared':
@@ -209,6 +222,9 @@ importers:
         specifier: ^0.58.9
         version: 0.58.9
       '@unocss/preset-wind':
+        specifier: ^0.58.9
+        version: 0.58.9
+      '@unocss/rule-utils':
         specifier: ^0.58.9
         version: 0.58.9
       deepmerge:
@@ -5238,7 +5254,7 @@ packages:
       ts-dedent: 2.2.0
       type-fest: 2.19.0
       vue: 3.4.27(typescript@5.4.5)
-      vue-component-type-helpers: 2.0.19
+      vue-component-type-helpers: 2.0.21
     transitivePeerDependencies:
       - encoding
       - prettier
@@ -8066,7 +8082,7 @@ packages:
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0, npm: '>=7.0.0'}
     dependencies:
       mdn-data: 2.0.28
-      source-map-js: 1.1.0
+      source-map-js: 1.2.0
     dev: false
 
   /css-tree@2.3.1:
@@ -8074,7 +8090,7 @@ packages:
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0}
     dependencies:
       mdn-data: 2.0.30
-      source-map-js: 1.0.2
+      source-map-js: 1.2.0
 
   /css-what@6.1.0:
     resolution: {integrity: sha512-HTUrgRJ7r4dsZKU6GjmpfRK1O76h97Z8MfS1G0FozR+oF2kG6Vfe8JE6zwrkbxigziPHinCJ+gCPjA9EaBDtRw==}
@@ -14389,10 +14405,6 @@ packages:
   /source-map-js@1.0.2:
     resolution: {integrity: sha512-R0XvVJ9WusLiqTCEiGCmICCMplcCkIwwR11mOSD9CR5u+IXYdiseeEuXCVAjS54zqwkLcPNnmU4OeJ6tUrWhDw==}
     engines: {node: '>=0.10.0'}
-
-  /source-map-js@1.1.0:
-    resolution: {integrity: sha512-9vC2SfsJzlej6MAaMPLu8HiBSHGdRAJ9hVFYN1ibZoNkeanmDmLUcIrj6G9DGL7XMJ54AKg/G75akXl1/izTOw==}
-    engines: {node: '>=0.10.0'}
     dev: false
 
   /source-map-js@1.2.0:
@@ -16171,6 +16183,10 @@ packages:
 
   /vue-component-type-helpers@2.0.19:
     resolution: {integrity: sha512-cN3f1aTxxKo4lzNeQAkVopswuImUrb5Iurll9Gaw5cqpnbTAxtEMM1mgi6ou4X79OCyqYv1U1mzBHJkzmiK82w==}
+    dev: true
+
+  /vue-component-type-helpers@2.0.21:
+    resolution: {integrity: sha512-3NaicyZ7N4B6cft4bfb7dOnPbE9CjLcx+6wZWAg5zwszfO4qXRh+U52dN5r5ZZfc6iMaxKCEcoH9CmxxoFZHLg==}
     dev: true
 
   /vue-demi@0.14.8(vue@3.4.27):
