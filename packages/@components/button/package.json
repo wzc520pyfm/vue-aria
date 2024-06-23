@@ -25,6 +25,7 @@
     "@nev-ui/aria-button": "workspace:^",
     "@nev-ui/preset-button": "workspace:^",
     "@nev-ui/shared": "workspace:^",
+    "@nev-ui/types-shared": "workspace:^",
     "@nev-ui/utilities-vue": "workspace:^"
   },
   "devDependencies": {
