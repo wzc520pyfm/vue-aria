@@ -108,7 +108,7 @@ export function usePress(props: PressProps = {}): ToRefs<PressResult> {
 
     isPressed.value = false
 
-    if (onPress && wasPressed && toValue(isDisabled)) {
+    if (onPress && wasPressed && !toValue(isDisabled)) {
       const event = new PressEvent('press', pointerType, originalEvent)
       onPress(event)
     }
