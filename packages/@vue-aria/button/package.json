@@ -25,6 +25,7 @@
   "dependencies": {
     "@nev-ui/shared": "workspace:^",
     "@nev-ui/types-aria-button": "workspace:^",
+    "@nev-ui/types-shared": "workspace:^",
     "@nev-ui/use-hover": "workspace:^",
     "@nev-ui/use-press": "workspace:^"
   },

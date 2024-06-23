@@ -1,18 +1,15 @@
 import {computed, toValue} from 'vue'
-import {useHover} from '@nev-ui/use-hover'
-import {usePress} from '@nev-ui/use-press'
-import {dataAttr, mergeProps} from '@nev-ui/shared'
+import {dataAttr} from '@nev-ui/shared'
+import {useAriaButton} from './use-aria-button'
+import type {As} from '@nev-ui/types-shared'
+import type {UseAriaButtonEmits, UseAriaButtonProps} from './use-aria-button'
 import type {MaybeRefOrGetter} from 'vue'
-import type {AriaButtonProps} from '@nev-ui/types-aria-button'
 
-export interface UseButtonProps extends AriaButtonProps {
-  as?: string // should be weaken
-  isDisabled?: boolean
+export interface UseButtonProps extends UseAriaButtonProps {
+  as?: As // should be weakened
 }
 
-export interface UseButtonEmits {
-  (e: 'click'): void
-}
+export interface UseButtonEmits extends UseAriaButtonEmits {}
 
 const BUTTON_DEFAULT = {
   as: 'button',
@@ -20,8 +17,17 @@ const BUTTON_DEFAULT = {
 } as const
 
 // TODO: move to type shared
-type PropMaybeRefOrGetter<T> = {
-  [P in keyof T]?: MaybeRefOrGetter<T[P]>
+type NonUndefined<T> = T extends undefined ? never : T
+type Duplicate<T> = {[P in keyof T]: T[P]}
+type OmitNever<T extends object> = Duplicate<T>[keyof T]
+type FunctionKeys<T extends object> = OmitNever<
+  Required<{
+    // eslint-disable-next-line @typescript-eslint/ban-types
+    [K in keyof T]: NonUndefined<T[K]> extends Function ? K : never
+  }>
+>
+type ToMaybeRefOrGettersForNonFunction<T extends object> = {
+  [P in keyof T]?: P extends FunctionKeys<T> ? T[P] : MaybeRefOrGetter<NonUndefined<T[P]>>
 }
 
 /**
@@ -29,43 +35,41 @@ type PropMaybeRefOrGetter<T> = {
  * @param props - Button props
  * @param emits - Button emits
  */
-export function useButton(props: PropMaybeRefOrGetter<UseButtonProps> = {}, emits: UseButtonEmits) {
-  const {as = BUTTON_DEFAULT.as, type = BUTTON_DEFAULT.type, isDisabled = false} = props
+export function useButton(
+  props: ToMaybeRefOrGettersForNonFunction<UseButtonProps> = {},
+  emits: UseButtonEmits,
+) {
+  const {as = BUTTON_DEFAULT.as, isDisabled = false, onPress, onClick, ...otherProps} = props
 
   const Component = computed(() => toValue(as))
 
-  const {isHovered, hoverProps} = useHover({isDisabled: toValue(isDisabled)})
-  const {isPressed, pressProps} = usePress({isDisabled: toValue(isDisabled)})
-  const additionalProps = computed(() =>
-    Component.value === 'button'
-      ? {
-          type: toValue(type),
-          disabled: toValue(isDisabled),
-        }
-      : {
-          role: 'button',
-          tabIndex: toValue(isDisabled) ? undefined : 0,
-          // href: Component.value === 'a' && toValue(isDisabled) ? undefined : href,
-          // target: Component.value === 'a' ? target : undefined,
-          type: Component.value === 'input' ? toValue(type) : undefined,
-          disabled: Component.value === 'input' ? toValue(isDisabled) : undefined,
-          'aria-disabled':
-            !toValue(isDisabled) || Component.value === 'input' ? undefined : toValue(isDisabled),
-          // rel: Component.value === 'a' ? rel : undefined,
-        },
-  )
-
-  const onClick = () => {
-    emits('click')
+  const handleClick = () => {
+    // maybe need other logic
   }
+
+  const {
+    buttonProps: ariaButtonProps,
+    buttonEvents: ariaButtonEvents,
+    isHovered,
+    isPressed,
+  } = useAriaButton(
+    {
+      elementType: as,
+      isDisabled,
+      onPress,
+      onClick: chain(onClick, handleClick),
+      ...otherProps,
+    },
+    emits,
+  )
   const getButtonProps = () => ({
     'data-disabled': dataAttr(toValue(isDisabled)),
     'data-hover': dataAttr(toValue(isHovered)),
     'data-pressed': dataAttr(toValue(isPressed)),
-    ...mergeProps(toValue(additionalProps), toValue(hoverProps), toValue(pressProps)),
+    ...toValue(ariaButtonProps),
   })
   const getButtonEvents = () => ({
-    click: onClick,
+    ...toValue(ariaButtonEvents),
   })
 
   return {
@@ -73,5 +77,20 @@ export function useButton(props: PropMaybeRefOrGetter<UseButtonProps> = {}, emit
     isDisabled: computed(() => toValue(isDisabled)),
     getButtonProps,
     getButtonEvents,
+  }
+}
+
+// TODO: move to shared
+/**
+ * Calls all functions in the order they were chained with the same arguments.
+ */
+function chain<T extends undefined | ((...args: any[]) => any)>(...callbacks: T[]) {
+  return (...args: Parameters<NonUndefined<T>>): ReturnType<NonUndefined<T>> | undefined => {
+    return callbacks.reduce((lastRes, callback) => {
+      if (typeof callback === 'function') {
+        lastRes = callback(...args)
+      }
+      return lastRes
+    }, undefined)
   }
 }
