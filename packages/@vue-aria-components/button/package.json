@@ -22,6 +22,7 @@
     "vue": ">=3.4.0"
   },
   "dependencies": {
+    "@nev-ui/types-shared": "workspace:^",
     "@nev-ui/use-aria-button": "workspace:^",
     "@nev-ui/utilities-bem": "workspace:^"
   },

@@ -1,7 +1,13 @@
 {
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      // To fix: The inferred type of "X" cannot be named without a reference to "Y". This is likely not portable. A type annotation is necessary.
+      // @see https://github.com/microsoft/TypeScript/issues/42873
+      // TODO: This issue has been fixed in TS 5.5. We need to update.
+      "@nev-ui/types-shared": ["node_modules/@nev-ui/types-shared"]
+    }
   },
   "include": ["src", "index.ts"]
 }
