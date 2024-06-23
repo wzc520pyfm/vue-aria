@@ -153,6 +153,9 @@ importers:
       '@nev-ui/shared':
         specifier: workspace:^
         version: link:../../@utilities/shared
+      '@nev-ui/types-shared':
+        specifier: workspace:^
+        version: link:../../@types/shared
       '@nev-ui/utilities-vue':
         specifier: workspace:^
         version: link:../../@utilities/vue
@@ -282,6 +285,9 @@ importers:
 
   packages/@vue-aria-components/button:
     dependencies:
+      '@nev-ui/types-shared':
+        specifier: workspace:^
+        version: link:../../@types/shared
       '@nev-ui/use-aria-button':
         specifier: workspace:^
         version: link:../../@vue-aria/button
@@ -304,6 +310,9 @@ importers:
       '@nev-ui/types-aria-button':
         specifier: workspace:^
         version: link:../../@types/button
+      '@nev-ui/types-shared':
+        specifier: workspace:^
+        version: link:../../@types/shared
       '@nev-ui/use-hover':
         specifier: workspace:^
         version: link:../../@interactions/use-hover
@@ -5258,7 +5267,7 @@ packages:
       ts-dedent: 2.2.0
       type-fest: 2.19.0
       vue: 3.4.27(typescript@5.4.5)
-      vue-component-type-helpers: 2.0.21
+      vue-component-type-helpers: 2.0.22
     transitivePeerDependencies:
       - encoding
       - prettier
@@ -16189,8 +16198,8 @@ packages:
     resolution: {integrity: sha512-cN3f1aTxxKo4lzNeQAkVopswuImUrb5Iurll9Gaw5cqpnbTAxtEMM1mgi6ou4X79OCyqYv1U1mzBHJkzmiK82w==}
     dev: true
 
-  /vue-component-type-helpers@2.0.21:
-    resolution: {integrity: sha512-3NaicyZ7N4B6cft4bfb7dOnPbE9CjLcx+6wZWAg5zwszfO4qXRh+U52dN5r5ZZfc6iMaxKCEcoH9CmxxoFZHLg==}
+  /vue-component-type-helpers@2.0.22:
+    resolution: {integrity: sha512-gPr2Ba7efUwy/Vfbuf735bHSVdN4ycoZUCHfypkI33M9DUH+ieRblLLVM2eImccFYaWNWwEzURx02EgoXDBmaQ==}
     dev: true
 
   /vue-demi@0.14.8(vue@3.4.27):
