@@ -294,6 +294,9 @@ importers:
       '@nev-ui/utilities-bem':
         specifier: workspace:^
         version: link:../../@utilities/bem
+      '@nev-ui/utilities-vue':
+        specifier: workspace:^
+        version: link:../../@utilities/vue
     devDependencies:
       clean-package:
         specifier: ^2.2.0

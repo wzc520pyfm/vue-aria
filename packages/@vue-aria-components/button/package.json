@@ -24,7 +24,8 @@
   "dependencies": {
     "@nev-ui/types-shared": "workspace:^",
     "@nev-ui/use-aria-button": "workspace:^",
-    "@nev-ui/utilities-bem": "workspace:^"
+    "@nev-ui/utilities-bem": "workspace:^",
+    "@nev-ui/utilities-vue": "workspace:^"
   },
   "devDependencies": {
     "clean-package": "^2.2.0",
