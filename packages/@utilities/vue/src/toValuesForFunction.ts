@@ -9,9 +9,9 @@ export type ToValuesForFunction<T extends ToRefs<T>> = {
 }
 export function toValuesForFunction<T extends ToRefs<T>>(obj: T): ToValuesForFunction<T> {
   return Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => [
+    Object.entries<Ref<unknown>>(obj).map(([key, value]) => [
       key,
-      typeof value === 'function' ? toValue(value) : value,
+      typeof toValue(value) === 'function' ? toValue(value) : value,
     ]),
   ) as ToValuesForFunction<T>
 }
