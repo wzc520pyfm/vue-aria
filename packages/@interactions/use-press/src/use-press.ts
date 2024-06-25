@@ -21,7 +21,7 @@ export interface PressResult {
   /** Props to spread on the target element. */
   pressProps: DOMAttributes
   /** Events to spread on the target element. */
-  pressEvents: DOMAttributes
+  pressEvents: EventHandlers<Events>
 }
 
 interface EventBase {
