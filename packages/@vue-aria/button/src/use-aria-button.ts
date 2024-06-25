@@ -112,15 +112,17 @@ export function useAriaButton(
     type = BUTTON_DEFAULT.type,
     isDisabled = false,
     onPress: onPressProp,
+    onPressStart: onPressStartProp,
     onClick: deprecatedOnClick,
   } = props
 
   const onClick = chainPre(deprecatedOnClick, (e: MouseEvent) => emits('click', e))
 
   const onPress = chainPre(onPressProp, (e: PressEvent) => emits('press', e))
+  const onPressStart = chainPre(onPressStartProp, (e: PressEvent) => emits('pressstart', e))
 
   const {isHovered, hoverProps, hoverEvents} = useHover({isDisabled})
-  const {isPressed, pressProps, pressEvents} = usePress({isDisabled, onPress})
+  const {isPressed, pressProps, pressEvents} = usePress({isDisabled, onPress, onPressStart})
   const additionalProps = computed(() =>
     toValue(elementType) === 'button'
       ? {
