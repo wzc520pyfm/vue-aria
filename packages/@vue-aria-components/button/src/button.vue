@@ -10,8 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import {toRefs} from 'vue'
-import {toValuesForFunction} from '@nev-ui/utilities-vue'
+import {toRefsForNonFunction} from '@nev-ui/utilities-vue'
 // todo: 删除v-on，事件仍可生效（包括事件修饰符），所以，是否不需要将emit和prop分开设置？
 import {useBEM} from '@nev-ui/utilities-bem'
 import {useButton} from '@nev-ui/use-aria-button'
@@ -28,10 +27,7 @@ const props = defineProps<ButtonProps>()
 const bem = useBEM('button')
 
 // Provides rendering properties and events
-const {Component, getButtonProps, getButtonEvents} = useButton(
-  toValuesForFunction(toRefs(props)),
-  emits,
-)
+const {Component, getButtonProps, getButtonEvents} = useButton(toRefsForNonFunction(props), emits)
 </script>
 
 <style scoped></style>
