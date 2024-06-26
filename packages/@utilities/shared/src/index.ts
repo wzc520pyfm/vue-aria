@@ -1,4 +1,5 @@
 export * from './dom'
 export * from './assertion'
+export * from './function'
 export * from './mergeProps'
 export * from './narrow'
