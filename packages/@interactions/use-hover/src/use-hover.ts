@@ -1,9 +1,8 @@
 import {computed, onMounted, reactive, ref, toValue, watchEffect} from 'vue'
-import type {Events, MaybeRefOrGetter, ToRefs} from 'vue'
+import type {MaybeRefOrGetter, ToRefs} from 'vue'
 import type {
   PointerType as BasePointerType,
   DOMAttributes,
-  EventHandlers,
   FocusableElement,
   HoverEvents,
 } from '@nev-ui/types-shared'
@@ -18,8 +17,6 @@ export interface HoverProps extends HoverEvents {
 export interface HoverResult {
   /** Props to spread on the target element. */
   hoverProps: DOMAttributes
-  /** Events to spread on the target element. */
-  hoverEvents: EventHandlers<Events>
   isHovered: boolean
 }
 
@@ -148,12 +145,10 @@ export function useHover(props: HoverProps = {}): ToRefs<HoverResult> {
     isHovered.value = false
   }
 
-  const hoverProps = computed<DOMAttributes>(() => ({}))
-
-  const hoverEvents = computed(() => {
-    const _hoverEvents: EventHandlers<Events> = {}
+  const hoverProps = computed(() => {
+    const _hoverProps: DOMAttributes = {}
     if (typeof PointerEvent !== 'undefined') {
-      _hoverEvents.onPointerenter = (e) => {
+      _hoverProps.onPointerenter = (e) => {
         if (globalIgnoreEmulatedMouseEvents && e.pointerType === 'mouse') {
           return
         }
@@ -161,7 +156,7 @@ export function useHover(props: HoverProps = {}): ToRefs<HoverResult> {
         triggerHoverStart(e, e.pointerType as PointerType)
       }
 
-      _hoverEvents.onPointerleave = (e) => {
+      _hoverProps.onPointerleave = (e) => {
         if (
           !toValue(isDisabled) &&
           e.currentTarget instanceof Element &&
@@ -171,11 +166,11 @@ export function useHover(props: HoverProps = {}): ToRefs<HoverResult> {
         }
       }
     } else {
-      _hoverEvents.onTouchstart = () => {
+      _hoverProps.onTouchstart = () => {
         state.ignoreEmulatedMouseEvents = true
       }
 
-      _hoverEvents.onMouseenter = (e) => {
+      _hoverProps.onMouseenter = (e) => {
         if (!state.ignoreEmulatedMouseEvents && !globalIgnoreEmulatedMouseEvents) {
           triggerHoverStart(e, 'mouse')
         }
@@ -183,7 +178,7 @@ export function useHover(props: HoverProps = {}): ToRefs<HoverResult> {
         state.ignoreEmulatedMouseEvents = false
       }
 
-      _hoverEvents.onMouseleave = (e) => {
+      _hoverProps.onMouseleave = (e) => {
         if (
           !toValue(isDisabled) &&
           e.currentTarget instanceof Element &&
@@ -193,7 +188,7 @@ export function useHover(props: HoverProps = {}): ToRefs<HoverResult> {
         }
       }
     }
-    return _hoverEvents
+    return _hoverProps
   })
 
   watchEffect(() => {
@@ -206,7 +201,6 @@ export function useHover(props: HoverProps = {}): ToRefs<HoverResult> {
 
   return {
     hoverProps,
-    hoverEvents,
     isHovered,
   }
 }
