@@ -28,6 +28,7 @@ export interface UseAriaButtonEvents extends AriaButtonEvents {
    * The native button click event handler.
    * @deprecated use `onPress` instead.
    */
+  // TODO: the type maybe change to `(eventname: 'click', e: MouseEvent): void`?
   onClick?: EventHandlers<Events>['onClick']
 }
 
@@ -43,8 +44,6 @@ export interface UseAriaButtonEmits extends EventsToEmits<AriaButtonEvents> {
 export interface ButtonAria<T> {
   /** Props for the button element. */
   buttonProps: T
-  /** Props for the button element. */
-  buttonEvents: EventHandlers<Events>
   /** Whether the button is currently pressed. */
   isPressed: boolean
   /** Whether the button is currently hovered. */
@@ -121,8 +120,8 @@ export function useAriaButton(
   const onPress = chainPre(onPressProp, (e: PressEvent) => emits('press', e))
   const onPressStart = chainPre(onPressStartProp, (e: PressEvent) => emits('pressstart', e))
 
-  const {isHovered, hoverProps, hoverEvents} = useHover({isDisabled})
-  const {isPressed, pressProps, pressEvents} = usePress({isDisabled, onPress, onPressStart})
+  const {isHovered, hoverProps} = useHover({isDisabled})
+  const {isPressed, pressProps} = usePress({isDisabled, onPress, onPressStart})
   const additionalProps = computed(() =>
     toValue(elementType) === 'button'
       ? {
@@ -152,12 +151,6 @@ export function useAriaButton(
       'aria-haspopup': toValue(props['aria-haspopup']),
       'aria-expanded': toValue(props['aria-expanded']),
       'aria-controls': toValue(props['aria-controls']),
-    }),
-  )
-
-  // for parent hooks // 在useButton中，需要转为getButtonEvents，提供click，press事件
-  const buttonEvents = computed(() =>
-    mergeProps(toValue(hoverEvents), toValue(pressEvents), {
       onClick,
     }),
   )
@@ -166,7 +159,6 @@ export function useAriaButton(
     isHovered,
     isPressed,
     buttonProps,
-    buttonEvents,
   }
 }
 

@@ -49,7 +49,6 @@ export function useButton(
 
   const {
     buttonProps: ariaButtonProps,
-    buttonEvents: ariaButtonEvents,
     isHovered,
     isPressed,
   } = useAriaButton(
@@ -68,15 +67,11 @@ export function useButton(
     'data-pressed': dataAttr(toValue(isPressed)),
     ...toValue(ariaButtonProps),
   })
-  const getButtonEvents = () => ({
-    ...toValue(ariaButtonEvents),
-  })
 
   return {
     Component,
     isDisabled: computed(() => toValue(isDisabled)),
     getButtonProps,
-    getButtonEvents,
   }
 }
 
