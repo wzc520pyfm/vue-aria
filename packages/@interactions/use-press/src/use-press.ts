@@ -1,12 +1,11 @@
 import {computed, ref, toValue} from 'vue'
 import type {
   DOMAttributes,
-  EventHandlers,
   PressEvent as IPressEvent,
   PointerType,
   PressEvents,
 } from '@nev-ui/types-shared'
-import type {Events, MaybeRefOrGetter, ToRefs} from 'vue'
+import type {MaybeRefOrGetter, ToRefs} from 'vue'
 
 export interface PressProps extends PressEvents {
   /** Whether the target is in a controlled press state (e.g. an overlay it triggers is open). */
@@ -20,8 +19,6 @@ export interface PressResult {
   isPressed: boolean
   /** Props to spread on the target element. */
   pressProps: DOMAttributes
-  /** Events to spread on the target element. */
-  pressEvents: EventHandlers<Events>
 }
 
 interface EventBase {
@@ -114,34 +111,32 @@ export function usePress(props: PressProps = {}): ToRefs<PressResult> {
     }
   }
 
-  const pressProps = computed<DOMAttributes>(() => ({}))
-
-  const pressEvents = computed(() => {
-    const _pressEvents: EventHandlers<Events> = {}
+  const pressProps = computed(() => {
+    const _pressProps: DOMAttributes = {}
     if (typeof PointerEvent !== 'undefined') {
-      _pressEvents.onPointerdown = (e) => {
+      _pressProps.onPointerdown = (e) => {
         triggerPressStart(e)
       }
 
-      _pressEvents.onPointerup = (e) => {
+      _pressProps.onPointerup = (e) => {
         triggerPressEnd(e)
       }
     } else {
-      _pressEvents.onMousedown = (e) => {
+      _pressProps.onMousedown = (e) => {
         triggerPressStart(e)
       }
 
-      _pressEvents.onMouseup = (e) => {
+      _pressProps.onMouseup = (e) => {
         triggerPressEnd(e)
       }
     }
 
-    return _pressEvents
+    return _pressProps
   })
 
   return {
     isPressed: computed(() => toValue(isPressedProp) || isPressed.value),
+    // todo: props给的类型太宽泛了，需要收敛
     pressProps,
-    pressEvents,
   }
 }
