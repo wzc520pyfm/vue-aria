@@ -2,14 +2,19 @@ import {computed, toValue} from 'vue'
 import {useHover} from '@nev-ui/use-hover'
 import {usePress} from '@nev-ui/use-press'
 import {dataAttr, mergeProps} from '@nev-ui/shared'
-import type {ElementType, EventHandlers, PressEvent} from '@nev-ui/types-shared'
+import type {
+  ElementType,
+  EventHandlers,
+  EventsToEmits,
+  PressEvent,
+  ToMaybeRefOrGettersForNonFunction,
+} from '@nev-ui/types-shared'
 import type {
   AnchorHTMLAttributes,
   ButtonHTMLAttributes,
   Events,
   HTMLAttributes,
   InputHTMLAttributes,
-  MaybeRefOrGetter,
   ToRefs,
 } from 'vue'
 import type {AriaButtonEvents, AriaButtonProps} from '@nev-ui/types-aria-button'
@@ -52,23 +57,6 @@ const BUTTON_DEFAULT = {
   elementType: 'button',
   type: 'button',
 } as const
-
-// TODO: move to type shared
-// type ToMaybeRefOrGetters<T> = {
-//   [P in keyof T]?: MaybeRefOrGetter<T[P]>
-// }
-type NonUndefined<T> = T extends undefined ? never : T
-type Duplicate<T> = {[P in keyof T]: T[P]}
-type OmitNever<T extends object> = Duplicate<T>[keyof T]
-type FunctionKeys<T extends object> = OmitNever<
-  Required<{
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    [K in keyof T]: NonUndefined<T[K]> extends Function ? K : never
-  }>
->
-type ToMaybeRefOrGettersForNonFunction<T extends object> = {
-  [P in keyof T]?: P extends FunctionKeys<T> ? T[P] : MaybeRefOrGetter<NonUndefined<T[P]>>
-}
 
 // Order with overrides is important: 'button' should be default
 export function useAriaButton(
@@ -159,25 +147,6 @@ export function useAriaButton(
     buttonProps,
   }
 }
-
-// TODO: move to shared
-
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
-  ? I
-  : never
-
-type RecordToUnion<T extends Record<string, any>> = T[keyof T]
-
-type _EventsToEmits<T extends object> = UnionToIntersection<
-  RecordToUnion<{
-    [K in keyof T]: K extends `on${infer U}`
-      ? T[K] extends (...args: infer E) => infer R
-        ? (eventname: Lowercase<U>, ...args: E) => R
-        : never
-      : never
-  }>
->
-type EventsToEmits<T extends object> = _EventsToEmits<Required<T>>
 
 /**
  * Executes the first given executable function.
