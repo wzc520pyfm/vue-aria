@@ -28,11 +28,9 @@ export interface UseAriaButtonEvents extends AriaButtonEvents {
    * The native button click event handler.
    * @deprecated use `onPress` instead.
    */
-  // TODO: the type maybe change to `(eventname: 'click', e: MouseEvent): void`?
   onClick?: EventHandlers<Events>['onClick']
 }
 
-// 受限于Vue defineProps和defineEmits的范型不支持复杂类型推断（如条件类型），此写法不被支持
 export interface UseAriaButtonEmits extends EventsToEmits<AriaButtonEvents> {
   /**
    * The native button click event handler.
