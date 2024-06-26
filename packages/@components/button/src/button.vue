@@ -1,6 +1,6 @@
 <template>
   <component
-    :is="h(Button, {isDisabled, ...mergeProps($attrs, toValues(otherProps), emits)}, $slots)"
+    :is="h(Button, {isDisabled, ...mergeProps($attrs, toValues(otherProps))}, $slots)"
     :class="[...buttonCls]"
   />
 </template>
@@ -18,7 +18,7 @@ defineOptions({
   name: 'NvButton',
 })
 
-const emits = defineEmits<ButtonEmits>()
+defineEmits<ButtonEmits>()
 const props = withDefaults(defineProps<ButtonProps>(), BUTTON_DEFAULT)
 
 const {size, color, radius, isDisabled, fullWidth, disableAnimation, ...otherProps} = toRefs(props)
