@@ -195,6 +195,9 @@ importers:
 
   packages/@interactions/use-press:
     dependencies:
+      '@nev-ui/shared':
+        specifier: workspace:^
+        version: link:../../@utilities/shared
       '@nev-ui/types-shared':
         specifier: workspace:^
         version: link:../../@types/shared

@@ -1,4 +1,5 @@
 import {computed, ref, toValue} from 'vue'
+import {narrow} from '@nev-ui/shared'
 import type {
   DOMAttributes,
   PressEvent as IPressEvent,
@@ -18,7 +19,9 @@ export interface PressResult {
   /** Whether the target is currently pressed. */
   isPressed: boolean
   /** Props to spread on the target element. */
-  pressProps: DOMAttributes
+  pressProps:
+    | Pick<DOMAttributes, 'onPointerdown' | 'onPointerup'>
+    | Pick<DOMAttributes, 'onMousedown' | 'onMouseup'>
 }
 
 interface EventBase {
@@ -112,8 +115,16 @@ export function usePress(props: PressProps = {}): ToRefs<PressResult> {
   }
 
   const pressProps = computed(() => {
-    const _pressProps: DOMAttributes = {}
-    if (typeof PointerEvent !== 'undefined') {
+    const _pressProps:
+      | Pick<DOMAttributes, 'onPointerdown' | 'onPointerup'>
+      | Pick<DOMAttributes, 'onMousedown' | 'onMouseup'> = {}
+
+    if (
+      narrow<Pick<DOMAttributes, 'onPointerdown' | 'onPointerup'>>(
+        _pressProps,
+        typeof PointerEvent !== 'undefined',
+      )
+    ) {
       _pressProps.onPointerdown = (e) => {
         triggerPressStart(e)
       }
@@ -136,7 +147,6 @@ export function usePress(props: PressProps = {}): ToRefs<PressResult> {
 
   return {
     isPressed: computed(() => toValue(isPressedProp) || isPressed.value),
-    // todo: props给的类型太宽泛了，需要收敛
     pressProps,
   }
 }
