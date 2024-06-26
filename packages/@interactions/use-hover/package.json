@@ -24,6 +24,7 @@
     "vue": ">=3.4.0"
   },
   "dependencies": {
+    "@nev-ui/shared": "workspace:^",
     "@nev-ui/types-shared": "workspace:^"
   },
   "devDependencies": {

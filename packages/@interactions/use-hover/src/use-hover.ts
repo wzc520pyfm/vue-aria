@@ -1,4 +1,5 @@
 import {computed, onMounted, reactive, ref, toValue, watchEffect} from 'vue'
+import {narrow} from '@nev-ui/shared'
 import type {MaybeRefOrGetter, ToRefs} from 'vue'
 import type {
   PointerType as BasePointerType,
@@ -15,9 +16,11 @@ export interface HoverProps extends HoverEvents {
 }
 
 export interface HoverResult {
-  /** Props to spread on the target element. */
-  hoverProps: DOMAttributes
   isHovered: boolean
+  /** Props to spread on the target element. */
+  hoverProps:
+    | Pick<DOMAttributes, 'onPointerenter' | 'onPointerleave'>
+    | Pick<DOMAttributes, 'onTouchstart' | 'onMouseenter' | 'onMouseleave'>
 }
 
 interface HoverState {
@@ -146,8 +149,15 @@ export function useHover(props: HoverProps = {}): ToRefs<HoverResult> {
   }
 
   const hoverProps = computed(() => {
-    const _hoverProps: DOMAttributes = {}
-    if (typeof PointerEvent !== 'undefined') {
+    const _hoverProps:
+      | Pick<DOMAttributes, 'onPointerenter' | 'onPointerleave'>
+      | Pick<DOMAttributes, 'onTouchstart' | 'onMouseenter' | 'onMouseleave'> = {}
+    if (
+      narrow<Pick<DOMAttributes, 'onPointerenter' | 'onPointerleave'>>(
+        _hoverProps,
+        typeof PointerEvent !== 'undefined',
+      )
+    ) {
       _hoverProps.onPointerenter = (e) => {
         if (globalIgnoreEmulatedMouseEvents && e.pointerType === 'mouse') {
           return
