@@ -1,7 +1,7 @@
 import {computed, toValue} from 'vue'
 import {useHover} from '@nev-ui/use-hover'
 import {usePress} from '@nev-ui/use-press'
-import {dataAttr, mergeProps} from '@nev-ui/shared'
+import {chainPre, dataAttr, mergeProps} from '@nev-ui/shared'
 import type {
   ElementType,
   EventHandlers,
@@ -145,15 +145,5 @@ export function useAriaButton(
     isHovered,
     isPressed,
     buttonProps,
-  }
-}
-
-/**
- * Executes the first given executable function.
- */
-function chainPre<T extends undefined | ((...args: any[]) => any)>(...callbacks: T[]) {
-  return (...args: Parameters<NonUndefined<T>>): ReturnType<NonUndefined<T>> | undefined => {
-    const canExecCb = callbacks.find((cb) => typeof cb === 'function')
-    return canExecCb?.(...args)
   }
 }

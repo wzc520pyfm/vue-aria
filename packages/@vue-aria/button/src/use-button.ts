@@ -1,5 +1,5 @@
 import {computed, toValue} from 'vue'
-import {dataAttr} from '@nev-ui/shared'
+import {chain, dataAttr} from '@nev-ui/shared'
 import {useAriaButton} from './use-aria-button'
 import type {As, ToMaybeRefOrGettersForNonFunction} from '@nev-ui/types-shared'
 import type {UseAriaButtonEmits, UseAriaButtonProps} from './use-aria-button'
@@ -57,20 +57,5 @@ export function useButton(
     Component,
     isDisabled: computed(() => toValue(isDisabled)),
     getButtonProps,
-  }
-}
-
-// TODO: move to shared
-/**
- * Calls all functions in the order they were chained with the same arguments.
- */
-function chain<T extends undefined | ((...args: any[]) => any)>(...callbacks: T[]) {
-  return (...args: Parameters<NonUndefined<T>>): ReturnType<NonUndefined<T>> | undefined => {
-    return callbacks.reduce((lastRes, callback) => {
-      if (typeof callback === 'function') {
-        lastRes = callback(...args)
-      }
-      return lastRes
-    }, undefined)
   }
 }
