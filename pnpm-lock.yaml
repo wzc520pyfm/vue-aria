@@ -460,6 +460,19 @@ importers:
         specifier: ^3.4.27
         version: 3.4.27(typescript@5.4.5)
 
+  packages/vue-aria:
+    dependencies:
+      '@nev-ui/use-aria-button':
+        specifier: workspace:^
+        version: link:../@vue-aria/button
+    devDependencies:
+      clean-package:
+        specifier: ^2.2.0
+        version: 2.2.0
+      vue:
+        specifier: ^3.4.27
+        version: 3.4.27(typescript@5.4.5)
+
   play:
     dependencies:
       '@nev-ui/preset':
