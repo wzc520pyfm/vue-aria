@@ -15,13 +15,18 @@ export interface PressProps extends PressEvents {
   isDisabled?: MaybeRefOrGetter<boolean>
 }
 
-export interface PressResult {
+// Prefer Pointer Events
+// See: https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events
+type MaybePressAttrs = Pick<
+  DOMAttributes,
+  'onPointerdown' | 'onPointerup' | 'onMousedown' | 'onMouseup'
+>
+
+export interface PressResult<T extends MaybePressAttrs = MaybePressAttrs> {
   /** Whether the target is currently pressed. */
   isPressed: boolean
   /** Props to spread on the target element. */
-  pressProps:
-    | Pick<DOMAttributes, 'onPointerdown' | 'onPointerup'>
-    | Pick<DOMAttributes, 'onMousedown' | 'onMouseup'>
+  pressProps: T
 }
 
 interface EventBase {
