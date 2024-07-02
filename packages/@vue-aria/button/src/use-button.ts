@@ -1,5 +1,5 @@
 import {computed, toValue} from 'vue'
-import {chain, dataAttr} from '@nev-ui/shared'
+import {chain, dataAttr, mergeProps} from '@nev-ui/shared'
 import {useAriaButton} from './use-aria-button'
 import type {As, ToMaybeRefOrGettersForNonFunction} from '@nev-ui/types-shared'
 import type {UseAriaButtonEmits, UseAriaButtonProps} from './use-aria-button'
@@ -46,12 +46,12 @@ export function useButton(
     },
     emits,
   )
-  const getButtonProps = () => ({
-    'data-disabled': dataAttr(toValue(isDisabled)),
-    'data-hover': dataAttr(toValue(isHovered)),
-    'data-pressed': dataAttr(toValue(isPressed)),
-    ...toValue(ariaButtonProps),
-  })
+  const getButtonProps = () =>
+    mergeProps(toValue(ariaButtonProps), {
+      'data-disabled': dataAttr(toValue(isDisabled)),
+      'data-hover': dataAttr(toValue(isHovered)),
+      'data-pressed': dataAttr(toValue(isPressed)),
+    })
 
   return {
     Component,
