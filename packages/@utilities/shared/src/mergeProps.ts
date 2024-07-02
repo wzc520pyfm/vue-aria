@@ -4,8 +4,7 @@ export interface Props {
 
 type PropsArg = Props | null | undefined
 
-// TODO: improve typing
-export function mergeProps<T extends PropsArg[]>(...args: T) {
+export function mergeProps<T extends PropsArg[], R = MergeRightAll<T>>(...args: T): R {
   // Start with a base clone of the first argument. This is a lot faster than starting
   // with an empty object and adding properties as we go.
   const result: Props = {...args[0]}
@@ -19,5 +18,14 @@ export function mergeProps<T extends PropsArg[]>(...args: T) {
     }
   }
 
-  return result
+  return result as R
 }
+
+// TODO: remove to shared
+type Keys<T> = keyof T
+type Duplicate<T> = {[P in keyof T]: T[P]}
+type MergeRight<F, S> = Duplicate<Omit<F, Keys<S>> & S>
+// eslint-disable-next-line @typescript-eslint/ban-types
+type MergeRightAll<XS, Prev = {}> = XS extends [infer First, ...infer Rest]
+  ? MergeRightAll<Rest, MergeRight<Prev, First>>
+  : Prev
