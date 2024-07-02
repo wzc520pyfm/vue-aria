@@ -15,12 +15,16 @@ export interface HoverProps extends HoverEvents {
   isDisabled?: MaybeRefOrGetter<boolean>
 }
 
-export interface HoverResult {
+// Prefer Pointer Events
+// See: https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events
+type MaybeHoverAttrs = Pick<
+  DOMAttributes,
+  'onPointerenter' | 'onPointerleave' | 'onTouchstart' | 'onMouseenter' | 'onMouseleave'
+>
+export interface HoverResult<T extends MaybeHoverAttrs = MaybeHoverAttrs> {
   isHovered: boolean
   /** Props to spread on the target element. */
-  hoverProps:
-    | Pick<DOMAttributes, 'onPointerenter' | 'onPointerleave'>
-    | Pick<DOMAttributes, 'onTouchstart' | 'onMouseenter' | 'onMouseleave'>
+  hoverProps: T
 }
 
 interface HoverState {
