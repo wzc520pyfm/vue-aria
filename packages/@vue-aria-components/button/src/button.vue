@@ -1,6 +1,8 @@
 <template>
   <component :is="Component" :class="[bem.b()]" v-bind="{...$attrs, ...getButtonProps()}">
+    <component :is="startContent" />
     <slot />
+    <component :is="endContent" />
   </component>
 </template>
 
@@ -21,7 +23,10 @@ const props = defineProps<ButtonProps>()
 const bem = useBEM('button')
 
 // Provides rendering properties
-const {Component, getButtonProps} = useButton(toRefsForNonFunction(props), emits)
+const {Component, startContent, endContent, getButtonProps} = useButton(
+  toRefsForNonFunction(props),
+  emits,
+)
 </script>
 
 <style scoped></style>
