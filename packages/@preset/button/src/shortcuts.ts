@@ -27,6 +27,12 @@ export const buttonShortcuts: Record<string, string> = {
     'data-[pressed=true]:scale-[0.97] transition duration-250 motion-reduce:transition-none',
   // should be provider as common option
   'non-animation': '!transition-none',
+  'is-icon-only': 'px-0 !gap-0',
+  'is-icon-only-sm': 'min-w-8 w-8 h-8',
+  'is-icon-only-md': 'min-w-10 w-10 h-10',
+  'is-icon-only-lg': 'min-w-12 w-12 h-12',
+  // 2em should be provider as theme (spacing)
+  'with-icon': '[&>svg]:max-w-[2em]',
 }
 
 export function getButtonSafeList() {
