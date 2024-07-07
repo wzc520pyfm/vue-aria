@@ -21,10 +21,19 @@ defineOptions({
 defineEmits<ButtonEmits>()
 const props = withDefaults(defineProps<ButtonProps>(), BUTTON_DEFAULT)
 
-const {size, color, radius, isDisabled, fullWidth, disableAnimation, ...otherProps} = toRefs(props)
+const {size, color, radius, isDisabled, fullWidth, disableAnimation, isIconOnly, ...otherProps} =
+  toRefs(props)
 
 // Provides uno class
-const {buttonCls} = useButtonUno({size, color, radius, isDisabled, fullWidth, disableAnimation})
+const {buttonCls} = useButtonUno({
+  size,
+  color,
+  radius,
+  isDisabled,
+  fullWidth,
+  disableAnimation,
+  isIconOnly,
+})
 </script>
 
 <style scoped></style>

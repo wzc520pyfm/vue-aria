@@ -5,7 +5,7 @@ import type {ButtonProps} from './button'
 export interface UseButtonUno
   extends Pick<
     ButtonProps,
-    'size' | 'color' | 'radius' | 'isDisabled' | 'fullWidth' | 'disableAnimation'
+    'size' | 'color' | 'radius' | 'isDisabled' | 'fullWidth' | 'disableAnimation' | 'isIconOnly'
   > {}
 
 type PropMaybeRefOrGetter<T> = {
@@ -18,7 +18,7 @@ type PropMaybeRefOrGetter<T> = {
  * @todo - support getter
  */
 export function useButtonUno(props: PropMaybeRefOrGetter<UseButtonUno> = {}) {
-  const {size, color, radius, isDisabled, fullWidth, disableAnimation} = props
+  const {size, color, radius, isDisabled, fullWidth, disableAnimation, isIconOnly} = props
 
   return {
     buttonCls: computed(() => [
@@ -30,6 +30,9 @@ export function useButtonUno(props: PropMaybeRefOrGetter<UseButtonUno> = {}) {
       {'btn-disabled': toValue(isDisabled)}, // disabled
       {'btn-animation': !toValue(disableAnimation)},
       {'non-animation': toValue(disableAnimation)},
+      {'is-icon-only': toValue(isIconOnly)},
+      {[`is-icon-only-${toValue(size)}`]: toValue(isIconOnly)},
+      {'with-icon': !toValue(isIconOnly)},
     ]),
   }
 }

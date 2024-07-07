@@ -9,6 +9,10 @@ export interface ButtonProps extends AriaButtonProps {
   radius?: 'none' | 'sm' | 'md' | 'lg' | 'full'
   fullWidth?: boolean
   disableAnimation?: boolean
+  /**
+   * Whether the button should have the same width and height.
+   */
+  isIconOnly?: boolean
 }
 
 export const BUTTON_DEFAULT = {
