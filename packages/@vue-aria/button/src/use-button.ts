@@ -70,6 +70,7 @@ export function useButton(
       'data-pressed': dataAttr(toValue(isPressed)),
     })
 
+  // should be handled at useAriaIcon
   const getIconClone = (icon?: Component) =>
     icon
       ? h(icon, {
