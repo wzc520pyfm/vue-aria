@@ -1,6 +1,7 @@
 import type {MaybeRefOrGetter} from 'vue'
 
 /** Basic */
+export type MaybeArray<T> = T | T[]
 export type NonUndefined<T> = T extends undefined ? never : T
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
   k: infer I,
