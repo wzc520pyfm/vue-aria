@@ -15,7 +15,6 @@ type PropMaybeRefOrGetter<T> = {
 /**
  * Get the uno class of button
  * @param props - Component props or refs
- * @todo - support getter
  */
 export function useButtonUno(props: PropMaybeRefOrGetter<UseButtonUno> = {}) {
   const {size, color, radius, isDisabled, fullWidth, disableAnimation, isIconOnly} = props
