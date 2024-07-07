@@ -24,6 +24,7 @@
     "vue-router": "^4.3.2"
   },
   "devDependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
     "@nev-ui/shared": "workspace:^",
     "@rushstack/eslint-patch": "^1.10.3",
     "@tsconfig/node20": "^20.1.4",
