@@ -34,3 +34,4 @@ type _EventsToEmits<T extends object> = UnionToIntersection<
   }>
 >
 export type EventsToEmits<T extends object> = _EventsToEmits<Required<T>>
+export type VueClass = MaybeArray<string> | MaybeArray<string | {[key: string]: boolean}>
