@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, type ButtonProps } from '@nev-ui/vue'
+import { Button, Spinner, type ButtonProps } from '@nev-ui/vue'
 import { ref } from 'vue'
 
 defineOptions({ name: 'PlayRepl' })
@@ -30,13 +30,23 @@ const changeSize = () => {
   <Button :as="as" size="sm" :color="color" :radius="radius">Button</Button>
   <Button :as="as" size="md" :color="color" :radius="radius">Button</Button>
   <Button :as="as" size="lg" :color="color" :radius="radius">Button</Button>
-  <div>
-    <Button :as="as" :size="size" :color="color" radius="none">Button</Button>
+  <Spinner color="default" class="ml-4">11</Spinner>
+  <Spinner color="primary" class="ml-4">11</Spinner>
+  <Spinner color="secondary" class="ml-4">11</Spinner>
+  <Spinner color="success" class="ml-4">11</Spinner>
+  <Spinner color="warning" class="ml-4">11</Spinner>
+  <Spinner color="danger" class="ml-4">11</Spinner>
+  <div class="flex">
+    <Button :as="as" :size="size" :color="color" radius="none" :startContent="Delete" :endContent="Delete">Button</Button>
     <Button :as="as" :size="size" :color="color" radius="sm">Button</Button>
     <Button :as="as" :size="size" :color="color" radius="md">Button</Button>
     <Button :as="as" :size="size" :color="color" radius="lg">Button</Button>
     <Button :as="as" :size="size" :color="color" radius="full">Button</Button>
   </div>
+  <Spinner color="secondary" label="Loading..." labelColor="secondary" class="ml-4">
+    <div class="w-25 h-25 bg-gray"></div>
+  </Spinner>
+  <Spinner color="secondary" label="Loading..." labelColor="secondary" class="ml-4" />
 </template>
 
 <style scoped></style>
