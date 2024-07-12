@@ -1,0 +1,35 @@
+{
+  "name": "@nev-ui/aria-spinner",
+  "version": "0.0.1",
+  "description": "Spinner",
+  "keywords": [
+    "button"
+  ],
+  "license": "MIT",
+  "author": "wzc520pyfm",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "stub": "vite build --watch",
+    "build": "vite build",
+    "prepack": "clean-package",
+    "postpack": "clean-package restore",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "vue": ">=3.4.0"
+  },
+  "dependencies": {
+    "@nev-ui/types-shared": "workspace:^",
+    "@nev-ui/use-aria-spinner": "workspace:^",
+    "@nev-ui/utilities-bem": "workspace:^",
+    "@nev-ui/utilities-vue": "workspace:^"
+  },
+  "devDependencies": {
+    "clean-package": "^2.2.0",
+    "vue": "^3.4.27"
+  },
+  "clean-package": "../../../clean-package.config.json"
+}
