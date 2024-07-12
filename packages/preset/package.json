@@ -19,8 +19,10 @@
   },
   "dependencies": {
     "@nev-ui/preset-button": "workspace:^",
+    "@nev-ui/preset-spinner": "workspace:^",
     "@nev-ui/preset-system": "workspace:^",
-    "@unocss/core": "^0.58.9"
+    "@unocss/core": "^0.58.9",
+    "deepmerge": "^4.3.1"
   },
   "clean-package": "../../../clean-package.config.json"
 }
