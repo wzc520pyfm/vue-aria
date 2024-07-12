@@ -43,7 +43,8 @@ export function useButton(
     ...otherProps
   } = props
 
-  const Component = computed(() => toValue(as))
+  // The as prop maybe a ref<undefined>
+  const Component = computed(() => toValue(as) ?? BUTTON_DEFAULT.as)
 
   const handleClick = () => {
     // maybe need other logic
