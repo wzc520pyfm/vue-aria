@@ -21,7 +21,8 @@
     "vue": ">=3.4.0"
   },
   "dependencies": {
-    "@nev-ui/use-aria-button": "workspace:^"
+    "@nev-ui/use-aria-button": "workspace:^",
+    "@nev-ui/use-aria-spinner": "workspace:^"
   },
   "devDependencies": {
     "clean-package": "^2.2.0",
