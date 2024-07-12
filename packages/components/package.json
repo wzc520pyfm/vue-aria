@@ -21,7 +21,8 @@
     "vue": ">=3.4.0"
   },
   "dependencies": {
-    "@nev-ui/button": "workspace:^"
+    "@nev-ui/button": "workspace:^",
+    "@nev-ui/spinner": "workspace:^"
   },
   "devDependencies": {
     "clean-package": "^2.2.0",
