@@ -7,6 +7,7 @@ import {get, omit} from 'radash'
 // TODO: temporary solution, the `unocss-preset-theme` has bug
 import presetTheme from './pre-theme'
 import {nevui} from './plugin'
+import {commonAnimationShortcuts} from './animations'
 import type {Preset} from '@unocss/core'
 import type {ConfigTheme, ConfigThemes, DefaultThemeType, LayoutTheme} from './types'
 import type {Theme} from './plugin'
@@ -25,9 +26,10 @@ export const presetNevUISystem = definePreset((options: PresetNevUISystemOptions
 
   const defaultTheme = get(theme, defaultThemeType, {})
   const otherTheme = omit(theme, [defaultThemeType]) || {}
-  const preset = {
+  const preset: Preset<Theme> = {
     name: '@nev-ui/preset-system',
     theme: defaultTheme,
+    shortcuts: [commonAnimationShortcuts],
     // and other custom configurations
   }
 

@@ -4,6 +4,7 @@ import deepMerge from 'deepmerge'
 import {semanticColors} from './colors'
 import {isBaseTheme} from './utils/theme'
 import {darkLayout, defaultLayout, lightLayout} from './default-layout'
+import {animation} from './animations'
 import type {Theme} from '@unocss/preset-wind'
 import type {ConfigThemes, DefaultThemeType, LayoutTheme} from './types'
 
@@ -58,6 +59,7 @@ export const nevui = (config: NevUIPlugin = {}) => {
   const light: Theme = {
     ...deepMerge(baseLayouts.light, get(themeObject, 'light.layout', {})),
     colors: deepMerge(semanticColors.light, userLightColors),
+    animation,
   }
 
   const dark: Theme = {
