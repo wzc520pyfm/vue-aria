@@ -1,7 +1,7 @@
 import {resolve} from 'node:path'
 import {defineConfig} from 'unocss'
 import {presetNevUIButton} from '@nev-ui/preset-button'
-import {getSubDirNames} from '../../../lib'
+import {getSubDirNames} from '@nev-ui/build-utils'
 import type {UserConfig} from 'unocss'
 import type {Theme} from '@nev-ui/preset-button'
 
