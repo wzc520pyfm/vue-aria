@@ -3,7 +3,7 @@ import {mergeProps} from '@nev-ui/shared'
 import {type UseAriaSpinnerProps, useAriaSpinner} from './use-aria-spinner'
 import type {As, ToMaybeRefOrGettersForNonFunction, VueClass} from '@nev-ui/types-shared'
 
-interface SpinnerClassName {
+export interface SpinnerClassName {
   spinner?: VueClass
   wrapper?: VueClass
   circleWrapper?: VueClass
