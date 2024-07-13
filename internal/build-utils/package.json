@@ -1,0 +1,21 @@
+{
+  "name": "@nev-ui/build-utils",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Build utils for Nev UI.",
+  "keywords": [],
+  "license": "MIT",
+  "author": "wzc520pyfm",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "unbuild",
+    "dev": "pnpm run stub",
+    "stub": "unbuild --stub",
+    "prepack": "clean-package",
+    "postpack": "clean-package restore"
+  },
+  "devDependencies": {
+    "unbuild": "^2.0.0"
+  },
+  "clean-package": "../../../clean-package.config.json"
+}
