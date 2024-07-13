@@ -1,14 +1,12 @@
 import {Button} from '../src'
+import type {Meta, StoryObj} from '@storybook/vue3'
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories
-export default {
+const meta: Meta<typeof Button> = {
   title: 'Components/Button',
   component: Button,
   tags: ['autodocs'],
   argTypes: {
-    backgroundColor: {
-      control: 'color',
-    },
     onClick: {},
     size: {
       control: {
@@ -16,33 +14,93 @@ export default {
       },
       options: ['sm', 'md', 'lg'],
     },
+    color: {
+      control: {
+        type: 'select',
+      },
+      options: ['default', 'primary', 'secondary', 'success', 'warning', 'danger'],
+    },
+    radius: {
+      control: {
+        type: 'select',
+      },
+      options: ['none', 'sm', 'md', 'lg', 'full'],
+    },
+    fullWidth: {
+      control: {
+        type: 'boolean',
+      },
+    },
+    disableAnimation: {
+      control: {
+        type: 'boolean',
+      },
+    },
+    isIconOnly: {
+      control: {
+        type: 'boolean',
+      },
+    },
   },
 }
+
+export default meta
+
+type Story = StoryObj<typeof Button>
 
 // More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
-export const Primary = {
+export const Primary: Story = {
   args: {
-    primary: true,
-    label: 'Button',
+    size: 'md',
+    color: 'primary',
   },
+  render: (args) => ({
+    components: {Button},
+    setup() {
+      return {args}
+    },
+    template: '<Button v-bind="args">Button</Button>',
+  }),
 }
 
-export const Secondary = {
+export const Secondary: Story = {
   args: {
-    label: 'Button',
+    size: 'md',
+    color: 'secondary',
   },
+  render: (args) => ({
+    components: {Button},
+    setup() {
+      return {args}
+    },
+    template: '<Button v-bind="args">Button</Button>',
+  }),
 }
 
-export const Large = {
+export const Large: Story = {
   args: {
-    size: 'large',
-    label: 'Button',
+    size: 'lg',
+    color: 'primary',
   },
+  render: (args) => ({
+    components: {Button},
+    setup() {
+      return {args}
+    },
+    template: '<Button v-bind="args">Button</Button>',
+  }),
 }
 
-export const Small = {
+export const Small: Story = {
   args: {
-    size: 'small',
-    label: 'Button',
+    size: 'sm',
+    color: 'primary',
   },
+  render: (args) => ({
+    components: {Button},
+    setup() {
+      return {args}
+    },
+    template: '<Button v-bind="args">Button</Button>',
+  }),
 }
