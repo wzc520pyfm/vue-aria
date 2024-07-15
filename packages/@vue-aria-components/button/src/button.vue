@@ -1,8 +1,10 @@
 <template>
   <component :is="Component" :class="[bem.b()]" v-bind="{...$attrs, ...getButtonProps()}">
-    <component :is="startContent" />
+    <component :is="startContent" v-if="startContent" />
+    <slot v-else name="start-content" />
     <slot />
-    <component :is="endContent" />
+    <component :is="endContent" v-if="startContent" />
+    <slot v-else name="end-content" />
   </component>
 </template>
 
