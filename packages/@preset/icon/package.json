@@ -1,0 +1,29 @@
+{
+  "name": "@nev-ui/preset-icon",
+  "version": "0.0.1",
+  "description": "",
+  "keywords": [],
+  "license": "MIT",
+  "author": "wzc520pyfm",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "stub": "pnpm build:fast --watch",
+    "build": "tsup src --dts",
+    "build:fast": "tsup src",
+    "prepack": "clean-package",
+    "postpack": "clean-package restore",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@nev-ui/preset-system": "workspace:^",
+    "@unocss/core": "^0.58.9",
+    "deepmerge": "^4.3.1"
+  },
+  "devDependencies": {
+    "unocss": "^0.58.9"
+  },
+  "clean-package": "../../../clean-package.config.json"
+}
