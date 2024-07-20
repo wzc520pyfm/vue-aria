@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@nev-ui/aria-button": "workspace:^",
+    "@nev-ui/aria-icon": "workspace:^",
     "@nev-ui/aria-spinner": "workspace:^"
   },
   "devDependencies": {
