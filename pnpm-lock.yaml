@@ -179,6 +179,37 @@ importers:
         specifier: ^3.4.27
         version: 3.4.27(typescript@5.4.5)
 
+  packages/@components/icon:
+    dependencies:
+      '@nev-ui/aria-icon':
+        specifier: workspace:^
+        version: link:../../@vue-aria-components/icon
+      '@nev-ui/preset-icon':
+        specifier: workspace:^
+        version: link:../../@preset/icon
+      '@nev-ui/shared':
+        specifier: workspace:^
+        version: link:../../@utilities/shared
+      '@nev-ui/types-shared':
+        specifier: workspace:^
+        version: link:../../@types/shared
+      '@nev-ui/utilities-vue':
+        specifier: workspace:^
+        version: link:../../@utilities/vue
+    devDependencies:
+      '@nev-ui/build-utils':
+        specifier: workspace:^
+        version: link:../../../internal/build-utils
+      clean-package:
+        specifier: ^2.2.0
+        version: 2.2.0
+      unocss:
+        specifier: ^0.58.9
+        version: 0.58.9(postcss@8.4.38)(vite@5.2.12)
+      vue:
+        specifier: ^3.4.27
+        version: 3.4.27(typescript@5.4.5)
+
   packages/@components/spinner:
     dependencies:
       '@nev-ui/aria-spinner':
@@ -250,6 +281,22 @@ importers:
         version: 3.4.27(typescript@5.4.5)
 
   packages/@preset/button:
+    dependencies:
+      '@nev-ui/preset-system':
+        specifier: workspace:^
+        version: link:../system
+      '@unocss/core':
+        specifier: ^0.58.9
+        version: 0.58.9
+      deepmerge:
+        specifier: ^4.3.1
+        version: 4.3.1
+    devDependencies:
+      unocss:
+        specifier: ^0.58.9
+        version: 0.58.9(postcss@8.4.38)(vite@5.2.12)
+
+  packages/@preset/icon:
     dependencies:
       '@nev-ui/preset-system':
         specifier: workspace:^
@@ -370,6 +417,25 @@ importers:
         specifier: ^3.4.27
         version: 3.4.27(typescript@5.4.5)
 
+  packages/@vue-aria-components/icon:
+    dependencies:
+      '@nev-ui/use-aria-icon':
+        specifier: workspace:^
+        version: link:../../@vue-aria/icon
+      '@nev-ui/utilities-bem':
+        specifier: workspace:^
+        version: link:../../@utilities/bem
+      '@nev-ui/utilities-vue':
+        specifier: workspace:^
+        version: link:../../@utilities/vue
+    devDependencies:
+      clean-package:
+        specifier: ^2.2.0
+        version: 2.2.0
+      vue:
+        specifier: ^3.4.27
+        version: 3.4.27(typescript@5.4.5)
+
   packages/@vue-aria-components/spinner:
     dependencies:
       '@nev-ui/types-shared':
@@ -414,6 +480,16 @@ importers:
         specifier: ^3.4.27
         version: 3.4.27(typescript@5.4.5)
 
+  packages/@vue-aria/icon:
+    dependencies:
+      '@nev-ui/types-shared':
+        specifier: workspace:^
+        version: link:../../@types/shared
+    devDependencies:
+      vue:
+        specifier: ^3.4.27
+        version: 3.4.27(typescript@5.4.5)
+
   packages/@vue-aria/spinner:
     dependencies:
       '@nev-ui/shared':
@@ -432,6 +508,9 @@ importers:
       '@nev-ui/button':
         specifier: workspace:^
         version: link:../@components/button
+      '@nev-ui/icon':
+        specifier: workspace:^
+        version: link:../@components/icon
       '@nev-ui/spinner':
         specifier: workspace:^
         version: link:../@components/spinner
@@ -473,6 +552,9 @@ importers:
       '@nev-ui/preset-button':
         specifier: workspace:^
         version: link:../@preset/button
+      '@nev-ui/preset-icon':
+        specifier: workspace:^
+        version: link:../@preset/icon
       '@nev-ui/preset-spinner':
         specifier: workspace:^
         version: link:../@preset/spinner
@@ -571,6 +653,9 @@ importers:
       '@nev-ui/use-aria-button':
         specifier: workspace:^
         version: link:../@vue-aria/button
+      '@nev-ui/use-aria-icon':
+        specifier: workspace:^
+        version: link:../@vue-aria/icon
       '@nev-ui/use-aria-spinner':
         specifier: workspace:^
         version: link:../@vue-aria/spinner
@@ -587,6 +672,9 @@ importers:
       '@nev-ui/aria-button':
         specifier: workspace:^
         version: link:../@vue-aria-components/button
+      '@nev-ui/aria-icon':
+        specifier: workspace:^
+        version: link:../@vue-aria-components/icon
       '@nev-ui/aria-spinner':
         specifier: workspace:^
         version: link:../@vue-aria-components/spinner
