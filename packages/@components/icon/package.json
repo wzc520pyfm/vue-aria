@@ -1,0 +1,38 @@
+{
+  "name": "@nev-ui/icon",
+  "version": "0.0.1",
+  "description": "Icon",
+  "keywords": [
+    "button"
+  ],
+  "license": "MIT",
+  "author": "wzc520pyfm",
+  "main": "src/index.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "stub": "vite build --watch",
+    "build": "vite build",
+    "prepack": "clean-package",
+    "postpack": "clean-package restore",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "peerDependencies": {
+    "vue": ">=3.4.0"
+  },
+  "dependencies": {
+    "@nev-ui/aria-icon": "workspace:^",
+    "@nev-ui/preset-icon": "workspace:^",
+    "@nev-ui/shared": "workspace:^",
+    "@nev-ui/types-shared": "workspace:^",
+    "@nev-ui/utilities-vue": "workspace:^"
+  },
+  "devDependencies": {
+    "@nev-ui/build-utils": "workspace:^",
+    "clean-package": "^2.2.0",
+    "unocss": "^0.58.9",
+    "vue": "^3.4.27"
+  },
+  "clean-package": "../../../clean-package.config.json"
+}
