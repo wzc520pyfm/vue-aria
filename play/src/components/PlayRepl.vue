@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Button, Spinner, type ButtonProps } from '@nev-ui/vue'
+import { Button, Spinner, Icon, type ButtonProps } from '@nev-ui/vue'
 import { ref } from 'vue'
+import { Delete, BellFilled, Basketball } from '@element-plus/icons-vue'
 
 defineOptions({ name: 'PlayRepl' })
 
@@ -37,11 +38,24 @@ const changeSize = () => {
   <Spinner color="warning" class="ml-4">11</Spinner>
   <Spinner color="danger" class="ml-4">11</Spinner>
   <div class="flex">
-    <Button :as="as" :size="size" :color="color" radius="none" :startContent="Delete" :endContent="Delete">Button</Button>
+    <!-- <Button :as="as" :size="size" :color="color" radius="none" :startContent="Delete" :endContent="Delete">Button</Button> -->
+    <Button :as="as" :size="size" :color="color" radius="none">
+      <template #start-content>
+        <Icon color="success"><Delete /></Icon>
+      </template>
+      Button
+      <template #end-content>
+        <Icon><Delete /></Icon>
+      </template>
+    </Button>
     <Button :as="as" :size="size" :color="color" radius="sm">Button</Button>
     <Button :as="as" :size="size" :color="color" radius="md">Button</Button>
     <Button :as="as" :size="size" :color="color" radius="lg">Button</Button>
     <Button :as="as" :size="size" :color="color" radius="full">Button</Button>
+    <Button :as="as" :size="size" :color="color" radius="md" is-icon-only>
+      <Icon><Basketball /></Icon>
+    </Button>
+    <Icon color="warning" size="lg"><BellFilled /></Icon>
   </div>
   <Spinner color="secondary" label="Loading..." labelColor="secondary" class="ml-4">
     <div class="w-25 h-25 bg-gray"></div>
