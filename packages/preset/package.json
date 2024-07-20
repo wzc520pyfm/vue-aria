@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@nev-ui/preset-button": "workspace:^",
+    "@nev-ui/preset-icon": "workspace:^",
     "@nev-ui/preset-spinner": "workspace:^",
     "@nev-ui/preset-system": "workspace:^",
     "@unocss/core": "^0.58.9",
