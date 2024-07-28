@@ -4,3 +4,7 @@ packages:
   - internal/*
   - lib
   - play
+
+# Define a catalog of version ranges.
+catalog:
+  vue: ^3.4.27

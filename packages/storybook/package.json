@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@nev-ui/preset": "workspace:^",
-    "vue": "^3.4.27"
+    "vue": "catalog:"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^1.5.0",

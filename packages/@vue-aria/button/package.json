@@ -30,7 +30,7 @@
     "@nev-ui/use-press": "workspace:^"
   },
   "devDependencies": {
-    "vue": "^3.4.27"
+    "vue": "catalog:"
   },
   "clean-package": "../../../clean-package.config.json"
 }

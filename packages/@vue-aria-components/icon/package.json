@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "clean-package": "^2.2.0",
-    "vue": "^3.4.27"
+    "vue": "catalog:"
   },
   "clean-package": "../../../clean-package.config.json"
 }

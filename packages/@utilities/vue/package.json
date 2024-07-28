@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@nev-ui/types-shared": "workspace:^",
-    "vue": "^3.4.27"
+    "vue": "catalog:"
   },
   "clean-package": "../../../clean-package.config.json"
 }
