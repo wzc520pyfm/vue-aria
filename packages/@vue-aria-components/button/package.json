@@ -16,12 +16,13 @@
     "build": "vite build",
     "prepack": "clean-package",
     "postpack": "clean-package restore",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "pnpm --workspace-root exec vitest run packages/@vue-aria-components/button"
   },
   "peerDependencies": {
     "vue": ">=3.4.0"
   },
   "dependencies": {
+    "@nev-ui/shared": "workspace:^",
     "@nev-ui/types-shared": "workspace:^",
     "@nev-ui/use-aria-button": "workspace:^",
     "@nev-ui/utilities-bem": "workspace:^",

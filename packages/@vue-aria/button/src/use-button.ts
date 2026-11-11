@@ -1,5 +1,5 @@
 import {computed, h, toValue} from 'vue'
-import {chain, dataAttr, mergeProps} from '@nev-ui/shared'
+import {chain, mergeProps, toHeroDataAttrs} from '@nev-ui/shared'
 import {useAriaButton} from './use-aria-button'
 import type {Component} from 'vue'
 import type {As, ToMaybeRefOrGettersForNonFunction} from '@nev-ui/types-shared'
@@ -15,6 +15,13 @@ export interface UseButtonProps extends UseAriaButtonProps {
    * The button end content.
    */
   endContent?: Component
+  /**
+   * Slot name for compound components and Hero UI `[data-slot]` selectors.
+   * @default 'button'
+   */
+  'data-slot'?: string
+  /** Camel-case alias of `data-slot` for Vue prop fallthrough. */
+  dataSlot?: string
 }
 
 export interface UseButtonEmits extends UseAriaButtonEmits {}
@@ -54,6 +61,9 @@ export function useButton(
     buttonProps: ariaButtonProps,
     isHovered,
     isPressed,
+    isFocused,
+    isFocusVisible,
+    isPending,
   } = useAriaButton(
     {
       elementType: as,
@@ -65,11 +75,18 @@ export function useButton(
     emits,
   )
   const getButtonProps = () =>
-    mergeProps(toValue(ariaButtonProps), {
-      'data-disabled': dataAttr(toValue(isDisabled)),
-      'data-hover': dataAttr(toValue(isHovered)),
-      'data-pressed': dataAttr(toValue(isPressed)),
-    })
+    mergeProps(
+      toValue(ariaButtonProps),
+      toHeroDataAttrs({
+        disabled: toValue(isDisabled),
+        hovered: toValue(isHovered),
+        pressed: toValue(isPressed),
+        focused: toValue(isFocused),
+        focusVisible: toValue(isFocusVisible),
+        pending: toValue(isPending),
+        slot: toValue(props['data-slot']) ?? toValue(props.dataSlot) ?? 'button',
+      }),
+    )
 
   // should be handled at useAriaIcon
   const getIconClone = (icon?: Component) =>

@@ -20,7 +20,7 @@
     "build:fast": "tsup src",
     "prepack": "clean-package",
     "postpack": "clean-package restore",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "pnpm --workspace-root exec vitest run packages/@interactions/use-press"
   },
   "peerDependencies": {
     "vue": ">=3.4.0"

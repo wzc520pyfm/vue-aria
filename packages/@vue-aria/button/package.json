@@ -17,7 +17,7 @@
     "build:fast": "tsup src",
     "prepack": "clean-package",
     "postpack": "clean-package restore",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "pnpm --workspace-root exec vitest run packages/@vue-aria/button"
   },
   "peerDependencies": {
     "vue": ">=3.4.0"
@@ -26,6 +26,7 @@
     "@nev-ui/shared": "workspace:^",
     "@nev-ui/types-aria-button": "workspace:^",
     "@nev-ui/types-shared": "workspace:^",
+    "@nev-ui/use-focus": "workspace:^",
     "@nev-ui/use-hover": "workspace:^",
     "@nev-ui/use-press": "workspace:^"
   },

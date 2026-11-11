@@ -21,6 +21,7 @@
     "vue": ">=3.4.0"
   },
   "dependencies": {
+    "@nev-ui/shared": "workspace:^",
     "@nev-ui/use-focus": "workspace:^",
     "@nev-ui/use-hover": "workspace:^",
     "@nev-ui/use-press": "workspace:^"

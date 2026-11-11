@@ -15,7 +15,7 @@
     "build:fast": "tsup src",
     "prepack": "clean-package",
     "postpack": "clean-package restore",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "pnpm --workspace-root exec vitest run packages/@utilities/shared"
   },
   "clean-package": "../../../clean-package.config.json"
 }

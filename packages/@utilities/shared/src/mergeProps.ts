@@ -1,3 +1,5 @@
+import {chain} from './function/chain'
+
 export interface Props {
   [key: string]: any
 }
@@ -14,7 +16,12 @@ export function mergeProps<T extends PropsArg[], R = MergeRightAll<T>>(...args: 
       const a = result[key]
       const b = props[key]
 
-      result[key] = b !== undefined ? b : a
+      // Chain event handlers and other callbacks so hover + press can coexist.
+      if (typeof a === 'function' && typeof b === 'function') {
+        result[key] = chain(a, b)
+      } else {
+        result[key] = b !== undefined ? b : a
+      }
     }
   }
 
