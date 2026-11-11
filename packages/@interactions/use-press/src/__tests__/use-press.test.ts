@@ -1,4 +1,4 @@
-import {defineComponent} from 'vue'
+import {defineComponent, isRef} from 'vue'
 import {flushPromises, mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {dispatchClick, dispatchKey, dispatchPointer} from '../../../../../test/dom-events'
@@ -73,6 +73,35 @@ describe('usePress', () => {
       expect(typesOf(wrapper.emitted('press'))).toEqual(['press'])
       expect(pointerTypesOf(wrapper.emitted('press'))).toEqual(['mouse'])
       expect(wrapper.emitted('presschange')?.map(([value]) => value)).toEqual([true, false])
+    })
+
+    it('returns a plain pressProps object whose handlers are direct properties', () => {
+      let pressProps: ReturnType<typeof usePress>['pressProps'] | undefined
+      const Probe = defineComponent({
+        setup() {
+          const result = usePress()
+          pressProps = result.pressProps
+          return result
+        },
+        template: '<button type="button" v-bind="pressProps">idle</button>',
+      })
+      mountInDoc(Probe)
+
+      expect(isRef(pressProps)).toBe(false)
+      expect(pressProps).toBeTypeOf('object')
+      expect(typeof pressProps?.onPointerdown).toBe('function')
+      expect(Object.hasOwn(pressProps!, 'onPointerdown')).toBe(true)
+      for (const key of [
+        'onPointerdown',
+        'onPointerup',
+        'onPointercancel',
+        'onLostpointercapture',
+        'onKeydown',
+        'onKeyup',
+        'onBlur',
+      ] as const) {
+        expect(typeof pressProps?.[key]).toBe('function')
+      }
     })
 
     it('exposes the stable pressProps event names from the behavior contract', () => {

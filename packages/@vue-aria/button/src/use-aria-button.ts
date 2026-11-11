@@ -164,22 +164,16 @@ export function useAriaButton(
   )
 
   const buttonProps = computed(() =>
-    mergeProps(
-      toValue(hoverProps),
-      toValue(pressProps),
-      toValue(focusProps),
-      toValue(additionalProps),
-      {
-        'aria-disabled': dataAttr(Boolean(toValue(isDisabled) || toValue(isPending))),
-        // Non-standard. Retained so existing useAriaButton consumers keep receiving an aria-* hover
-        // flag (NOTE.md documents this hook as the aria-* layer). Prefer `data-hovered` from useButton.
-        'aria-hover': dataAttr(toValue(isHovered)),
-        'aria-pressed': toValue(props['aria-pressed']),
-        'aria-haspopup': toValue(props['aria-haspopup']),
-        'aria-expanded': toValue(props['aria-expanded']),
-        'aria-controls': toValue(props['aria-controls']),
-      },
-    ),
+    mergeProps(toValue(hoverProps), pressProps, toValue(focusProps), toValue(additionalProps), {
+      'aria-disabled': dataAttr(Boolean(toValue(isDisabled) || toValue(isPending))),
+      // Non-standard. Retained so existing useAriaButton consumers keep receiving an aria-* hover
+      // flag (NOTE.md documents this hook as the aria-* layer). Prefer `data-hovered` from useButton.
+      'aria-hover': dataAttr(toValue(isHovered)),
+      'aria-pressed': toValue(props['aria-pressed']),
+      'aria-haspopup': toValue(props['aria-haspopup']),
+      'aria-expanded': toValue(props['aria-expanded']),
+      'aria-controls': toValue(props['aria-controls']),
+    }),
   )
 
   return {

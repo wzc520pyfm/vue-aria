@@ -47,6 +47,14 @@ describe('Button', () => {
     expect(wrapper.emitted('press')).toHaveLength(1)
   })
 
+  it('sets aria-disabled="true" when pending and does not set native disabled', () => {
+    const wrapper = mountInDoc(Button, {props: {isPending: true}, slots: {default: 'Press me'}})
+    expect(wrapper.attributes('aria-disabled')).toBe('true')
+    expect(wrapper.attributes('disabled')).toBeUndefined()
+    expect((wrapper.element as HTMLButtonElement).disabled).toBe(false)
+    expect(wrapper.attributes('data-pending')).toBe('true')
+  })
+
   it('accepts a custom data-slot and keeps it during press', async () => {
     const Wrapper = defineComponent({
       components: {AriaButton: Button},

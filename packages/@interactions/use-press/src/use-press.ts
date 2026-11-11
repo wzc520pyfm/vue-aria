@@ -12,7 +12,7 @@ import type {
   PointerType,
   PressEvents,
 } from '@nev-ui/types-shared'
-import type {MaybeRefOrGetter, ToRefs} from 'vue'
+import type {ComputedRef, MaybeRefOrGetter} from 'vue'
 
 /**
  * Stable public options for a future hero-ui-vue vue-aria adapter.
@@ -66,6 +66,16 @@ export interface PressResult {
    * Stable keys (hero-ui-vue contract): onPointerdown, onPointerup,
    * onPointercancel, onLostpointercapture, onKeydown, onKeyup, onBlur.
    */
+  pressProps: PressPropsEl
+}
+
+/**
+ * Public return value of {@link usePress}.
+ * `pressProps` is a plain object (not a computed/ref) so script can use
+ * `pressProps.onPointerdown` directly. `isPressed` remains a computed ref.
+ */
+export interface UsePressReturn {
+  isPressed: ComputedRef<boolean>
   pressProps: PressPropsEl
 }
 
@@ -143,7 +153,7 @@ function createPressState(): PressState {
  * `onPointerdown` / `onPointerup` / `onPointercancel` / `onLostpointercapture` /
  * `onKeydown` / `onKeyup` / `onBlur`.
  */
-export function usePress(props: PressProps = {}): ToRefs<PressResult> {
+export function usePress(props: PressProps = {}): UsePressReturn {
   const {
     onPress,
     onPressChange,
@@ -457,6 +467,6 @@ export function usePress(props: PressProps = {}): ToRefs<PressResult> {
 
   return {
     isPressed: computed(() => toValue(isPressedProp) || isPressed.value),
-    pressProps: computed(() => pressProps),
+    pressProps,
   }
 }
