@@ -1,0 +1,36 @@
+{
+  "name": "vue-aria",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "description": "Vue 3 port of React Aria, React Stately, and React Aria Components as three monopackages.",
+  "keywords": ["vue", "aria", "accessibility", "vue-aria", "react-aria"],
+  "license": "Apache-2.0",
+  "author": "wzc520pyfm",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wzc520pyfm/vue-aria.git"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "pnpm --filter vue-stately build && pnpm --filter vue-aria build && pnpm --filter vue-aria-components build",
+    "clean": "pnpm -r --filter \"./packages/*\" exec rm -rf dist"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^26.1.0",
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4",
+    "vue": "^3.5.13"
+  },
+  "engines": {
+    "node": ">=18.18.0",
+    "pnpm": ">=9.15.0 <10"
+  }
+}

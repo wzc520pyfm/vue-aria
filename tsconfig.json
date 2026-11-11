@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
+    "types": ["vitest/globals"],
+    "paths": {
+      "vue-aria": ["./packages/vue-aria/exports/index.ts"],
+      "vue-aria/*": ["./packages/vue-aria/exports/*.ts"],
+      "vue-stately": ["./packages/vue-stately/exports/index.ts"],
+      "vue-stately/*": ["./packages/vue-stately/exports/*.ts"],
+      "vue-aria-components": ["./packages/vue-aria-components/exports/index.ts"],
+      "vue-aria-components/*": ["./packages/vue-aria-components/exports/*.ts"]
+    }
+  },
+  "include": [
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
+    "test/**/*.ts",
+    "vitest.config.ts",
+    "vitest.setup.ts"
+  ],
+  "exclude": ["**/node_modules", "**/dist", "**/tsup.config.ts", "vitest.config.ts"]
+}
+

@@ -1,0 +1,45 @@
+{
+  "name": "vue-aria",
+  "version": "0.0.1",
+  "description": "Vue 3 hooks that provide accessible UI behavior, ported from react-aria.",
+  "keywords": ["vue", "aria", "accessibility", "hooks"],
+  "license": "Apache-2.0",
+  "author": "wzc520pyfm",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "development": "./exports/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "development": "./exports/*.ts",
+      "default": "./dist/*.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "exports", "src"],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json --pretty false"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "dependencies": {
+    "vue-stately": "workspace:*"
+  },
+  "devDependencies": {
+    "vue": "^3.5.13"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
