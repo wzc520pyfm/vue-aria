@@ -1,7 +1,8 @@
-import {computed, defineComponent, h, inject, provide, ref, Teleport, type PropType, type Ref} from 'vue'
+import {computed, defineComponent, h, inject, provide, ref, watch, Teleport, type PropType, type Ref} from 'vue'
 import {
   mergeProps,
   toHeroDataAttrs,
+  useFocusScope,
   usePlacement,
   usePopover,
   type Placement,
@@ -80,6 +81,66 @@ export const Popover = defineComponent({
     const {shouldMount, presenceAttrs, elRef} = useOverlayPresence(state.isOpen)
     const {placementAttrs} = usePlacement({placement: () => resolved.value})
 
+    // Official RAC Popover: when the popover is modal (default) and has no
+    // child [role=dialog], it is itself a dialog (tabIndex=-1) and is focused.
+    // A child Dialog focuses itself via useDialog. Restore the trigger on close
+    // in either case (Modal already restores via its own useFocusScope).
+    const isStandaloneDialog = ref(false)
+    useFocusScope({
+      ref: popoverRef,
+      contain: () => !props.isNonModal,
+      autoFocus: true,
+      restoreFocus: true,
+      isActive: () => shouldMount.value,
+    })
+    watch(
+      () => [popoverRef.value, shouldMount.value, props.isNonModal] as const,
+      ([el], _prev, onCleanup) => {
+        if (!el || !shouldMount.value) {
+          isStandaloneDialog.value = false
+          return
+        }
+        const standalone = !props.isNonModal && !el.querySelector('[role="dialog"]')
+        isStandaloneDialog.value = standalone
+        if (!standalone) return
+        let cancelled = false
+        const tryFocus = () => {
+          if (cancelled || !el.isConnected) return true
+          if (el.getAttribute('data-entering') === 'true') return false
+          if (!el.contains(el.ownerDocument.activeElement)) {
+            if (el.tabIndex < 0) el.tabIndex = -1
+            try {
+              el.focus({preventScroll: true})
+            } catch {
+              el.focus()
+            }
+          }
+          return true
+        }
+        if (tryFocus()) return
+        let timer: ReturnType<typeof setTimeout> | undefined
+        const schedule = () => {
+          if (cancelled) return
+          timer = window.setTimeout(() => {
+            if (!tryFocus()) schedule()
+          }, 0)
+        }
+        const onEnd = () => {
+          if (!tryFocus()) schedule()
+        }
+        el.addEventListener('animationend', onEnd)
+        el.addEventListener('transitionend', onEnd)
+        schedule()
+        onCleanup(() => {
+          cancelled = true
+          el.removeEventListener('animationend', onEnd)
+          el.removeEventListener('transitionend', onEnd)
+          if (timer) clearTimeout(timer)
+        })
+      },
+      {flush: 'post'},
+    )
+
     provide(OverlayArrowContextKey, {
       placement: computed(() => resolved.value),
     })
@@ -100,6 +161,7 @@ export const Popover = defineComponent({
             presenceAttrs.value,
             placementAttrs.value,
             toHeroDataAttrs({slot: dataSlot.value}),
+            isStandaloneDialog.value ? {role: 'dialog', tabIndex: -1} : {},
             {
               ref: (el: HTMLElement | null) => {
                 popoverRef.value = el

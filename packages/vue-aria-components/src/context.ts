@@ -22,7 +22,15 @@ export const DialogOverlayPropsKey: InjectionKey<{
   'aria-labelledby'?: string
 }> = Symbol('DialogOverlayProps')
 
-export const DialogTitlePropsKey: InjectionKey<TitlePropsEl> = Symbol('DialogTitleProps')
+export interface DialogTitleContext extends TitlePropsEl {
+  /** Whether a title Heading is currently rendered. */
+  hasTitle: {value: boolean}
+  /** The id actually used by the registered title (explicit or generated). */
+  registeredId: {value: string | undefined}
+  registerTitle: (id: string) => () => void
+}
+
+export const DialogTitlePropsKey: InjectionKey<DialogTitleContext> = Symbol('DialogTitleProps')
 
 export const ButtonCloseKey: InjectionKey<() => void> = Symbol('ButtonClose')
 

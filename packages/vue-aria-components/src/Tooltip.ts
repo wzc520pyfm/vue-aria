@@ -42,6 +42,21 @@ function assignElRef(target: {value: Element | null}, el: unknown) {
   target.value = (node && typeof node === 'object' && '$el' in node ? node.$el : node) as Element | null
 }
 
+/** Join space-separated id lists, preserving existing tokens (SHOULD-FIX). */
+function mergeIdLists(...lists: Array<string | undefined | null>): string | undefined {
+  const tokens: string[] = []
+  const seen = new Set<string>()
+  for (const list of lists) {
+    if (!list) continue
+    for (const token of String(list).split(/\s+/)) {
+      if (!token || seen.has(token)) continue
+      seen.add(token)
+      tokens.push(token)
+    }
+  }
+  return tokens.length ? tokens.join(' ') : undefined
+}
+
 /**
  * TooltipTrigger wraps a trigger element and a Tooltip. Opens on hover/focus,
  * closes on leave/Escape. Official delays are 1500ms / 500ms unless overridden.
@@ -86,9 +101,18 @@ export const TooltipTrigger = defineComponent({
           return node
         }
         assigned = true
+        // Vue mergeProps / cloneVNode overwrite aria-describedby; concatenate
+        // with any existing id list so opening a tooltip does not drop it.
+        const existingDescribedby =
+          (node.props?.['aria-describedby'] as string | undefined) ??
+          (node.props?.ariaDescribedby as string | undefined)
+        const describedby = mergeIdLists(existingDescribedby, triggerProps['aria-describedby'] as string | undefined)
         const extra: Record<string, unknown> = {
           ...triggerProps,
           ref: (el: unknown) => assignElRef(triggerRef, el),
+        }
+        if (describedby) {
+          extra['aria-describedby'] = describedby
         }
         if (typeof node.type === 'string') {
           const prevClick = extra.onClick as ((e: MouseEvent) => void) | undefined

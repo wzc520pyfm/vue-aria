@@ -21,6 +21,22 @@ async function tickPresence() {
   await flushPromises()
 }
 
+/** Keyboard-activate a trigger the way usePress does (keydown + keyup). */
+async function keyboardActivate(el: HTMLElement, key = 'Enter') {
+  el.focus()
+  dispatchKey(el, 'keydown', {key})
+  dispatchKey(el, 'keyup', {key})
+  await tickPresence()
+}
+
+/** Press Escape on the element that actually holds focus (not a hard-coded overlay node). */
+function escapeFromFocus() {
+  const active = document.activeElement
+  expect(active, 'expected a focused element before Escape').toBeTruthy()
+  expect(active).not.toBe(document.body)
+  dispatchKey(active as HTMLElement, 'keydown', {key: 'Escape'})
+}
+
 const DialogExample = defineComponent({
   name: 'DialogExample',
   props: {
@@ -190,6 +206,122 @@ describe('DialogTrigger + Modal + Dialog', () => {
     wrapper.unmount()
   })
 
+  it('uses the trigger button id as aria-labelledby when there is no Heading and no aria-label', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(DialogTrigger, {defaultOpen: true}, {
+            default: () => [
+              h(Button, null, {default: () => 'Open'}),
+              h(Modal, null, {
+                default: () => h(Dialog, null, {default: () => 'No title, no label'}),
+              }),
+            ],
+          })
+      },
+    })
+    const wrapper = mountInDoc(Root)
+    await tickPresence()
+    const trigger = wrapper.get('button').element as HTMLButtonElement
+    const dialog = document.querySelector('[data-slot="dialog"]') as HTMLElement
+    expect(trigger.id).toBeTruthy()
+    expect(dialog.getAttribute('aria-labelledby')).toBe(trigger.id)
+    expect(dialog.getAttribute('aria-label')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('uses the Heading slot="title" id as aria-labelledby, not the trigger id', async () => {
+    const wrapper = mountInDoc(DialogExample, {props: {defaultOpen: true, labelledByTrigger: true}})
+    await tickPresence()
+    const trigger = wrapper.get('button').element as HTMLButtonElement
+    const dialog = document.querySelector('[data-slot="dialog"]') as HTMLElement
+    const heading = document.querySelector('[data-slot="heading"]') as HTMLElement
+    expect(heading.getAttribute('id')).toBeTruthy()
+    expect(dialog.getAttribute('aria-labelledby')).toBe(heading.getAttribute('id'))
+    expect(dialog.getAttribute('aria-labelledby')).not.toBe(trigger.id)
+    expect(dialog.getAttribute('aria-label')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('does not leave aria-labelledby pointing at a missing id when aria-label is set', async () => {
+    const wrapper = mountInDoc(DialogExample, {props: {defaultOpen: true}})
+    await tickPresence()
+    const dialog = document.querySelector('[data-slot="dialog"]') as HTMLElement
+    expect(dialog.getAttribute('aria-label')).toBe('Settings')
+    const labelledby = dialog.getAttribute('aria-labelledby')
+    if (labelledby) {
+      for (const id of labelledby.split(/\s+/).filter(Boolean)) {
+        expect(document.getElementById(id), `aria-labelledby pointed at missing id "${id}"`).not.toBeNull()
+      }
+    }
+    wrapper.unmount()
+  })
+
+  it('keeps an explicit title Heading id and points aria-labelledby at it', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(DialogTrigger, {defaultOpen: true}, {
+            default: () => [
+              h(Button, null, {default: () => 'Open'}),
+              h(Modal, null, {
+                default: () =>
+                  h(Dialog, null, {
+                    default: () => [
+                      h(Heading, {slot: 'title', id: 'custom-title'}, {default: () => 'Custom'}),
+                      'Body',
+                    ],
+                  }),
+              }),
+            ],
+          })
+      },
+    })
+    const wrapper = mountInDoc(Root)
+    await tickPresence()
+    const heading = document.querySelector('[data-slot="heading"]') as HTMLElement
+    const dialog = document.querySelector('[data-slot="dialog"]') as HTMLElement
+    expect(heading.getAttribute('id')).toBe('custom-title')
+    expect(dialog.getAttribute('aria-labelledby')).toBe('custom-title')
+    wrapper.unmount()
+  })
+
+  it('moves focus into a text-only Modal+Dialog, closes on Escape from focus, and restores the trigger', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(DialogTrigger, null, {
+            default: () => [
+              h(Button, null, {default: () => 'Open'}),
+              h(Modal, null, {
+                default: () =>
+                  h(Dialog, {'aria-label': 'Text only'}, {
+                    default: () => 'Just some text. Press Escape to close.',
+                  }),
+              }),
+            ],
+          })
+      },
+    })
+    const wrapper = mountInDoc(Root)
+    const trigger = wrapper.get('button').element as HTMLButtonElement
+    await keyboardActivate(trigger)
+    const dialog = document.querySelector('[data-slot="dialog"]') as HTMLElement
+    const overlay = document.querySelector('[data-slot="modal-overlay"]') as HTMLElement
+    expect(dialog).not.toBeNull()
+    expect(
+      dialog.contains(document.activeElement) ||
+        dialog === document.activeElement ||
+        overlay.contains(document.activeElement),
+      `expected focus inside the overlay, got ${document.activeElement && (document.activeElement as HTMLElement).outerHTML}`,
+    ).toBe(true)
+    escapeFromFocus()
+    await tickPresence()
+    expect(document.querySelector('[data-slot="modal-overlay"]')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+    wrapper.unmount()
+  })
+
   it('traps tab focus inside the modal', async () => {
     const wrapper = mountInDoc(DialogExample, {props: {defaultOpen: true}})
     await tickPresence()
@@ -272,6 +404,27 @@ describe('DialogTrigger + Popover', () => {
     expect(document.querySelector('[data-slot="popover"]')).toBeNull()
     wrapper.unmount()
   })
+
+  it('keyboard-opens DialogTrigger+Popover+Dialog, focuses the dialog, closes on Escape from focus, and restores the trigger', async () => {
+    const wrapper = mountInDoc(PopoverExample)
+    const trigger = wrapper.get('button').element as HTMLButtonElement
+    await keyboardActivate(trigger)
+    const popover = document.querySelector('[data-slot="popover"]') as HTMLElement
+    const dialog = document.querySelector('[data-slot="dialog"]') as HTMLElement
+    expect(popover).not.toBeNull()
+    expect(dialog).not.toBeNull()
+    expect(
+      dialog.contains(document.activeElement) ||
+        dialog === document.activeElement ||
+        popover.contains(document.activeElement),
+      `expected focus inside the overlay, got ${document.activeElement && (document.activeElement as HTMLElement).outerHTML}`,
+    ).toBe(true)
+    escapeFromFocus()
+    await tickPresence()
+    expect(document.querySelector('[data-slot="popover"]')).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+    wrapper.unmount()
+  })
 })
 
 const TooltipExample = defineComponent({
@@ -307,6 +460,32 @@ describe('TooltipTrigger + Tooltip', () => {
     dispatchKey(document, 'keydown', {key: 'Escape'})
     await tickPresence()
     expect(document.querySelector('[data-slot="tooltip"]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('concatenates an existing aria-describedby with the tooltip id', async () => {
+    const Root = defineComponent({
+      setup() {
+        return () =>
+          h(TooltipTrigger, {delay: 0, closeDelay: 0}, {
+            default: () => [
+              h(Button, {'aria-describedby': 'extra-hint'}, {default: () => 'Hint'}),
+              h(Tooltip, {placement: 'top'}, {default: () => 'Hello'}),
+            ],
+          })
+      },
+    })
+    const wrapper = mountInDoc(Root)
+    const trigger = wrapper.get('button')
+    expect(trigger.attributes('aria-describedby')).toBe('extra-hint')
+    dispatchPointer(trigger.element, 'pointerenter')
+    await tickPresence()
+    const tooltip = document.querySelector('[data-slot="tooltip"]') as HTMLElement
+    expect(tooltip).not.toBeNull()
+    const describedby = (trigger.element as HTMLElement).getAttribute('aria-describedby') ?? ''
+    const tokens = describedby.split(/\s+/).filter(Boolean)
+    expect(tokens).toContain('extra-hint')
+    expect(tokens).toContain(tooltip.id)
     wrapper.unmount()
   })
 })

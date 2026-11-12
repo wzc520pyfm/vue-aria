@@ -16,6 +16,7 @@ import {
   ButtonCloseKey,
   DialogOverlayPropsKey,
   DialogTitlePropsKey,
+  type DialogTitleContext,
   InModalKey,
   OVERLAY_COMPONENT_NAMES,
   OverlayTriggerButtonKey,
@@ -74,9 +75,21 @@ export const DialogTrigger = defineComponent({
     const triggerId = useId('vue-aria-trigger')
     const {triggerProps, overlayProps} = useOverlayTrigger({type: 'dialog'}, state)
 
+    // Official RAC DialogTrigger sets overlayProps['aria-labelledby'] = trigger id
+    // as a fallback when the Dialog has no title slot. Dialog reads this from
+    // DialogOverlayPropsKey (not only PopoverContext).
+    const dialogOverlayProps = {
+      get id() {
+        return overlayProps.id
+      },
+      get 'aria-labelledby'() {
+        return triggerId.value
+      },
+    }
+
     provide(OverlayTriggerStateKey, state)
     provide(TriggerRefKey, triggerRef)
-    provide(DialogOverlayPropsKey, overlayProps)
+    provide(DialogOverlayPropsKey, dialogOverlayProps)
     provide(PopoverContextKey, {
       triggerRef,
       id: overlayProps.id,
@@ -158,26 +171,9 @@ export const Dialog = defineComponent({
     const state = inject(OverlayTriggerStateKey, null)
     const inModal = inject(InModalKey, false)
     const dialogRef = ref<HTMLElement | null>(null)
+    const hasTitle = ref(false)
+    const registeredTitleId = ref<string | undefined>()
 
-    const {dialogProps, titleProps} = useDialog(
-      {
-        role: () => props.role,
-        'aria-label': () =>
-          props.ariaLabel ??
-          props['aria-label'] ??
-          (attrs['aria-label'] as string | undefined) ??
-          (attrs.ariaLabel as string | undefined),
-        'aria-labelledby': () => props.ariaLabelledby ?? props['aria-labelledby'],
-      },
-      dialogRef,
-    )
-
-    provide(DialogTitlePropsKey, titleProps)
-    provide(ButtonCloseKey, () => state?.close())
-
-    const dataSlot = computed(
-      () => props['data-slot'] ?? props.dataSlot ?? (attrs['data-slot'] as string | undefined) ?? 'dialog',
-    )
     const ariaLabel = computed(
       () =>
         props.ariaLabel ??
@@ -185,31 +181,87 @@ export const Dialog = defineComponent({
         (attrs['aria-label'] as string | undefined) ??
         (attrs.ariaLabel as string | undefined),
     )
+    const explicitLabelledby = computed(
+      () => props.ariaLabelledby ?? props['aria-labelledby'],
+    )
+
+    const {dialogProps, titleProps} = useDialog(
+      {
+        role: () => props.role,
+        'aria-label': () => ariaLabel.value,
+        // Only pass labelledby from the Dialog's own props, not context.
+        // Official RAC uses context as a fallback after useDialog.
+        'aria-labelledby': () => explicitLabelledby.value,
+        hasTitle: () => hasTitle.value,
+        isEntering: () =>
+          Boolean(
+            dialogRef.value?.getAttribute('data-entering') === 'true' ||
+              dialogRef.value?.closest('[data-entering="true"]'),
+          ),
+      },
+      dialogRef,
+    )
+
+    const titleContext: DialogTitleContext = {
+      get id() {
+        return titleProps.id
+      },
+      hasTitle,
+      registeredId: registeredTitleId,
+      registerTitle(id: string) {
+        hasTitle.value = true
+        registeredTitleId.value = id
+        return () => {
+          if (registeredTitleId.value === id) {
+            registeredTitleId.value = undefined
+            hasTitle.value = false
+          }
+        }
+      },
+    }
+    provide(DialogTitlePropsKey, titleContext)
+    provide(ButtonCloseKey, () => state?.close())
+
+    const dataSlot = computed(
+      () => props['data-slot'] ?? props.dataSlot ?? (attrs['data-slot'] as string | undefined) ?? 'dialog',
+    )
 
     return () => {
-      const labelledby = ariaLabel.value
-        ? dialogProps['aria-labelledby']
-        : (dialogProps['aria-labelledby'] || overlayFromTrigger?.['aria-labelledby'])
+      // Official name precedence: aria-label, then a rendered title Heading,
+      // then the trigger id from DialogTrigger overlay context.
+      let labelledby: string | undefined
+      if (ariaLabel.value) {
+        labelledby = explicitLabelledby.value
+      } else if (explicitLabelledby.value) {
+        labelledby = explicitLabelledby.value
+      } else if (hasTitle.value) {
+        labelledby = registeredTitleId.value ?? titleProps.id ?? dialogProps['aria-labelledby']
+      } else {
+        labelledby = overlayFromTrigger?.['aria-labelledby']
+      }
       const close = () => state?.close()
       const children = [
         slots.default?.({close}),
         slots.title?.({close}),
         slots.close?.({close}),
       ]
-      return h(
-        'section',
-        mergeProps(
-          attrs,
-          overlayFromTrigger ? {id: overlayFromTrigger.id} : {},
-          dialogProps,
-          ariaLabel.value ? {'aria-label': ariaLabel.value} : {},
-          labelledby && !ariaLabel.value ? {'aria-labelledby': labelledby} : {},
-          inModal ? {'aria-modal': 'true'} : {},
-          toHeroDataAttrs({slot: dataSlot.value}),
-          {ref: dialogRef},
-        ),
-        children,
+      const sectionProps = mergeProps(
+        attrs,
+        overlayFromTrigger ? {id: overlayFromTrigger.id} : {},
+        dialogProps,
+        ariaLabel.value ? {'aria-label': ariaLabel.value} : {},
+        inModal ? {'aria-modal': 'true'} : {},
+        toHeroDataAttrs({slot: dataSlot.value}),
+        {ref: dialogRef},
       )
+      // mergeProps ignores `undefined`, so explicitly replace or drop labelledby
+      // (aria-label must not leave a labelledby pointing at a missing id).
+      if (labelledby) {
+        sectionProps['aria-labelledby'] = labelledby
+      } else {
+        delete sectionProps['aria-labelledby']
+      }
+      return h('section', sectionProps, children)
     }
   },
 })

@@ -115,6 +115,9 @@ export const ModalOverlay = defineComponent({
             modalProps,
             presenceAttrs.value,
             toHeroDataAttrs({slot: dataSlot.value}),
+            // useFocusScope falls back to this container; tabindex=-1 makes a
+            // text-only Modal+Dialog focusable so Escape can run on it.
+            {tabIndex: -1},
             {
               ref: (el: HTMLElement | null) => {
                 overlayRef.value = el
