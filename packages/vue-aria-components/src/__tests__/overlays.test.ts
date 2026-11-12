@@ -121,7 +121,10 @@ describe('DialogTrigger + Modal + Dialog', () => {
     }
 
     dispatchKey(overlay, 'keydown', {key: 'Escape'})
-    await flushPromises()
+    // Wait for Vue to apply the exiting phase only. flushPromises uses
+    // setImmediate when it exists, which in Node runs after the 0ms
+    // presence fallback and can unmount the overlay before this assertion.
+    await nextTick()
     await nextTick()
     const exiting = document.querySelector('[data-slot="modal-overlay"]') as HTMLElement | null
     expect(exiting).not.toBeNull()
