@@ -1,9 +1,12 @@
 /**
  * Public surface of `vue-aria`, aligned with `react-aria@3.53.1`
- * (`packages/react-aria/exports`). This batch implements the interaction
- * hooks, Button hook, and Hero UI Vue behavior contract. Remaining official
- * subpaths (overlays, collections, dates, i18n, …) will be added later
- * using the same `exports/<name>.ts` style.
+ * (`packages/react-aria/exports` at
+ * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
+ *
+ * This batch adds overlay, dialog, tooltip, focus-scope, and dismiss hooks
+ * on top of the first-batch interaction hooks and Hero UI Vue behavior
+ * contract. Menu/Select/ComboBox/Sheet, collections, dates, and a full
+ * I18nProvider remain deferred.
  */
 export {usePress} from './usePress'
 export type {PressEvent, PressEvents, PressProps, PressPropsEl, UsePressOptions, UsePressReturn, PointerType} from './usePress'
@@ -36,3 +39,41 @@ export {BehaviorElement} from './BehaviorElement'
 export {behaviorAdapter} from './behaviorAdapter'
 export {mergeProps} from './mergeProps'
 export {chain} from './chain'
+export {useId} from './useId'
+
+export {useOverlayTrigger} from './useOverlayTrigger'
+export type {
+  OverlayTriggerProps,
+  OverlayTriggerAria,
+  OverlayTriggerPropsEl,
+  OverlayPropsEl,
+} from './useOverlayTrigger'
+
+export {useDialog} from './useDialog'
+export type {AriaDialogProps, DialogAria, DialogPropsEl, TitlePropsEl} from './useDialog'
+
+export {useModal} from './useModal'
+export type {UseModalOptions, ModalAria, ModalPropsEl} from './useModal'
+
+export {useModalOverlay} from './useModalOverlay'
+export type {AriaModalOverlayProps, ModalOverlayAria} from './useModalOverlay'
+
+export {usePopover} from './usePopover'
+export type {AriaPopoverProps, PopoverAria, PopoverPropsEl} from './usePopover'
+export type {Placement, PlacementAxis, Axis, PlacementResult} from './usePopover'
+export {computePosition, parsePlacement} from './usePopover'
+
+export {useTooltip} from './useTooltip'
+export type {AriaTooltipProps, TooltipAria, TooltipPropsEl} from './useTooltip'
+
+export {useTooltipTrigger} from './useTooltipTrigger'
+export type {TooltipTriggerAria} from './useTooltipTrigger'
+
+export {usePreventScroll} from './usePreventScroll'
+export type {UsePreventScrollOptions} from './usePreventScroll'
+
+export {useFocusScope} from './useFocusScope'
+export type {UseFocusScopeOptions} from './useFocusScope'
+
+export {useInteractOutside} from './useInteractOutside'
+export type {InteractOutsideProps} from './useInteractOutside'
