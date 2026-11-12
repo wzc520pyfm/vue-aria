@@ -17,7 +17,15 @@ import {Button as ButtonSubpath} from 'vue-aria-components/Button'
 
 ## Status
 
-This repository is being bootstrapped. The first batch covers the monorepo scaffold, `usePress` / `useHover` / `useFocusVisible`, Button hooks, the `vue-aria-components` `Button`, and a Hero UI Vue behavior-layer contract. Overlays, collections, dates, and `I18nProvider` are intentionally deferred.
+The first batch covers the monorepo scaffold, `usePress` / `useHover` / `useFocusVisible`, Button hooks, the `vue-aria-components` `Button`, and a Hero UI Vue behavior-layer contract.
+
+This overlays batch adds:
+
+- `vue-stately`: `useOverlayTriggerState`, `useTooltipTriggerState` (official delays 1500 / 500)
+- `vue-aria`: `useOverlayTrigger`, `useDialog`, `useModal`, `useModalOverlay`, `usePopover`, `useTooltip` / `useTooltipTrigger`, `usePreventScroll`, `useFocusScope`, `useInteractOutside`
+- `vue-aria-components`: `Dialog`, `DialogTrigger`, `Modal`, `ModalOverlay`, `Popover`, `OverlayArrow`, `Tooltip`, `TooltipTrigger`, and a minimal `Heading` (`slot="title"`)
+
+Menu, Select, ComboBox, Sheet, collections, dates, a full `I18nProvider`, and Storybook / Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 

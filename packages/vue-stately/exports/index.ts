@@ -1,9 +1,17 @@
 /**
  * Public surface of `vue-stately`, aligned with `react-stately@3.51.0`
- * (`packages/react-stately/exports`).
+ * (`packages/react-stately/exports` at
+ * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
- * Collection, selection, overlay, and date state hooks will be added in later
- * batches. The package and dependency graph are in place so `vue-aria` and
- * `vue-aria-components` can depend on it now.
+ * This batch adds overlay and tooltip trigger state. Collection, selection,
+ * and date state hooks remain deferred.
  */
-export {}
+export {useOverlayTriggerState} from './useOverlayTriggerState'
+export type {
+  OverlayTriggerProps,
+  OverlayTriggerState,
+  Point,
+} from './useOverlayTriggerState'
+
+export {useTooltipTriggerState, TOOLTIP_DELAY, TOOLTIP_COOLDOWN} from './useTooltipTriggerState'
+export type {TooltipTriggerProps, TooltipTriggerState} from './useTooltipTriggerState'
