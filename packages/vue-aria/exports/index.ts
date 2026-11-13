@@ -4,9 +4,9 @@
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
  * This batch adds overlay, dialog, tooltip, focus-scope, dismiss,
- * ListBox, and Menu hooks on top of the first-batch interaction hooks and
- * Hero UI Vue behavior contract. Select and ComboBox hooks are now included. Sheet, dates, and a full
- * I18nProvider remain deferred.
+ * ListBox, Menu, Select, ComboBox, I18n primitives, and the first
+ * Calendar hooks slice on top of the interaction hooks and Hero UI Vue
+ * behavior contract. Sheet and the remaining dates work remain deferred.
  */
 export {usePress} from './usePress'
 export type {PressEvent, PressEvents, PressProps, PressPropsEl, UsePressOptions, UsePressReturn, PointerType} from './usePress'
@@ -117,3 +117,17 @@ export type {SeparatorProps, SeparatorAria} from './useSeparator'
 
 export {useKeyboard} from './useKeyboard'
 export type {KeyboardProps, KeyboardResult} from './useKeyboard'
+
+export {I18nProvider, useLocale, isRTL} from './I18nProvider'
+export type {I18nProviderProps, Locale} from './I18nProvider'
+export {useDateFormatter} from './useDateFormatter'
+export type {DateFormatterOptions} from './useDateFormatter'
+export type {DateFormatter} from '@internationalized/date'
+export {useLocalizedStringFormatter, useLocalizedStringDictionary} from './useLocalizedStringFormatter'
+export type {LocalizedStringFormatter} from '@internationalized/string'
+export {useVisuallyHidden, VisuallyHidden} from './VisuallyHidden'
+export type {VisuallyHiddenAria, VisuallyHiddenProps} from './VisuallyHidden'
+
+export {useCalendar, useCalendarGrid, useCalendarCell} from './useCalendar'
+export type {AriaCalendarProps, AriaCalendarGridProps, AriaCalendarCellProps, CalendarAria, CalendarGridAria, CalendarCellAria} from './useCalendar'
+export type {CalendarProps, DateValue} from 'vue-stately/useCalendarState'

@@ -1,4 +1,4 @@
-import {computed, defineComponent, h, inject, mergeProps as vueMergeProps, onMounted, ref, toRef, type PropType} from 'vue'
+import {computed, defineComponent, h, inject, onMounted, ref, type PropType} from 'vue'
 import {mergeProps, useButton, type PressEvent} from 'vue-aria'
 import {ButtonCloseKey, ButtonContextKey, OverlayTriggerButtonKey} from './context'
 
@@ -42,27 +42,33 @@ export const Button = defineComponent({
     })
     const optsOut = computed(() => slotName.value === null)
 
-    const mergedCtx = computed<Record<string, any>>(() => {
+    const activeCtx = computed<Record<string, any>>(() => {
       if (optsOut.value) return {}
-      return {...(trigger || {}), ...(buttonCtx || {})}
+      const name = slotName.value
+      if (name && buttonCtx?.slots && buttonCtx.slots[name]) {
+        return buttonCtx.slots[name]
+      }
+      // Flat context (trigger + button ctx) for existing consumers.
+      const {slots: _slots, ...restButton} = (buttonCtx || {})
+      return {...(trigger || {}), ...restButton}
     })
 
     const isDisabled = computed(() => {
       if (props.isDisabled != null) return props.isDisabled
-      if (!optsOut.value && mergedCtx.value.isDisabled != null) return !!mergedCtx.value.isDisabled
+      if (!optsOut.value && activeCtx.value.isDisabled != null) return !!activeCtx.value.isDisabled
       return false
     })
 
     const dataSlot = computed(() => {
       const fromProps = props['data-slot'] ?? props.dataSlot
       const fromAttrs = (attrs['data-slot'] ?? attrs.dataSlot) as string | undefined
-      return fromProps || fromAttrs || 'button'
+      return fromProps || fromAttrs || slotName.value || 'button'
     })
 
     const setRefs = (el: any) => {
       internalRef.value = el
       if (!optsOut.value) {
-        const r = mergedCtx.value.ref
+        const r = activeCtx.value.ref
         if (typeof r === 'function') r(el)
         else if (r && typeof r === 'object' && 'value' in r) r.value = el
       }
@@ -70,7 +76,7 @@ export const Button = defineComponent({
 
     onMounted(() => {
       if (optsOut.value) return
-      const autoFocus = props.autoFocus ?? mergedCtx.value.autoFocus
+      const autoFocus = props.autoFocus ?? activeCtx.value.autoFocus
       if (autoFocus && internalRef.value && typeof (internalRef.value as any).focus === 'function') {
         try { (internalRef.value as any).focus() } catch {}
       }
@@ -82,30 +88,29 @@ export const Button = defineComponent({
       type: () => props.type,
       elementType: () => props.elementType,
       'data-slot': () => dataSlot.value,
-      'aria-expanded': () => optsOut.value ? undefined : (mergedCtx.value['aria-expanded'] ?? trigger?.['aria-expanded']),
-      'aria-haspopup': () => optsOut.value ? undefined : (mergedCtx.value['aria-haspopup'] ?? trigger?.['aria-haspopup'] as any),
-      'aria-controls': () => optsOut.value ? undefined : (mergedCtx.value['aria-controls'] ?? trigger?.['aria-controls']),
-      'aria-label': () => optsOut.value ? undefined : mergedCtx.value['aria-label'],
-      'aria-labelledby': () => optsOut.value ? undefined : mergedCtx.value['aria-labelledby'],
-      preventFocusOnPress: () => optsOut.value ? undefined : mergedCtx.value.preventFocusOnPress,
-      excludeFromTabOrder: () => optsOut.value ? undefined : mergedCtx.value.excludeFromTabOrder,
+      'aria-expanded': () => optsOut.value ? undefined : activeCtx.value['aria-expanded'],
+      'aria-haspopup': () => optsOut.value ? undefined : activeCtx.value['aria-haspopup'],
+      'aria-controls': () => optsOut.value ? undefined : activeCtx.value['aria-controls'],
+      'aria-label': () => optsOut.value ? undefined : activeCtx.value['aria-label'],
+      'aria-labelledby': () => optsOut.value ? undefined : activeCtx.value['aria-labelledby'],
+      preventFocusOnPress: () => optsOut.value ? undefined : activeCtx.value.preventFocusOnPress,
+      excludeFromTabOrder: () => optsOut.value ? undefined : activeCtx.value.excludeFromTabOrder,
       onPress: (event) => {
         emit('press', event)
         if (!optsOut.value) {
-          const onPress = mergedCtx.value.onPress ?? trigger?.onPress
-          onPress?.(event)
+          activeCtx.value.onPress?.(event)
         }
         if (slotName.value === 'close') close?.()
       },
-      onPressStart: (event) => { if (!optsOut.value) mergedCtx.value.onPressStart?.(event); emit('pressstart', event) },
-      onPressEnd: (event) => { if (!optsOut.value) mergedCtx.value.onPressEnd?.(event); emit('pressend', event) },
-      onPressUp: (event) => { if (!optsOut.value) mergedCtx.value.onPressUp?.(event); emit('pressup', event) },
-      onPressChange: (isPressed) => { if (!optsOut.value) mergedCtx.value.onPressChange?.(isPressed); emit('presschange', isPressed) },
-      onClick: (event) => { if (!optsOut.value) mergedCtx.value.onClick?.(event); emit('click', event) },
+      onPressStart: (event) => { if (!optsOut.value) activeCtx.value.onPressStart?.(event); emit('pressstart', event) },
+      onPressEnd: (event) => { if (!optsOut.value) activeCtx.value.onPressEnd?.(event); emit('pressend', event) },
+      onPressUp: (event) => { if (!optsOut.value) activeCtx.value.onPressUp?.(event); emit('pressup', event) },
+      onPressChange: (isPressed) => { if (!optsOut.value) activeCtx.value.onPressChange?.(isPressed); emit('presschange', isPressed) },
+      onClick: (event) => { if (!optsOut.value) activeCtx.value.onClick?.(event); emit('click', event) },
     })
 
     return () => {
-      const ctx = optsOut.value ? {} : mergedCtx.value
+      const ctx = optsOut.value ? {} : activeCtx.value
       // Event handlers from context run before press handlers (official order:
       // context/DOMProps first, then useButton press props), so handlers like
       // useMenuTrigger's onKeyDown see the event before press preventDefaults it.
@@ -116,8 +121,8 @@ export const Button = defineComponent({
         onKeyup: ctx.onKeyup ?? ctx.onKeyUp,
         onPointerDown: ctx.onPointerDown ?? ctx.onPointerdown,
         onPointerdown: ctx.onPointerdown ?? ctx.onPointerDown,
-        onFocus: ctx.onFocus,
-        onBlur: ctx.onBlur,
+        onFocus: ctx.onFocus ?? (ctx.onFocusChange ? (e: any) => ctx.onFocusChange(true, e) : undefined),
+        onBlur: ctx.onBlur ?? (ctx.onFocusChange ? (e: any) => ctx.onFocusChange(false, e) : undefined),
       }
       const dom: Record<string, any> = {
         id: ctx.id,

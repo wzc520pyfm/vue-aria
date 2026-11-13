@@ -1,6 +1,6 @@
 import {computed, defineComponent, h, inject, onBeforeUnmount, watch, type PropType} from 'vue'
 import {mergeProps, toHeroDataAttrs} from 'vue-aria'
-import {DialogTitlePropsKey} from './context'
+import {DialogTitlePropsKey, HeadingContextKey} from './context'
 
 export const Heading = defineComponent({
   name: 'Heading',
@@ -18,6 +18,7 @@ export const Heading = defineComponent({
   },
   setup(props, {slots, attrs}) {
     const titleContext = inject(DialogTitlePropsKey, null)
+    const headingCtx = inject(HeadingContextKey, null) as any
     const isTitle = computed(() => (props.slot ?? (attrs.slot as string | undefined)) === 'title')
     const dataSlot = computed(
       () => props['data-slot'] ?? props.dataSlot ?? (attrs['data-slot'] as string | undefined) ?? 'heading',
@@ -48,6 +49,22 @@ export const Heading = defineComponent({
     })
 
     return () => {
+      // Dialog title takes precedence over HeadingContext.
+      if (!isTitle.value && headingCtx) {
+        const level = (headingCtx.level ?? props.level ?? 3) as 1 | 2 | 3 | 4 | 5 | 6
+        const tag = `h${level}`
+        const children = slots.default?.() ?? headingCtx.children
+        return h(
+          tag,
+          mergeProps(
+            attrs,
+            {'aria-hidden': headingCtx['aria-hidden']},
+            toHeroDataAttrs({slot: dataSlot.value}),
+          ),
+          children,
+        )
+      }
+
       const level = props.level ?? 3
       const tag = `h${level}`
       // Caller attrs (including id) win over the generated title id.
