@@ -16,6 +16,23 @@ import {
 } from './context'
 import {useOverlayPresence} from './useOverlayPresence'
 
+function resolveDirection(el: Element | null | undefined): 'ltr' | 'rtl' | undefined {
+  if (!el) return undefined
+  try {
+    let node: Element | null = el
+    while (node) {
+      const dir = node.getAttribute?.('dir')
+      if (dir === 'rtl' || dir === 'ltr') return dir
+      node = node.parentElement
+    }
+    const docDir = el.ownerDocument?.documentElement?.getAttribute('dir') || el.ownerDocument?.documentElement?.dir
+    if (docDir === 'rtl' || docDir === 'ltr') return docDir
+    const computed = getComputedStyle(el as HTMLElement).direction
+    if (computed === 'rtl' || computed === 'ltr') return computed
+  } catch {}
+  return undefined
+}
+
 /**
  * A popover is an overlay element positioned relative to a trigger.
  *
@@ -29,11 +46,12 @@ export const Popover = defineComponent({
   props: {
     isOpen: {type: Boolean, default: undefined},
     defaultOpen: {type: Boolean, default: undefined},
-    isNonModal: {type: Boolean, default: false},
+    isNonModal: {type: Boolean, default: undefined},
     isKeyboardDismissDisabled: {type: Boolean, default: false},
     placement: {type: String as PropType<Placement>, default: undefined},
     offset: {type: Number, default: undefined},
     shouldFlip: {type: Boolean, default: true},
+    shouldCloseOnInteractOutside: {type: Function as PropType<(el: Element) => boolean>, default: undefined},
     'data-slot': {type: String, default: undefined},
     dataSlot: {type: String, default: undefined},
     triggerRef: {type: Object as PropType<{value: Element | null}>, default: undefined},
@@ -43,7 +61,7 @@ export const Popover = defineComponent({
   },
   setup(props, {slots, emit, attrs}) {
     const contextState = inject(OverlayTriggerStateKey, null)
-    const context = inject(PopoverContextKey, null)
+    const context = inject(PopoverContextKey, null) as any
     const triggerFromContext = inject(TriggerRefKey, null)
     const localState = useOverlayTriggerState({
       isOpen: () => props.isOpen,
@@ -59,6 +77,8 @@ export const Popover = defineComponent({
     const vnodeProps = (instance?.vnode.props || {}) as Record<string, any>
     const placementExplicit = vnodeProps.placement != null || vnodeProps['placement'] != null
     const offsetExplicit = vnodeProps.offset != null || vnodeProps['offset'] != null
+    const isNonModalExplicit = vnodeProps.isNonModal != null || vnodeProps['is-non-modal'] != null || vnodeProps['isNonModal'] != null
+    const shouldCloseExplicit = vnodeProps.shouldCloseOnInteractOutside != null || vnodeProps['should-close-on-interact-outside'] != null
 
     const popoverRef = ref<HTMLElement | null>(null)
     const fallbackTriggerRef = ref<Element | null>(null)
@@ -68,6 +88,7 @@ export const Popover = defineComponent({
       triggerFromContext ??
       fallbackTriggerRef
 
+    const isSubmenu = computed(() => context?.trigger === 'SubmenuTrigger')
     const effectivePlacement = computed(() => {
       if (placementExplicit && props.placement != null) return props.placement
       if (context?.placement) return context.placement as Placement
@@ -78,6 +99,16 @@ export const Popover = defineComponent({
       if (context?.offset != null) return context.offset
       return props.offset ?? 8
     })
+    const effectiveIsNonModal = computed(() => {
+      if (isNonModalExplicit && props.isNonModal != null) return props.isNonModal
+      if (context?.isNonModal != null) return !!context.isNonModal
+      return !!props.isNonModal
+    })
+    const effectiveShouldCloseOnInteractOutside = computed(() => {
+      if (shouldCloseExplicit && props.shouldCloseOnInteractOutside) return props.shouldCloseOnInteractOutside
+      if (context?.shouldCloseOnInteractOutside) return context.shouldCloseOnInteractOutside
+      return props.shouldCloseOnInteractOutside
+    })
     const effectiveAriaLabelledby = computed(() => context?.['aria-labelledby'])
     const effectiveId = computed(() => context?.id)
     const dataTrigger = computed(() => context?.trigger)
@@ -86,42 +117,56 @@ export const Popover = defineComponent({
       {
         triggerRef,
         popoverRef,
-        isNonModal: () => props.isNonModal,
+        isNonModal: () => effectiveIsNonModal.value,
         isKeyboardDismissDisabled: () => props.isKeyboardDismissDisabled,
         placement: () => effectivePlacement.value,
         offset: () => effectiveOffset.value,
         shouldFlip: () => props.shouldFlip,
-      },
+        shouldCloseOnInteractOutside: effectiveShouldCloseOnInteractOutside.value as any,
+        trigger: dataTrigger.value as any,
+        isSubmenu: isSubmenu.value as any,
+      } as any,
       state,
     )
 
-    // triggerRef.value is a Ref object; usePopover reads .value each time in a
-    // watch, so passing the inner ref is correct as long as it is the same object.
     const {shouldMount, presenceAttrs, elRef} = useOverlayPresence(state.isOpen)
     const {placementAttrs} = usePlacement({placement: () => resolved.value})
 
-    // Official RAC Popover: when the popover is modal (default) and has no
-    // child [role=dialog], it is itself a dialog (tabIndex=-1) and is focused.
-    // A child Dialog focuses itself via useDialog. Restore the trigger on close
-    // in either case (Modal already restores via its own useFocusScope).
+    // For SubmenuTrigger: non-modal, dialog when no nested dialog, do not auto-focus on pointer/hover open,
+    // do auto-focus first item on keyboard/virtual open (handled by Menu autoFocus/focusStrategy).
     const isStandaloneDialog = ref(false)
+    const shouldContainFocus = computed(() => !effectiveIsNonModal.value && !isSubmenu.value)
+    const shouldAutoFocusPopover = computed(() => {
+      if (!shouldMount.value) return false
+      if (isSubmenu.value) return false
+      return !effectiveIsNonModal.value
+    })
+
     useFocusScope({
       ref: popoverRef,
-      contain: () => !props.isNonModal,
-      autoFocus: true,
-      restoreFocus: true,
+      contain: () => shouldContainFocus.value,
+      autoFocus: () => shouldAutoFocusPopover.value,
+      restoreFocus: () => shouldContainFocus.value,
       isActive: () => shouldMount.value,
     })
+
     watch(
-      () => [popoverRef.value, shouldMount.value, props.isNonModal] as const,
+      () => [popoverRef.value, shouldMount.value, effectiveIsNonModal.value, isSubmenu.value] as const,
       ([el], _prev, onCleanup) => {
         if (!el || !shouldMount.value) {
           isStandaloneDialog.value = false
           return
         }
-        const standalone = !props.isNonModal && !el.querySelector('[role="dialog"]')
+        const standalone = (!effectiveIsNonModal.value || isSubmenu.value) && !el.querySelector('[role="dialog"]')
+        // For submenus official Popover still sets dialog in many cases; keep role=dialog if standalone.
+        // But for submenu trigger we must not steal focus on pointer open.
         isStandaloneDialog.value = standalone
         if (!standalone) return
+        if (isSubmenu.value) {
+          // No pointer autofocus for submenu popover.
+          return
+        }
+        if (effectiveIsNonModal.value) return
         let cancelled = false
         const tryFocus = () => {
           if (cancelled || !el.isConnected) return true
@@ -171,6 +216,8 @@ export const Popover = defineComponent({
     return () => {
       if (!shouldMount.value) return null
       const close = () => state.close()
+      const standaloneDialog = isStandaloneDialog.value
+      const resolvedDir = resolveDirection(triggerRef.value as Element | null)
       return h(Teleport, {to: 'body'}, [
         h(
           'div',
@@ -181,9 +228,10 @@ export const Popover = defineComponent({
             placementAttrs.value,
             toHeroDataAttrs({slot: dataSlot.value}),
             dataTrigger.value ? {'data-trigger': dataTrigger.value} : {},
+            resolvedDir && !(attrs as any).dir ? {dir: resolvedDir} : {},
             effectiveAriaLabelledby.value && !(attrs as any)['aria-labelledby'] && !(attrs as any).ariaLabelledby ? {'aria-labelledby': effectiveAriaLabelledby.value} : {},
             effectiveId.value && !(attrs as any).id ? {id: effectiveId.value} : {},
-            isStandaloneDialog.value ? {role: 'dialog', tabIndex: -1} : {},
+            standaloneDialog ? {role: 'dialog', tabIndex: -1} : {},
             {
               ref: (el: HTMLElement | null) => {
                 popoverRef.value = el

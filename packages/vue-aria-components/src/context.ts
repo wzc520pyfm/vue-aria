@@ -32,6 +32,8 @@ export interface PopoverContextValue {
   placement?: string
   offset?: number
   scrollRef?: Ref<HTMLElement | null>
+  isNonModal?: boolean
+  shouldCloseOnInteractOutside?: (element: Element) => boolean
 }
 export const PopoverContextKey: InjectionKey<PopoverContextValue> = Symbol('PopoverContext')
 export const OverlayArrowContextKey: InjectionKey<{placement: Ref<PlacementAxis | undefined>}> = Symbol('OverlayArrow')
@@ -62,3 +64,4 @@ export const RootMenuTriggerStateContextKey: InjectionKey<RootMenuTriggerState |
 export const SeparatorContextKey: InjectionKey<{elementType?: string} | undefined> = Symbol('SeparatorContext')
 export const KeyboardContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('KeyboardContext')
 export const MenuItemContextKey: InjectionKey<Record<string, any> | null> = Symbol('MenuItemContext')
+export const SubmenuTriggerContextKey: InjectionKey<Record<string, any> | null> = Symbol('SubmenuTriggerContext')

@@ -86,8 +86,8 @@ export type {ListKeyboardDelegateOptions} from './ListKeyboardDelegate'
 export {useLabel} from './useLabel'
 export type {UseLabelProps, LabelAria} from './useLabel'
 
-export {useMenu, useMenuItem, useMenuSection, useMenuTrigger} from './useMenu'
-export type {MenuProps, AriaMenuProps, AriaMenuOptions, MenuAria, AriaMenuItemProps, MenuItemAria, AriaMenuSectionProps, MenuSectionAria, AriaMenuTriggerProps, MenuTriggerAria} from './useMenu'
+export {useMenu, useMenuItem, useMenuSection, useMenuTrigger, useSubmenuTrigger} from './useMenu'
+export type {MenuProps, AriaMenuProps, AriaMenuOptions, MenuAria, AriaMenuItemProps, MenuItemAria, AriaMenuSectionProps, MenuSectionAria, AriaMenuTriggerProps, MenuTriggerAria, AriaSubmenuTriggerProps, SubmenuTriggerAria} from './useMenu'
 
 export {useSeparator} from './useSeparator'
 export type {SeparatorProps, SeparatorAria} from './useSeparator'

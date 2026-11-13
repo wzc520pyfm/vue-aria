@@ -5,8 +5,8 @@
  *
  * This batch adds collection and selection state: `useMultipleSelectionState`,
  * `useListState`, the `Selection` class, the `SelectionManager`, `ListCollection`,
- * and `equalSets`. Menu / Select / ComboBox / Tree / date state hooks remain
- * deferred.
+ * and `equalSets`. Menu (including submenu trigger state) is included;
+ * Select / ComboBox / Tree / date state hooks remain deferred.
  */
 export {useOverlayTriggerState} from './overlays/useOverlayTriggerState'
 export type {
@@ -39,3 +39,8 @@ export {equalSets} from './selection/equalSets'
 export {ListCollection} from './collections/ListCollection'
 export {useListState} from './list/useListState'
 export type {ListProps, ListState} from './selection/types'
+
+export {useMenuTriggerState} from './menu/useMenuTriggerState'
+export type {MenuTriggerProps, MenuTriggerType, MenuTriggerState, RootMenuTriggerState} from './menu/useMenuTriggerState'
+export {useSubmenuTriggerState} from './menu/useSubmenuTriggerState'
+export type {SubmenuTriggerProps, SubmenuTriggerState} from './menu/useSubmenuTriggerState'

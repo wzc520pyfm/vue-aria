@@ -7,23 +7,31 @@ import {
   isVNode,
   provide,
   ref,
+  watch,
   cloneVNode,
+  onBeforeUnmount,
   type PropType,
   type VNode,
   type VNodeChild,
 } from 'vue'
 import {mergeProps, toHeroDataAttrs, useFocusScope} from 'vue-aria'
 import {useMenu} from 'vue-aria/useMenu'
+import {useSubmenuTrigger} from 'vue-aria/useSubmenuTrigger'
 import {useListState} from 'vue-stately/useListState'
 import {useMenuTriggerState} from 'vue-stately/useMenuTriggerState'
+import {useSubmenuTriggerState} from 'vue-stately/useSubmenuTriggerState'
 import type {CollectionNode, Key} from 'vue-stately/useListState'
 import type {Selection} from 'vue-stately/useMultipleSelectionState'
 import {Collection as CollectionComponent} from './Collection'
 import {
   MenuContextKey,
+  MenuItemContextKey,
   MenuStateContextKey,
+  OverlayTriggerStateKey,
+  PopoverContextKey,
   RootMenuTriggerStateContextKey,
   SeparatorContextKey,
+  SubmenuTriggerContextKey,
 } from './context'
 import {MenuItem} from './MenuItem'
 import {MenuSection} from './MenuSection'
@@ -97,30 +105,9 @@ function resolveVNodesFromSlot(vnode: VNode): VNode[] {
   return []
 }
 
-function injectGeneratedChildIds(vnodes: VNode[], path: Array<Key | number>): VNode[] {
-  const injected: VNode[] = []
-  let childIndex = 0
-  for (const vnode of vnodes) {
-    const name = getComponentName(vnode)
-    const props: any = vnode.props || {}
-    if (name === 'MenuItem') {
-      const key = (props.id ?? null) as Key | null
-      const resolvedKey = key ?? genKey('item', ...path, childIndex)
-      childIndex += 1
-      injected.push(key ? vnode : cloneVNode(vnode, {id: resolvedKey}))
-    } else if (name === 'MenuSection') {
-      const key = (props.id ?? null) as Key | null
-      const sectionKey = key ?? genKey('section', ...path, childIndex)
-      childIndex += 1
-      const nestedVnode = cloneVNode(vnode, {id: sectionKey})
-      const nestedChildren = resolveVNodesFromSlot(vnode)
-      ;(nestedVnode as any).children = injectGeneratedChildIds(nestedChildren, [...path, sectionKey])
-      injected.push(nestedVnode)
-    } else {
-      injected.push(vnode)
-    }
-  }
-  return injected
+function ensureMenuItemId(vnode: VNode, resolvedKey: Key): VNode {
+  const props: any = vnode.props || {}
+  return props.id ? vnode : cloneVNode(vnode, {id: resolvedKey})
 }
 
 function buildCollection(
@@ -149,6 +136,35 @@ function buildCollection(
       rendered.push(...sub.rendered)
       continue
     }
+    if (name === 'SubmenuTrigger') {
+      const subChildren = flatten(resolveVNodesFromSlot(vnode))
+      const triggerVNode = subChildren.find((c) => getComponentName(c) === 'MenuItem') ?? subChildren[0]
+      const popoverVNode = subChildren.find((c) => getComponentName(c) === 'Popover') ?? subChildren[1]
+      if (triggerVNode) {
+        const tProps: any = triggerVNode.props || {}
+        const resolvedKey = (tProps.id ?? null) as Key | null ?? genKey('item', ...path, index)
+        const triggerWithId = ensureMenuItemId(triggerVNode, resolvedKey)
+        nodes.push({
+          key: resolvedKey,
+          parentKey,
+          type: 'item',
+          value: tProps.value ?? {key: resolvedKey},
+          props: {...tProps, isDisabled: !!tProps.isDisabled},
+          index: index++,
+          level,
+          hasChildNodes: false,
+          textValue: tProps.textValue || getTextContent(flatten(resolveVNodesFromSlot(triggerVNode))),
+          'aria-label': tProps['aria-label'],
+        } as any)
+        const cloned = cloneVNode(vnode, props)
+        const slotChildren = [triggerWithId, popoverVNode].filter(Boolean)
+        ;(cloned as any).children = {default: () => slotChildren}
+        rendered.push(cloned)
+      } else {
+        rendered.push(vnode)
+      }
+      continue
+    }
     if (name === 'MenuSection') {
       const key = (props.id ?? null) as Key | null
       const sectionKey = key ?? genKey('section', ...path, index)
@@ -164,22 +180,14 @@ function buildCollection(
           ...(children as any),
           default: (...args: any[]) => {
             const result = originalSlot(...args)
+            // When using dynamic/render-prop sections, let buildCollection logic run by returning injected children.
             const arr = flatten(result)
-            let i = 0
-            return arr.map((child: any) => {
-              const childName = getComponentName(child)
-              const childProps = child?.props || {}
-              if (childName === 'MenuItem') {
-                const childKey = (childProps.id ?? null) ?? genKey('item', ...childPath, i)
-                i += 1
-                return childProps.id ? child : cloneVNode(child, {id: childKey})
-              }
-              return child
-            })
+            const injected = buildCollection(arr, sectionKey, level + 1, childPath)
+            return injected.rendered
           },
         }
       } else {
-        ;(sectionVnode as any).children = injectGeneratedChildIds(childSlotVNodes, childPath)
+        ;(sectionVnode as any).children = childResult.rendered
       }
       nodes.push({
         key: sectionKey,
@@ -288,7 +296,7 @@ export const Menu = defineComponent({
   },
   emits: ['selectionchange', 'action'],
   setup(props, {slots, attrs, emit}) {
-    const menuContext = inject(MenuContextKey, null)
+    const menuContext = inject(MenuContextKey, null) as any
     const rootStateCtx = inject(RootMenuTriggerStateContextKey, null)
     const fallbackRootState = rootStateCtx ? null : useMenuTriggerState({})
     const rootState = rootStateCtx ?? fallbackRootState!
@@ -317,33 +325,40 @@ export const Menu = defineComponent({
     provide(SeparatorContextKey, {elementType: 'div'})
     if (!rootStateCtx) provide(RootMenuTriggerStateContextKey, rootState as any)
 
-    const ariaLabelledby = computed(() => props['aria-labelledby'] ?? (menuContext as any)?.['aria-labelledby'])
+    // Submenu trigger context for items rendered inside this menu.
+    provide(SubmenuTriggerContextKey, {
+      parentMenuRef: menuRef,
+      shouldUseVirtualFocus: !!menuContext?.shouldUseVirtualFocus,
+    } as any)
+
+    const ariaLabelledby = computed(() => props['aria-labelledby'] ?? menuContext?.['aria-labelledby'])
     const autoFocus = computed(() => {
-      const ctxAuto = (menuContext as any)?.autoFocus
+      const ctxAuto = menuContext?.autoFocus
       if (ctxAuto !== undefined) return ctxAuto
       return props.autoFocus
     })
     const onClose = () => {
-      if ((menuContext as any)?.onClose) (menuContext as any).onClose()
+      if (menuContext?.onClose) menuContext.onClose()
       else rootState?.close?.()
     }
 
+    // Live autoFocus for submenu mount timing.
     const {menuProps} = useMenu({
-      id: props.id ?? (menuContext as any)?.id,
+      id: props.id ?? menuContext?.id,
       'aria-label': props['aria-label'],
       'aria-labelledby': ariaLabelledby.value,
       selectionMode: props.selectionMode,
       shouldFocusWrap: props.shouldFocusWrap,
       shouldCloseOnSelect: props.shouldCloseOnSelect,
       escapeKeyBehavior: props.escapeKeyBehavior,
-      autoFocus: autoFocus.value as any,
-      shouldSelectOnPressUp: (menuContext as any)?.shouldSelectOnPressUp,
+      get autoFocus() { return autoFocus.value as any },
+      shouldSelectOnPressUp: menuContext?.shouldSelectOnPressUp,
       onAction: (key: Key) => { props.onAction?.(key); emit('action', key) },
       onClose,
     } as any, state as any, menuRef)
 
-    // Close-on-select for Enter and other interactions is handled by useMenuItem,
-    // so menu-level key handling must not force-close on Enter.
+    // Submenu close-on-parent-focus is handled by useSubmenuTrigger's focusin listener
+    // on the provided parentMenuRef (SubmenuTriggerContext). Keep Menu free of duplicate handling.
 
     useFocusScope({
       ref: menuRef,
@@ -394,9 +409,16 @@ export const Menu = defineComponent({
       const isEmpty = state.collection.value.size === 0
       const dataSlot = (attrs as any)['data-slot'] ?? props['data-slot']
       const domProps = mergeProps(attrs, menuProps, {
-        ref: (el: any) => { menuRef.value = el },
+        ref: (el: any) => {
+          menuRef.value = el
+          if (menuContext && 'ref' in menuContext) {
+            const r = menuContext.ref
+            if (r && typeof r === 'object' && 'value' in r) r.value = el
+            else menuContext.ref = el
+          }
+        },
         class: ['react-aria-Menu', (attrs as any).class].filter(Boolean),
-        ...(props.id || (menuContext as any)?.id ? {id: props.id ?? (menuContext as any)?.id} : {}),
+        ...(props.id || menuContext?.id ? {id: props.id ?? menuContext?.id} : {}),
         ...(props['aria-label'] ? {'aria-label': props['aria-label']} : {}),
         ...(ariaLabelledby.value ? {'aria-labelledby': ariaLabelledby.value} : {}),
         ...toHeroDataAttrs({slot: dataSlot}),
@@ -406,6 +428,16 @@ export const Menu = defineComponent({
       const alb = ariaLabelledby.value ?? (props as any)['aria-labelledby'] ?? (props as any).ariaLabelledby ?? (attrs as any)['aria-labelledby'] ?? (attrs as any).ariaLabelledby
       if (al) (domProps as any)['aria-label'] = al
       if (alb) (domProps as any)['aria-labelledby'] = alb
+      // Merge submenu/menu context keyboard handlers (e.g. submenu Escape/Arrow) so they run.
+      if (menuContext?.onKeyDown) {
+        const prev = (domProps as any).onKeydown || (domProps as any).onKeyDown
+        const chain = (e: KeyboardEvent) => {
+          menuContext.onKeyDown(e)
+          if (!e.defaultPrevented && typeof prev === 'function') prev(e)
+        }
+        Object.defineProperty(domProps, 'onKeydown', {value: chain, enumerable: true, configurable: true, writable: true})
+        Object.defineProperty(domProps, 'onKeyDown', {value: chain, enumerable: true, configurable: true, writable: true})
+      }
       const children: VNode[] = []
       if (isEmpty) {
         const empty = renderEmptyState()
@@ -414,6 +446,98 @@ export const Menu = defineComponent({
         children.push(...renderChildren())
       }
       return h('div', domProps, children)
+    }
+  },
+})
+
+export interface SubmenuTriggerProps {
+  delay?: number
+}
+
+export const SubmenuTrigger = defineComponent({
+  name: 'SubmenuTrigger',
+  inheritAttrs: false,
+  props: {
+    delay: {type: Number, default: 200},
+  },
+  setup(props, {slots}) {
+    const parentState = inject(MenuStateContextKey, null)
+    const rootState = inject(RootMenuTriggerStateContextKey, null)
+    const submenuCtx = inject(SubmenuTriggerContextKey, null) as any
+    if (!parentState || !rootState || !submenuCtx) {
+      throw new Error('SubmenuTrigger must be used within a Menu')
+    }
+
+    const itemRef = ref<Element | null>(null)
+    const submenuRef = ref<HTMLElement | null>(null)
+    const triggerKey = ref<Key | null>(null)
+    const triggerDisabled = ref(false)
+    const submenuState = useSubmenuTriggerState({triggerKey: () => triggerKey.value}, rootState as any)
+
+    const {submenuTriggerProps, submenuProps, popoverProps} = useSubmenuTrigger(
+      {
+        parentMenuRef: submenuCtx.parentMenuRef,
+        submenuRef,
+        delay: () => props.delay,
+        type: 'menu',
+        isDisabled: () => triggerDisabled.value,
+        shouldUseVirtualFocus: submenuCtx.shouldUseVirtualFocus,
+      } as any,
+      submenuState as any,
+      itemRef as any,
+    )
+
+    // Provide contexts for submenu content (popover/menu). MenuItemContext for the trigger is provided
+    // by a scoped wrapper so it doesn't leak into submenu items.
+    const menuCtx: any = {}
+    for (const [k, desc] of Object.entries(Object.getOwnPropertyDescriptors(submenuProps))) {
+      Object.defineProperty(menuCtx, k, desc)
+    }
+    menuCtx.ref = submenuRef
+    provide(MenuContextKey, menuCtx)
+
+    provide(OverlayTriggerStateKey, submenuState as any)
+    // Keep providing existing RootMenuTriggerState (do not replace).
+    provide(RootMenuTriggerStateContextKey, rootState as any)
+
+    const popoverCtx: any = {
+      trigger: 'SubmenuTrigger',
+      triggerRef: itemRef,
+      placement: 'end top',
+    }
+    // aria-labelledby is a getter on submenuProps
+    Object.defineProperty(popoverCtx, 'aria-labelledby', {
+      get: () => (submenuProps as any)['aria-labelledby'],
+      enumerable: true,
+      configurable: true,
+    })
+    for (const [k, desc] of Object.entries(Object.getOwnPropertyDescriptors(popoverProps))) {
+      Object.defineProperty(popoverCtx, k, desc)
+    }
+    provide(PopoverContextKey, popoverCtx as any)
+
+    const menuItemCtx: any = {}
+    for (const [k, desc] of Object.entries(Object.getOwnPropertyDescriptors(submenuTriggerProps))) {
+      Object.defineProperty(menuItemCtx, k, desc)
+    }
+    menuItemCtx.onAction = undefined
+    menuItemCtx.ref = itemRef
+
+    const TriggerItemProvider = defineComponent({
+      name: 'SubmenuTriggerItemProvider',
+      setup(_, {slots}) {
+        provide(MenuItemContextKey, menuItemCtx)
+        return () => slots.default?.()
+      },
+    })
+
+    return () => {
+      const children = flatten(slots.default?.() as any)
+      const triggerVNode = children.find((c) => getComponentName(c) === 'MenuItem') ?? children[0]
+      const popoverVNode = children.find((c) => getComponentName(c) === 'Popover') ?? children[1]
+      triggerKey.value = ((triggerVNode as any)?.props?.id ?? null) as Key | null
+      triggerDisabled.value = !!((triggerVNode as any)?.props?.isDisabled)
+      return [h(TriggerItemProvider, null, {default: () => triggerVNode}), popoverVNode as any].filter(Boolean)
     }
   },
 })

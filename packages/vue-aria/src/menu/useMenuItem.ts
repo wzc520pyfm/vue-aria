@@ -26,6 +26,9 @@ export interface AriaMenuItemProps {
   isDisabled?: MaybeRefOrGetter<boolean | undefined>
   isSelected?: MaybeRefOrGetter<boolean | undefined>
   'aria-label'?: MaybeRefOrGetter<string | undefined>
+  'aria-haspopup'?: MaybeRefOrGetter<string | boolean | undefined>
+  'aria-expanded'?: MaybeRefOrGetter<string | boolean | undefined>
+  'aria-controls'?: MaybeRefOrGetter<string | undefined>
   shouldSelectOnPressUp?: MaybeRefOrGetter<boolean | undefined>
   shouldFocusOnHover?: MaybeRefOrGetter<boolean | undefined>
   closeOnSelect?: boolean
@@ -35,6 +38,12 @@ export interface AriaMenuItemProps {
   isVirtualized?: boolean
   href?: string
   selectionManager?: any
+  // submenu trigger integration
+  onPressStart?: (e?: any) => void
+  onPress?: (e?: any) => void
+  onHoverChange?: (isHovered: boolean) => void
+  onKeyDown?: (e: KeyboardEvent) => void
+  isOpen?: boolean
 }
 
 export interface MenuItemAria {
@@ -71,11 +80,16 @@ export function useMenuItem<T>(
     return manager.isSelected(key.value)
   })
 
-  const isTrigger = false
-  let role = 'menuitem'
-  if (!isTrigger) {
-    if (manager.selectionMode === 'single') role = 'menuitemradio'
-    else if (manager.selectionMode === 'multiple') role = 'menuitemcheckbox'
+  const hasPopup = computed(() => toValue(props['aria-haspopup']) as string | boolean | undefined)
+  const isTrigger = computed(() => !!hasPopup.value)
+  const ariaExpanded = computed(() => toValue(props['aria-expanded']) as string | boolean | undefined)
+  const isExpanded = computed(() => ariaExpanded.value === true || ariaExpanded.value === 'true')
+
+  const roleGetter = () => {
+    if (isTrigger.value) return 'menuitem'
+    if (manager.selectionMode === 'single') return 'menuitemradio'
+    if (manager.selectionMode === 'multiple') return 'menuitemcheckbox'
+    return 'menuitem'
   }
 
   const baseId = computed(() => getItemId(state as any, key.value))
@@ -89,11 +103,12 @@ export function useMenuItem<T>(
   const focusVisibleState = useFocusVisible()
   const isFocused = computed(() => manager.isFocused && manager.focusedKey === key.value)
   const isFocusVisible = computed(() => isFocused.value && focusVisibleState.isFocusVisible.value)
+  const effectiveIsFocusVisible = computed(() => (isExpanded.value ? false : isFocusVisible.value))
 
   const shouldSelectOnPressUp = computed(() => (toValue(props.shouldSelectOnPressUp) ?? data.shouldSelectOnPressUp) || true)
 
   const performAction = () => {
-    if (isTrigger) return
+    if (isTrigger.value) return
     props.onAction?.(key.value)
     if (data.onAction) data.onAction(key.value)
     if (mdata.onAction) mdata.onAction(key.value)
@@ -105,20 +120,17 @@ export function useMenuItem<T>(
   const {pressProps, isPressed} = usePress({
     isDisabled,
     onPressStart: (e) => {
-      // Keyboard interaction key may be captured later in keydown/click paths.
+      if (typeof props.onPressStart === 'function') props.onPressStart(e)
     },
     onPress: (e) => {
-      // selection/action on press for keyboard/virtual/touch per official behavior simplified
+      if (typeof props.onPress === 'function') props.onPress(e)
     },
     onPressUp: (e) => {
       if (e.pointerType !== 'keyboard') interaction.value = {pointerType: e.pointerType}
-      // mouse drag-release behavior handled by native click; ensure selection on press up when needed
       if (e.pointerType === 'mouse' && !isPressedRef.value) {
-        // allowsDifferentPressOrigin: if mouse up on item without prior press start tracked, activate
+        // allowsDifferentPressOrigin
       }
-      if (shouldSelectOnPressUp.value && e.pointerType !== 'keyboard') {
-        // handled in click to unify
-      }
+      void shouldSelectOnPressUp
     },
     onPressChange: (p) => { isPressedRef.value = p },
   })
@@ -131,12 +143,20 @@ export function useMenuItem<T>(
         manager.setFocusedKey(key.value)
       }
     },
+    onHoverChange: (hovered) => {
+      if (typeof props.onHoverChange === 'function') props.onHoverChange(hovered)
+    },
   })
 
   const onClick = (e: MouseEvent) => {
     if (isDisabled.value) {
       e.preventDefault()
       e.stopPropagation()
+      return
+    }
+    // Submenu triggers must not fire onAction or close the menu.
+    if (isTrigger.value) {
+      interaction.value = null
       return
     }
     const pointerType = interaction.value?.pointerType ?? 'mouse'
@@ -150,12 +170,8 @@ export function useMenuItem<T>(
     const isLink = !!props.href
     let shouldClose =
       pointerType === 'keyboard'
-        ? // Always close when pressing Enter key, or if item is not selectable.
-          kbdKey === 'Enter' ||
-          manager.selectionMode === 'none' ||
-          isLink
-        : // Close except if multi-select is enabled.
-          manager.selectionMode !== 'multiple' || isLink
+        ? kbdKey === 'Enter' || manager.selectionMode === 'none' || isLink
+        : manager.selectionMode !== 'multiple' || isLink
 
     shouldClose = props.shouldCloseOnSelect ?? props.closeOnSelect ?? mdata.shouldCloseOnSelect ?? mdata.closeOnSelect ?? shouldClose
 
@@ -167,11 +183,19 @@ export function useMenuItem<T>(
 
   const onKeyDown = (e: KeyboardEvent) => {
     if (isDisabled.value) return
+    if (typeof props.onKeyDown === 'function') props.onKeyDown(e)
+    // External trigger handlers (e.g. Arrow keys to open submenu) may prevent default.
+    // For Enter/Space activation, continue even if press/external handlers prevented default.
+    if (e.defaultPrevented && e.key !== ' ' && e.key !== 'Enter') return
     if (e.key === ' ' || e.key === 'Enter') {
       interaction.value = {pointerType: 'keyboard', key: e.key}
       e.preventDefault()
-      const el = itemRef.value as HTMLElement | null
-      if (el && typeof (el as any).click === 'function') (el as any).click()
+      // For submenu triggers, keyboard open is handled by onPressStart/onKeyDown from trigger props.
+      // For normal items, click unifies selection/action/close behavior.
+      if (!isTrigger.value) {
+        const el = itemRef.value as HTMLElement | null
+        if (el && typeof (el as any).click === 'function') (el as any).click()
+      }
     }
   }
 
@@ -179,7 +203,6 @@ export function useMenuItem<T>(
     onClick,
     onKeydown: onKeyDown,
   }
-  // merge press/hover/focus handlers with our handlers (chain)
   const mergedInteractionProps = {...pressProps, ...hoverProps, ...focusVisibleState.focusProps}
   for (const key of Object.keys(baseProps)) {
     const a = (mergedInteractionProps as any)[key]
@@ -190,12 +213,13 @@ export function useMenuItem<T>(
       ;(mergedInteractionProps as any)[key] = b
     }
   }
+
   const menuItemProps: Record<string, any> = {
     ...mergedInteractionProps,
   }
   Object.defineProperties(menuItemProps, {
     id: {get: () => props.id ?? baseId.value, enumerable: true},
-    role: {get: () => role, enumerable: true},
+    role: {get: () => roleGetter(), enumerable: true},
     'aria-disabled': {get: () => (isDisabled.value ? true : undefined), enumerable: true},
     'aria-label': {get: () => toValue(props['aria-label']), enumerable: true},
     'aria-labelledby': {get: () => resolvedLabelId.value, enumerable: true},
@@ -207,14 +231,14 @@ export function useMenuItem<T>(
       enumerable: true,
     },
     'aria-checked': {
-      get: () => (manager.selectionMode !== 'none' && !isTrigger ? isSelected.value : undefined),
+      get: () => (manager.selectionMode !== 'none' && !isTrigger.value ? isSelected.value : undefined),
       enumerable: true,
     },
-    tabIndex: {get: () => (isFocused.value ? 0 : -1), enumerable: true},
+    'aria-haspopup': {get: () => hasPopup.value ?? undefined, enumerable: true},
+    'aria-expanded': {get: () => (hasPopup.value != null ? (ariaExpanded.value ?? undefined) : undefined), enumerable: true},
+    'aria-controls': {get: () => toValue(props['aria-controls']) ?? undefined, enumerable: true},
+    tabIndex: {get: () => (isFocused.value ? (isExpanded.value ? -1 : 0) : -1), enumerable: true},
   })
-
-  // focus element when manager focuses this key
-  // (component can also do this; keep prop simple)
 
   return {
     menuItemProps,
@@ -222,7 +246,7 @@ export function useMenuItem<T>(
     descriptionProps: {id: descriptionId.value},
     keyboardShortcutProps: {id: keyboardId.value},
     isFocused,
-    isFocusVisible,
+    isFocusVisible: effectiveIsFocusVisible,
     isSelected,
     isPressed,
     isDisabled,
