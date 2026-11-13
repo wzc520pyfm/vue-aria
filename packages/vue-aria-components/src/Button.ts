@@ -119,6 +119,7 @@ export const Button = defineComponent({
         id: ctx.id,
         ref: setRefs,
         'aria-labelledby': ctx['aria-labelledby'],
+        'aria-describedby': ctx['aria-describedby'],
         'aria-expanded': ctx['aria-expanded'] ?? buttonProps.value['aria-expanded'],
         'aria-haspopup': ctx['aria-haspopup'] ?? buttonProps.value['aria-haspopup'],
         'aria-controls': ctx['aria-controls'] ?? buttonProps.value['aria-controls'],

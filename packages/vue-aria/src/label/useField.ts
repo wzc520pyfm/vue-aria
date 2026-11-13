@@ -1,6 +1,6 @@
 import {toValue, type MaybeRefOrGetter} from 'vue'
 import {mergeProps} from '../utils/mergeProps'
-import {useId} from '../utils/useId'
+import {useId, useSlotId} from '../utils/useId'
 import {useLabel} from './useLabel'
 
 export interface AriaFieldProps {
@@ -42,15 +42,19 @@ export function useField(props: AriaFieldProps): FieldAria {
     labelElementType: props.labelElementType ?? 'label',
   })
 
+  // Official behavior: ids are always reserved via useSlotId (never gated on
+  // props.description / props.errorMessage), and are only included in
+  // aria-describedby when the corresponding element exists in the DOM after mount.
   const descriptionId = useId('vue-aria-description')
   const errorMessageId = useId('vue-aria-error')
-
-  const hasDescription = () => toValue(props.description as any) != null
-  const hasErrorMessage = () => {
-    const em = toValue(props.errorMessage as any)
-    const invalid = !!toValue(props.isInvalid as any) || toValue(props.validationState as any) === 'invalid'
-    return invalid && em != null
-  }
+  const slotIdDeps = [
+    () => toValue(props.description as any) != null,
+    () => toValue(props.errorMessage as any) != null,
+    () => !!toValue(props.isInvalid as any) || toValue(props.validationState as any) === 'invalid',
+    () => toValue(props.validationState as any),
+  ]
+  const resolvedDescriptionId = useSlotId(descriptionId, slotIdDeps)
+  const resolvedErrorMessageId = useSlotId(errorMessageId, slotIdDeps)
 
   const labelProps: Record<string, any> = {}
   Object.defineProperties(labelProps, {
@@ -67,9 +71,9 @@ export function useField(props: AriaFieldProps): FieldAria {
     'aria-describedby': {
       get: () => {
         const parts = [
-          hasDescription() ? descriptionId.value : undefined,
+          resolvedDescriptionId.value,
           // Use aria-describedby for error messages (official behavior).
-          hasErrorMessage() ? errorMessageId.value : undefined,
+          resolvedErrorMessageId.value,
           toValue(props['aria-describedby'] as any),
         ].filter(Boolean)
         return parts.length ? parts.join(' ') : undefined
@@ -80,12 +84,12 @@ export function useField(props: AriaFieldProps): FieldAria {
 
   const descriptionProps: Record<string, any> = {}
   Object.defineProperties(descriptionProps, {
-    id: {get: () => (hasDescription() ? descriptionId.value : undefined), enumerable: true},
+    id: {get: () => resolvedDescriptionId.value, enumerable: true},
   })
 
   const errorMessageProps: Record<string, any> = {}
   Object.defineProperties(errorMessageProps, {
-    id: {get: () => (hasErrorMessage() ? errorMessageId.value : undefined), enumerable: true},
+    id: {get: () => resolvedErrorMessageId.value, enumerable: true},
   })
 
   // Keep a stable ref for callers that may want the raw ids.

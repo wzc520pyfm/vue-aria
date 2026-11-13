@@ -89,6 +89,17 @@ export type {UseLabelProps, LabelAria} from './useLabel'
 export {useField} from './useField'
 export type {AriaFieldProps, FieldAria} from './useField'
 
+export {useSelect, useHiddenSelect, HiddenSelect} from './useSelect'
+export type {
+  AriaSelectProps,
+  AriaSelectOptions,
+  SelectAria,
+  AriaHiddenSelectProps,
+  AriaHiddenSelectOptions,
+  HiddenSelectProps,
+  HiddenSelectAria,
+} from './useSelect'
+
 export {useMenu, useMenuItem, useMenuSection, useMenuTrigger, useSubmenuTrigger} from './useMenu'
 export type {MenuProps, AriaMenuProps, AriaMenuOptions, MenuAria, AriaMenuItemProps, MenuItemAria, AriaMenuSectionProps, MenuSectionAria, AriaMenuTriggerProps, MenuTriggerAria, AriaSubmenuTriggerProps, SubmenuTriggerAria} from './useMenu'
 

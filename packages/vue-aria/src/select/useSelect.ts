@@ -263,7 +263,7 @@ export function useSelect<T, M extends SelectionMode = 'single'>(
     validationBehavior: {get: () => validationBehavior.value, enumerable: true},
   })
 
-  return {
+  const out = {
     labelProps: labelPropsOut,
     triggerProps,
     valueProps,
@@ -271,8 +271,13 @@ export function useSelect<T, M extends SelectionMode = 'single'>(
     descriptionProps,
     errorMessageProps,
     hiddenSelectProps,
-    isInvalid: isInvalid.value,
     validationErrors: validationErrors.value,
     validationDetails: validationDetails.value,
-  }
+  } as SelectAria<T, M>
+  // Keep isInvalid live: expose a getter rather than a setup-time snapshot.
+  Object.defineProperty(out, 'isInvalid', {
+    get: () => isInvalid.value,
+    enumerable: true,
+  })
+  return out
 }

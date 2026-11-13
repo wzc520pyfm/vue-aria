@@ -6,13 +6,14 @@ import {
   h,
   inject,
   isVNode,
+  onUnmounted,
   provide,
   ref,
   type PropType,
   type VNode,
   type VNodeChild,
 } from 'vue'
-import {mergeProps, toHeroDataAttrs} from 'vue-aria'
+import {mergeProps} from 'vue-aria'
 import {HiddenSelect} from 'vue-aria/useSelect'
 import {useSelect} from 'vue-aria/useSelect'
 import {useSelectState} from 'vue-stately/useSelectState'
@@ -273,12 +274,18 @@ export const Select = defineComponent({
     const focusWithin = ref(false)
     const focusVisible = ref(false)
     let modality: 'pointer' | 'keyboard' | 'virtual' = 'virtual'
+    const onModalityPointerdown = () => { modality = 'pointer' }
+    const onModalityKeydown = (e: KeyboardEvent) => { if (!e.metaKey && !e.altKey && !e.ctrlKey) modality = 'keyboard' }
     if (typeof window !== 'undefined') {
-      const pd = () => { modality = 'pointer' }
-      const kd = (e: KeyboardEvent) => { if (!e.metaKey && !e.altKey && !e.ctrlKey) modality = 'keyboard' }
-      window.addEventListener('pointerdown', pd, true)
-      window.addEventListener('keydown', kd, true)
+      window.addEventListener('pointerdown', onModalityPointerdown, true)
+      window.addEventListener('keydown', onModalityKeydown, true)
     }
+    onUnmounted(() => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('pointerdown', onModalityPointerdown, true)
+        window.removeEventListener('keydown', onModalityKeydown, true)
+      }
+    })
     const focusProps = {
       onFocusin: () => { focusWithin.value = true; focusVisible.value = modality !== 'pointer' },
       onFocusout: (e: FocusEvent) => {
@@ -355,16 +362,7 @@ export const Select = defineComponent({
       nodes: buildNodes,
     } as any)
 
-    const {
-      labelProps,
-      triggerProps,
-      valueProps,
-      menuProps,
-      descriptionProps,
-      errorMessageProps,
-      hiddenSelectProps,
-      isInvalid,
-    } = useSelect<any, any>(
+    const selectAria = useSelect<any, any>(
       {
         id: () => props.id,
         label: hasLabel ? true : (attrs as any).label,
@@ -387,6 +385,15 @@ export const Select = defineComponent({
       state as any,
       triggerRef as any,
     )
+    const {
+      labelProps,
+      triggerProps,
+      valueProps,
+      menuProps,
+      descriptionProps,
+      errorMessageProps,
+      hiddenSelectProps,
+    } = selectAria
 
     // Provide contexts for composition.
     provide(SelectContextKey, props as any)
@@ -397,7 +404,7 @@ export const Select = defineComponent({
     provide(LabelContextKey, labelCtx as any)
     const buttonCtx: any = { ...triggerProps }
     // Keep the trigger aria attributes live (they derive from open state).
-    for (const key of ['aria-haspopup', 'aria-expanded', 'aria-controls', 'aria-labelledby', 'onKeyDown', 'onKeyUp', 'onKeydown', 'onKeyup', 'onFocus', 'onBlur', 'onPointerDown', 'onPointerdown', 'onPress', 'type', 'id'] as const) {
+    for (const key of ['aria-haspopup', 'aria-expanded', 'aria-controls', 'aria-labelledby', 'aria-describedby', 'onKeyDown', 'onKeyUp', 'onKeydown', 'onKeyup', 'onFocus', 'onBlur', 'onPointerDown', 'onPointerdown', 'onPress', 'type', 'id'] as const) {
       Object.defineProperty(buttonCtx, key, {
         get: () => (triggerProps as any)[key],
         enumerable: true,
@@ -447,7 +454,7 @@ export const Select = defineComponent({
         isFocusVisible: focusVisible.value,
         isDisabled: !!props.isDisabled,
         isOpen: state.isOpen.value,
-        isInvalid: !!(isInvalid ?? props.isInvalid),
+        isInvalid: !!selectAria.isInvalid,
         isRequired: !!props.isRequired,
       }
       const children = typeof slots.default === 'function'
@@ -464,7 +471,7 @@ export const Select = defineComponent({
           'data-focus-visible': focusVisible.value ? 'true' : undefined,
           'data-open': state.isOpen.value ? 'true' : undefined,
           'data-disabled': props.isDisabled ? 'true' : undefined,
-          'data-invalid': (isInvalid ?? props.isInvalid) ? 'true' : undefined,
+          'data-invalid': selectAria.isInvalid ? 'true' : undefined,
           'data-required': props.isRequired ? 'true' : undefined,
         },
       )

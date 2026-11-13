@@ -571,6 +571,8 @@ describe('Select', () => {
     await click(opts[1]); await tick(3)
     const text = getTrigger(wrapper).textContent || ''
     expect(text.includes('Cat') && text.includes('Dog')).toBe(true)
+    // Exact Intl.ListFormat (en) conjunction formatting
+    expect(wrapper.find('.react-aria-SelectValue').text()).toBe('Cat and Dog')
     const fd = new FormData(form!)
     const all = fd.getAll('pets').map(String)
     expect(all).toContain('cat')
@@ -675,5 +677,169 @@ describe('Select', () => {
     expect(innerBtn.getAttribute('aria-haspopup')).not.toBe('listbox')
     const innerLabel = document.querySelector('[data-testid="inner-label"]') as HTMLElement
     expect(innerLabel.getAttribute('id')).not.toBe(label.getAttribute('id'))
+  })
+
+  it('17. trigger aria-describedby includes description and errorMessage Text ids', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {Select, Label, Button, SelectValue, Text, Popover, ListBox, ListBoxItem},
+      template: `
+        <Select isInvalid>
+          <Label>Animal</Label>
+          <Button><SelectValue /></Button>
+          <Text slot="description">Description</Text>
+          <Text slot="errorMessage">Error message</Text>
+          <Popover><ListBox><ListBoxItem id="cat">Cat</ListBoxItem></ListBox></Popover>
+        </Select>
+      `,
+    }))
+    await tick(3)
+    const trigger = getTrigger(wrapper)
+    const describedby = (trigger.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean)
+    const desc = wrapper.find('[data-slot="description"]').element as HTMLElement
+    const err = wrapper.find('[data-slot="errorMessage"]').element as HTMLElement
+    expect(desc.id).toBeTruthy()
+    expect(err.id).toBeTruthy()
+    expect(describedby).toContain(desc.id)
+    expect(describedby).toContain(err.id)
+  })
+
+  it('18. live data-* attrs: data-focused, data-focus-visible, data-open, trigger data-pressed', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {Select, Label, Button, SelectValue, Popover, ListBox, ListBoxItem},
+      template: `
+        <Select>
+          <Label>Animal</Label>
+          <Button><SelectValue /></Button>
+          <Popover><ListBox><ListBoxItem id="cat">Cat</ListBoxItem><ListBoxItem id="dog">Dog</ListBoxItem></ListBox></Popover>
+        </Select>
+      `,
+    }))
+    await tick(2)
+    const trigger = getTrigger(wrapper)
+    const rootEl = () => wrapper.find('.react-aria-Select').element as HTMLElement
+    expect(rootEl().getAttribute('data-focused')).toBeFalsy()
+    expect(rootEl().getAttribute('data-focus-visible')).toBeFalsy()
+    expect(rootEl().getAttribute('data-open')).toBeFalsy()
+    expect(trigger.getAttribute('data-pressed')).toBeFalsy()
+    focus(trigger)
+    await nextTick()
+    expect(rootEl().getAttribute('data-focused')).toBe('true')
+    expect(rootEl().getAttribute('data-focus-visible')).toBe('true')
+    dispatchKey(trigger, 'keydown', {key: 'Enter'})
+    await tick(4)
+    expect(rootEl().getAttribute('data-open')).toBe('true')
+    expect(trigger.getAttribute('data-pressed')).toBe('true')
+  })
+
+  it('19. keyboard open focuses first/selected option, ArrowUp focuses last, allowsEmptyCollection opens empty', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {Select, Label, Button, SelectValue, Popover, ListBox, ListBoxItem},
+      template: `
+        <Select>
+          <Label>Animal</Label>
+          <Button><SelectValue /></Button>
+          <Popover><ListBox><ListBoxItem id="cat">Cat</ListBoxItem><ListBoxItem id="dog">Dog</ListBoxItem></ListBox></Popover>
+        </Select>
+      `,
+    }))
+    await tick(2)
+    const trigger = getTrigger(wrapper)
+    focus(trigger)
+    dispatchKey(trigger, 'keydown', {key: 'ArrowDown'})
+    await tick(4)
+    expect((document.activeElement as HTMLElement)?.textContent).toContain('Cat')
+    dispatchKey(document.activeElement as HTMLElement, 'keydown', {key: 'Escape'})
+    await tick(3)
+
+    // ArrowUp opens at last
+    focus(trigger)
+    dispatchKey(trigger, 'keydown', {key: 'ArrowUp'})
+    await tick(4)
+    expect(trigger.getAttribute('aria-expanded')).toBe('true')
+    expect((document.activeElement as HTMLElement)?.textContent).toContain('Dog')
+    dispatchKey(document.activeElement as HTMLElement, 'keydown', {key: 'Escape'})
+    await tick(3)
+
+    // Selected item receives focus on open
+    const selected = mountInDoc(defineComponent({
+      components: {Select, Label, Button, SelectValue, Popover, ListBox, ListBoxItem},
+      template: `
+        <Select defaultSelectedKey="dog">
+          <Label>Animal</Label>
+          <Button><SelectValue /></Button>
+          <Popover><ListBox><ListBoxItem id="cat">Cat</ListBoxItem><ListBoxItem id="dog">Dog</ListBoxItem></ListBox></Popover>
+        </Select>
+      `,
+    }))
+    await tick(2)
+    const sTrigger = getTrigger(selected)
+    focus(sTrigger)
+    dispatchKey(sTrigger, 'keydown', {key: 'ArrowDown'})
+    await tick(4)
+    expect((document.activeElement as HTMLElement)?.textContent).toContain('Dog')
+    dispatchKey(document.activeElement as HTMLElement, 'keydown', {key: 'Escape'})
+    await tick(3)
+    selected.unmount()
+
+    // allowsEmptyCollection permits opening an empty list
+    const emptyAllowed = mountInDoc(defineComponent({
+      components: {Select, Label, Button, SelectValue, Popover, ListBox},
+      template: `
+        <Select :allowsEmptyCollection="true">
+          <Label>Empty</Label><Button><SelectValue /></Button>
+          <Popover><ListBox></ListBox></Popover>
+        </Select>
+      `,
+    }))
+    await tick(2)
+    const eTrigger = getTrigger(emptyAllowed)
+    focus(eTrigger)
+    dispatchKey(eTrigger, 'keydown', {key: 'ArrowDown'})
+    await tick(3)
+    expect(eTrigger.getAttribute('aria-expanded')).toBe('true')
+    emptyAllowed.unmount()
+    wrapper.unmount()
+  })
+
+  it('20. required empty select blocks submit and FormData value is empty string', async () => {
+    let form: HTMLFormElement | null = null
+    const wrapper = mountInDoc(defineComponent({
+      components: {Select, Label, Button, SelectValue, Popover, ListBox, ListBoxItem},
+      setup() { return {setForm: (el: any) => { form = el }} },
+      template: `
+        <form :ref="setForm">
+          <Select name="animal" isRequired>
+            <Label>Animal</Label>
+            <Button><SelectValue /></Button>
+            <Popover><ListBox><ListBoxItem id="cat">Cat</ListBoxItem></ListBox></Popover>
+          </Select>
+        </form>
+      `,
+    }))
+    await tick(3)
+    expect(new FormData(form!).get('animal')).toBe('')
+    expect(form!.checkValidity()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('21. form attribute associates the hidden control with an external form', async () => {
+    let form: HTMLFormElement | null = null
+    const wrapper = mountInDoc(defineComponent({
+      components: {Select, Label, Button, SelectValue, Popover, ListBox, ListBoxItem},
+      setup() { return {setForm: (el: any) => { form = el }} },
+      template: `
+        <form id="external-form" :ref="setForm"></form>
+        <Select name="ext" form="external-form" defaultSelectedKey="cat">
+          <Label>Animal</Label>
+          <Button><SelectValue /></Button>
+          <Popover><ListBox><ListBoxItem id="cat">Cat</ListBoxItem></ListBox></Popover>
+        </Select>
+      `,
+    }))
+    await tick(3)
+    const selectEl = wrapper.find('select').element as HTMLSelectElement
+    expect(selectEl.getAttribute('form')).toBe('external-form')
+    expect(new FormData(form!).get('ext')).toBe('cat')
+    wrapper.unmount()
   })
 })
