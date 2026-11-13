@@ -34,6 +34,8 @@
     "vue": "^3.5.0"
   },
   "dependencies": {
+    "@internationalized/date": "^3.12.4",
+    "@internationalized/string": "^3.2.10",
     "vue-stately": "workspace:*"
   },
   "devDependencies": {

@@ -53,7 +53,13 @@ This ComboBox batch adds:
 
 Generated collection keys for id-less items/sections are path-based: `$$va-item-<path>` and `$$va-section-<path>` (with path segments reflecting nesting and indices).
 
-Sheet, dates, `Group`, `FieldError`/`Form`/`Autocomplete`, a full `I18nProvider`, and Storybook / Netlify remain deferred.
+This dates slice adds the first usable `Calendar` vertical:
+
+- `vue-stately`: `useCalendarState`
+- `vue-aria`: `I18nProvider`, `useLocale`, `isRTL`, `useDateFormatter`, `useLocalizedStringFormatter`, `useLocalizedStringDictionary`, `useCalendar`, `useCalendarGrid`, `useCalendarCell`, `VisuallyHidden`, `useVisuallyHidden`
+- `vue-aria-components`: `Calendar`, `CalendarGrid`, `CalendarGridHeader`, `CalendarGridBody`, `CalendarHeaderCell`, `CalendarCell`, `CalendarContext`, `CalendarStateContext`, plus re-exports of `I18nProvider` / `useLocale` / `isRTL`
+
+RangeCalendar, calendar month/year pickers and heading components, DateField/TimeField/DatePicker/DateRangePicker/HiddenDateInput, Group, FieldError, Form, Autocomplete, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 

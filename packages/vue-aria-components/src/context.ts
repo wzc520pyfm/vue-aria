@@ -78,3 +78,4 @@ export const ComboBoxValueContextKey: InjectionKey<Record<string, any> | undefin
 export const InputContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('InputContext')
 
 export const ButtonContextKey: InjectionKey<Record<string, any> | null | undefined> = Symbol('ButtonContext')
+export const HeadingContextKey: InjectionKey<Record<string, any> | null | undefined> = Symbol('HeadingContext')

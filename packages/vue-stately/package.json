@@ -32,6 +32,9 @@
   "peerDependencies": {
     "vue": "^3.5.0"
   },
+  "dependencies": {
+    "@internationalized/date": "^3.12.4"
+  },
   "devDependencies": {
     "vue": "^3.5.13"
   },

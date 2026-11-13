@@ -3,11 +3,10 @@
  * `react-aria-components@1.22.1` (`packages/react-aria-components/exports` at
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
- * This batch adds collections/ListBox and action/selection Menu components
- * on top of Button, overlays, and text primitives: ListBox, ListBoxItem,
- * ListBoxSection, Collection, Header, Text, Menu, MenuItem, MenuSection,
- * MenuTrigger, SubmenuTrigger, Separator, Keyboard. Select and ComboBox are now included. Sheet,
- * dates, a full I18nProvider, and Storybook / Netlify remain deferred.
+ * This batch adds collections/ListBox, action/selection Menu components,
+ * Select, ComboBox, I18n primitives, and the first Calendar slice on top
+ * of Button, overlays, and text primitives. Sheet and the remaining dates
+ * work remain deferred.
  */
 export {Button} from './Button'
 export type {ButtonType} from './Button'
@@ -48,3 +47,10 @@ export {useFilter} from 'vue-aria/useFilter'
 export type {Filter} from 'vue-aria/useFilter'
 export {Label, LabelContext} from './Label'
 export type {LabelProps} from './Label'
+
+export {I18nProvider, useLocale, isRTL} from './I18nProvider'
+export type {I18nProviderProps, Locale} from './I18nProvider'
+
+export {Calendar, CalendarGrid, CalendarGridHeader, CalendarGridBody, CalendarHeaderCell, CalendarCell, CalendarContext, CalendarStateContext} from './Calendar'
+export type {CalendarProps, CalendarRenderProps, CalendarGridProps, CalendarCellProps} from './Calendar'
+export type {DateValue, CalendarState, CalendarSelectionMode} from 'vue-stately/useCalendarState'
