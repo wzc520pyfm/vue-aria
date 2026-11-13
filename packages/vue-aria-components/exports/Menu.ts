@@ -1,6 +1,6 @@
-export {Menu, MenuItem, MenuSection, MenuTrigger, Collection} from '../src/Menu'
+export {Menu, MenuItem, MenuSection, MenuTrigger, SubmenuTrigger, Collection} from '../src/Menu'
 export {MenuContextKey as MenuContext, MenuStateContextKey as MenuStateContext, RootMenuTriggerStateContextKey as RootMenuTriggerStateContext} from '../src/context'
-export type {MenuProps} from '../src/Menu'
+export type {MenuProps, SubmenuTriggerProps} from '../src/Menu'
 export type {MenuItemProps} from '../src/MenuItem'
 export type {MenuSectionProps} from '../src/MenuSection'
 export type {MenuTriggerProps} from '../src/MenuTrigger'

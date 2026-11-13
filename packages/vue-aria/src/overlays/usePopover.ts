@@ -39,6 +39,9 @@ export interface AriaPopoverProps {
   offset?: MaybeRefOrGetter<number | undefined>
   /** Whether to flip on viewport overflow. @default true */
   shouldFlip?: MaybeRefOrGetter<boolean | undefined>
+  /** Trigger type (e.g. SubmenuTrigger) for submenu-specific behavior. */
+  trigger?: string
+  isSubmenu?: boolean
 }
 
 export interface PopoverPropsEl extends OverlayPropsEl {
@@ -70,12 +73,13 @@ export interface PopoverAria {
  * the full official `calculatePosition`.
  */
 export function usePopover(props: AriaPopoverProps, state: OverlayTriggerState): PopoverAria {
+  const isSubmenu = (props as any).trigger === 'SubmenuTrigger' || !!(props as any).isSubmenu
   const {overlayProps, underlayProps} = useOverlay(
     {
       isOpen: () => state.isOpen.value,
       onClose: () => state.close(),
-      // Official: isDismissable: !isNonModal || isSubmenu. Submenus are deferred.
-      isDismissable: () => !toValue(props.isNonModal),
+      // Official: isDismissable: !isNonModal || isSubmenu.
+      isDismissable: () => !toValue(props.isNonModal) || isSubmenu,
       isKeyboardDismissDisabled: () => Boolean(toValue(props.isKeyboardDismissDisabled)),
       shouldCloseOnInteractOutside: props.shouldCloseOnInteractOutside,
     },
@@ -83,7 +87,7 @@ export function usePopover(props: AriaPopoverProps, state: OverlayTriggerState):
   )
 
   usePreventScroll({
-    isDisabled: () => Boolean(toValue(props.isNonModal)) || !state.isOpen.value,
+    isDisabled: () => Boolean(toValue(props.isNonModal)) || isSubmenu || !state.isOpen.value,
   })
 
   const placement = reactive({value: parseAxis(toValue(props.placement) || 'bottom')})
@@ -118,7 +122,7 @@ export function usePopover(props: AriaPopoverProps, state: OverlayTriggerState):
       placement.value = result.placement
       popoverProps.style = result.style
 
-      if (!isNonModal) {
+      if (!isNonModal && !isSubmenu) {
         const restore = ariaHideOutside([popover])
         onCleanup(() => restore())
       }

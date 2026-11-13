@@ -10,7 +10,7 @@
  * governing permissions and limitations under the License.
  */
 
-import {computed, onMounted, ref, toValue, type MaybeRefOrGetter, type Ref} from 'vue'
+import {computed, onMounted, ref, toValue, watch, type MaybeRefOrGetter, type Ref} from 'vue'
 import type {ListState} from 'vue-stately/useListState'
 import type {Key} from 'vue-stately/useListState'
 import {ListKeyboardDelegate} from '../listbox/useListKeyboardDelegate'
@@ -219,13 +219,14 @@ export function useMenu<T>(
     onBlur: {value: onBlur, enumerable: true},
   })
 
-  const autoFocusRef = ref((props as any).autoFocus)
+  const getAutoFocus = () => (props as any).autoFocus
+  const didAutoFocus = ref(false)
   onMounted(() => {
-    if (!autoFocusRef.value) return
-    const autoFocus = (props as any).autoFocus
+    const af = getAutoFocus()
+    if (!af) return
     let focusedKey: Key | null = null
-    if (autoFocus === 'first') focusedKey = delegate.value.getFirstKey?.() ?? null
-    else if (autoFocus === 'last') focusedKey = delegate.value.getLastKey?.() ?? null
+    if (af === 'first') focusedKey = delegate.value.getFirstKey?.() ?? null
+    else if (af === 'last') focusedKey = delegate.value.getLastKey?.() ?? null
     const selectedKeys = state.selectionManager.selectedKeys
     if (selectedKeys.size) {
       for (const key of selectedKeys) {
@@ -234,8 +235,28 @@ export function useMenu<T>(
     }
     state.selectionManager.setFocused(true)
     if (focusedKey != null) state.selectionManager.setFocusedKey(focusedKey)
-    if (state.collection.value.size > 0) autoFocusRef.value = false
+    if (state.collection.value.size > 0) didAutoFocus.value = true
   })
+
+  // If collection becomes available after mount and autoFocus requested, apply once.
+  watch(
+    () => [getAutoFocus(), state.collection.value.size],
+    ([af, size]) => {
+      if (!af || didAutoFocus.value || size === 0) return
+      let focusedKey: Key | null = null
+      if (af === 'first') focusedKey = delegate.value.getFirstKey?.() ?? null
+      else if (af === 'last') focusedKey = delegate.value.getLastKey?.() ?? null
+      const selectedKeys = state.selectionManager.selectedKeys
+      if (selectedKeys.size) {
+        for (const key of selectedKeys) {
+          if (state.selectionManager.canSelectItem(key)) { focusedKey = key; break }
+        }
+      }
+      state.selectionManager.setFocused(true)
+      if (focusedKey != null) state.selectionManager.setFocusedKey(focusedKey)
+      didAutoFocus.value = true
+    },
+  )
 
   return {menuProps}
 }

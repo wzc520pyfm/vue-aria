@@ -18,6 +18,8 @@ export type {TooltipTriggerProps, TooltipTriggerState} from './useTooltipTrigger
 
 export {useMenuTriggerState} from './useMenuTriggerState'
 export type {MenuTriggerProps, MenuTriggerType, MenuTriggerState, RootMenuTriggerState} from './useMenuTriggerState'
+export {useSubmenuTriggerState} from './useMenuTriggerState'
+export type {SubmenuTriggerProps, SubmenuTriggerState} from './useMenuTriggerState'
 
 export {useMultipleSelectionState} from './useMultipleSelectionState'
 export type {

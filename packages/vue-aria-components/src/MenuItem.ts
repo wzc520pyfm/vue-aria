@@ -2,7 +2,7 @@ import {computed, defineComponent, h, inject, provide, ref, watchEffect, type Pr
 import {mergeProps, toHeroDataAttrs, useSelectable} from 'vue-aria'
 import {useMenuItem} from 'vue-aria/useMenu'
 import type {Key} from 'vue-stately/useListState'
-import {ListBoxItemContextKey, MenuContextKey, MenuItemContextKey, MenuStateContextKey, KeyboardContextKey, TextContextKey, RootMenuTriggerStateContextKey} from './context'
+import {KeyboardContextKey, ListBoxItemContextKey, MenuContextKey, MenuItemContextKey, MenuStateContextKey, RootMenuTriggerStateContextKey, TextContextKey} from './context'
 
 export interface MenuItemProps {
   id?: Key
@@ -36,8 +36,18 @@ export const MenuItem = defineComponent({
     }
     const rootState = inject(RootMenuTriggerStateContextKey, null)
     const menuContext = inject(MenuContextKey, null)
+    const itemContext = inject(MenuItemContextKey, null) as any
     const itemRef = ref<HTMLElement | null>(null)
+
+    // Register trigger/item ref when provided via SubmenuTrigger context.
+    if (itemContext?.ref) {
+      watchEffect(() => {
+        itemContext.ref.value = itemRef.value
+      })
+    }
+
     const itemKey = computed<Key>(() => (props.id ?? null) as Key)
+    const shouldCloseOnSelect = computed(() => props.shouldCloseOnSelect ?? itemContext?.shouldCloseOnSelect)
 
     const {
       menuItemProps,
@@ -55,19 +65,26 @@ export const MenuItem = defineComponent({
         key: itemKey,
         isDisabled: () => props.isDisabled,
         'aria-label': () => props['aria-label'],
-        shouldCloseOnSelect: props.shouldCloseOnSelect,
+        'aria-haspopup': () => itemContext?.['aria-haspopup'],
+        'aria-expanded': () => itemContext?.['aria-expanded'],
+        'aria-controls': () => itemContext?.['aria-controls'],
+        onPressStart: itemContext?.onPressStart,
+        onPress: itemContext?.onPress,
+        onHoverChange: itemContext?.onHoverChange,
+        onKeyDown: itemContext?.onKeyDown,
+        isOpen: itemContext?.isOpen,
+        shouldCloseOnSelect: shouldCloseOnSelect.value,
         href: props.href,
         onAction: (k) => { props.onAction?.(k); emit('action', k) },
         onClose: () => {
           ;(menuContext as any)?.onClose?.()
-          ;(rootState as any)?.close?.()
+          if (!(menuContext as any)?.onClose) (rootState as any)?.close?.()
         },
       },
       state as any,
       itemRef as any,
     )
 
-    // Provide contexts for Text and Keyboard (official slot ids)
     provide(ListBoxItemContextKey, {labelProps, descriptionProps})
     provide(TextContextKey, {
       slots: {
@@ -76,7 +93,7 @@ export const MenuItem = defineComponent({
       },
     })
     provide(KeyboardContextKey, keyboardShortcutProps)
-    provide(MenuItemContextKey, {shouldCloseOnSelect: props.shouldCloseOnSelect})
+    provide(MenuItemContextKey, {shouldCloseOnSelect: shouldCloseOnSelect.value})
 
     const {selectedAttrs} = useSelectable({isSelected: () => isSelected.value})
 
@@ -88,7 +105,10 @@ export const MenuItem = defineComponent({
 
     return () => {
       const selectionMode = (state as any).selectionManager?.selectionMode ?? 'none'
+      // Preserve any id set by submenu trigger context on the element via aria/id merge in menuItemProps.
       const base = mergeProps(menuItemProps, attrs)
+      // For submenu trigger items, prefer submenu trigger id for aria-labelledby linkage.
+      if (itemContext?.id) Object.defineProperty(base, 'id', {value: itemContext.id, enumerable: true, configurable: true, writable: true})
       const dataAttrs: Record<string, any> = {
         ...toHeroDataAttrs({
           hovered: isHovered.value,
@@ -102,14 +122,29 @@ export const MenuItem = defineComponent({
       if (selectionMode !== 'none') {
         dataAttrs['data-selection-mode'] = selectionMode
       }
-      const domProps = {
-        ...base,
-        ...dataAttrs,
-        class: ['react-aria-MenuItem', (attrs as any).class].filter(Boolean),
-        ref: (el: any) => { itemRef.value = el as HTMLElement },
+
+      const domProps: Record<string, any> = {}
+      // Copy descriptors first to keep handlers/getters, then materialize dynamic values for Vue patching.
+      for (const [k, desc] of Object.entries(Object.getOwnPropertyDescriptors(base))) {
+        if (desc && ('get' in desc || 'set' in desc)) {
+          try { domProps[k] = (base as any)[k] } catch { domProps[k] = undefined }
+        } else if (desc) {
+          domProps[k] = desc.value
+        }
       }
+
+      const hasSubmenu = !!domProps['aria-haspopup']
+      const expanded = domProps['aria-expanded']
+      if (hasSubmenu) dataAttrs['data-has-submenu'] = 'true'
+      if (expanded === 'true' || expanded === true) dataAttrs['data-open'] = 'true'
+
+      for (const [k, v] of Object.entries(dataAttrs)) {
+        domProps[k] = v
+      }
+      domProps.class = ['react-aria-MenuItem', (attrs as any).class].filter(Boolean)
+      domProps.ref = (el: any) => { itemRef.value = el as HTMLElement }
       const Tag = props.href ? 'a' : 'div'
-      if (props.href) (domProps as any).href = props.href
+      if (props.href) domProps.href = props.href
       return h(Tag, domProps, slots.default?.())
     }
   },
