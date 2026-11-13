@@ -65,3 +65,12 @@ export const SeparatorContextKey: InjectionKey<{elementType?: string} | undefine
 export const KeyboardContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('KeyboardContext')
 export const MenuItemContextKey: InjectionKey<Record<string, any> | null> = Symbol('MenuItemContext')
 export const SubmenuTriggerContextKey: InjectionKey<Record<string, any> | null> = Symbol('SubmenuTriggerContext')
+
+
+export const LabelContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('LabelContext')
+
+export const SelectContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('SelectContext')
+export const SelectStateContextKey: InjectionKey<any | null> = Symbol('SelectStateContext')
+export const SelectValueContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('SelectValueContext')
+
+export const ButtonContextKey: InjectionKey<Record<string, any> | null | undefined> = Symbol('ButtonContext')

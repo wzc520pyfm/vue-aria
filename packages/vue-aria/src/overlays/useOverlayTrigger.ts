@@ -69,7 +69,8 @@ export function useOverlayTrigger(
     if (isOpen) {
       triggerProps['aria-controls'] = overlayId.value
     } else {
-      delete triggerProps['aria-controls']
+      // Keep the key present (with value undefined) so consumers can bind a live getter.
+      triggerProps['aria-controls'] = undefined
     }
     overlayProps.id = overlayId.value
     triggerProps.onPress = () => state.toggle()

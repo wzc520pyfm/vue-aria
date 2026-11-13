@@ -6,7 +6,7 @@
  * This batch adds collections/ListBox and action/selection Menu components
  * on top of Button, overlays, and text primitives: ListBox, ListBoxItem,
  * ListBoxSection, Collection, Header, Text, Menu, MenuItem, MenuSection,
- * MenuTrigger, SubmenuTrigger, Separator, Keyboard. Select, ComboBox, Sheet,
+ * MenuTrigger, SubmenuTrigger, Separator, Keyboard. Select is now included. ComboBox, Sheet,
  * dates, a full I18nProvider, and Storybook / Netlify remain deferred.
  */
 export {Button} from './Button'
@@ -36,3 +36,8 @@ export {Separator, SeparatorContext} from './Separator'
 export type {SeparatorProps} from './Separator'
 export {Keyboard, KeyboardContext} from './Keyboard'
 export type {KeyboardProps} from './Keyboard'
+
+export {Select, SelectValue, SelectContext, SelectValueContext, SelectStateContext} from './Select'
+export type {SelectProps, SelectValueProps, SelectValueRenderProps, SelectRenderProps} from './Select'
+export {Label, LabelContext} from './Label'
+export type {LabelProps} from './Label'

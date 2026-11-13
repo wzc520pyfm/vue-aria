@@ -102,11 +102,16 @@ export function useMenuTrigger<T = unknown>(
     }
   }
 
-  // Preserve reactivity of triggerProps from useOverlayTrigger
+  // Preserve reactivity of triggerProps from useOverlayTrigger: keep live
+  // getters so aria-expanded / aria-haspopup / aria-controls / onPress
+  // reflect open state, including keys added or removed later.
   const menuTriggerProps: Record<string, any> = Object.create(null)
-  for (const key of Object.keys(triggerProps)) {
-    const desc = Object.getOwnPropertyDescriptor(triggerProps, key)
-    if (desc) Object.defineProperty(menuTriggerProps, key, desc)
+  for (const key of ['aria-haspopup', 'aria-expanded', 'aria-controls'] as const) {
+    Object.defineProperty(menuTriggerProps, key, {
+      get: () => (triggerProps as any)[key],
+      enumerable: true,
+      configurable: true,
+    })
   }
   menuTriggerProps.id = menuTriggerId.value
   menuTriggerProps.onKeyDown = onKeyDown

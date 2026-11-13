@@ -39,9 +39,15 @@ This Menu batch adds a usable Menu slice, including SubmenuTrigger:
 
 SubmenuTrigger hoists its trigger MenuItem into the parent list collection and renders its Popover as the submenu. `useSafelyMouseToSubmenu` is internal (not exported). RTL arrow behavior follows element/document direction (`dir`), not a full I18nProvider.
 
+This Select batch adds:
+
+- `vue-stately`: `useSelectState`
+- `vue-aria`: `useSelect`, `useHiddenSelect`, `HiddenSelect`, `useField`
+- `vue-aria-components`: `Select`, `SelectValue`, `SelectContext`, `SelectValueContext`, `SelectStateContext`, `Label`, `LabelContext`
+
 Generated collection keys for id-less items/sections are path-based: `$$va-item-<path>` and `$$va-section-<path>` (with path segments reflecting nesting and indices).
 
-Select, ComboBox, Sheet, dates, a full `I18nProvider`, and Storybook / Netlify remain deferred.
+ComboBox, Sheet, dates, a full `I18nProvider`, and Storybook / Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 

@@ -5,12 +5,14 @@ import {
   BehaviorElement,
   behaviorAdapter,
   chain,
+  HiddenSelect,
   mergeProps,
   toHeroDataAttrs,
   useButton,
   useDialog,
   useFocusScope,
   useFocusVisible,
+  useHiddenSelect,
   useHover,
   useInteractOutside,
   useInvalid,
@@ -26,9 +28,19 @@ import {
   usePresenceState,
   usePress,
   usePreventScroll,
+  useSelect,
   useSelectable,
   useTooltip,
   useTooltipTrigger,
+} from 'vue-aria'
+import type {
+  AriaHiddenSelectOptions,
+  AriaHiddenSelectProps,
+  AriaSelectOptions,
+  AriaSelectProps,
+  HiddenSelectAria,
+  HiddenSelectProps,
+  SelectAria,
 } from 'vue-aria'
 import {useOverlayTriggerState, useTooltipTriggerState} from 'vue-stately'
 
@@ -61,6 +73,21 @@ describe('vue-aria main entry', () => {
     expect(typeof useOption).toBe('function')
     expect(typeof useListBoxSection).toBe('function')
     expect(typeof ListKeyboardDelegate).toBe('function')
+    expect(typeof useSelect).toBe('function')
+    expect(typeof useHiddenSelect).toBe('function')
+    expect(HiddenSelect).toBeDefined()
+    // Type-level presence check (compile-time): the official root re-exports
+    // these types, and so must the vue-aria root.
+    const typeProbe = (
+      _selectProps: AriaSelectProps | null,
+      _selectOptions: AriaSelectOptions | null,
+      _selectAria: SelectAria | null,
+      _hiddenProps: AriaHiddenSelectProps | null,
+      _hiddenOptions: AriaHiddenSelectOptions | null,
+      _hiddenPropsFull: HiddenSelectProps | null,
+      _hiddenAria: HiddenSelectAria | null,
+    ) => [_selectProps, _selectOptions, _selectAria, _hiddenProps, _hiddenOptions, _hiddenPropsFull, _hiddenAria]
+    expect(typeof typeProbe).toBe('function')
   })
 
   it('keeps all three interaction *Props objects unwrapped', () => {

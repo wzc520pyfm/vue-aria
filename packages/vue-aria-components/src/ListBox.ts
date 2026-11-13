@@ -282,19 +282,19 @@ export const ListBox = defineComponent({
   name: 'ListBox',
   inheritAttrs: false,
   props: {
-    selectionMode: {type: String as PropType<'none' | 'single' | 'multiple'>, default: 'none'},
-    selectionBehavior: {type: String as PropType<'toggle' | 'replace'>, default: 'toggle'},
+    selectionMode: {type: String as PropType<'none' | 'single' | 'multiple'>, default: undefined},
+    selectionBehavior: {type: String as PropType<'toggle' | 'replace'>, default: undefined},
     selectedKeys: {type: null as unknown as PropType<Selection | undefined>, default: undefined},
     defaultSelectedKeys: {type: null as unknown as PropType<Selection | Iterable<Key> | undefined>, default: undefined},
     disabledKeys: {type: null as unknown as PropType<Iterable<Key> | undefined>, default: undefined},
-    disallowEmptySelection: {type: Boolean, default: false},
-    orientation: {type: String as PropType<'vertical' | 'horizontal'>, default: 'vertical'},
-    layout: {type: String as PropType<'stack' | 'grid'>, default: 'stack'},
-    autoFocus: {type: [Boolean, String] as PropType<boolean | 'first' | 'last'>, default: false},
-    shouldFocusWrap: {type: Boolean, default: false},
-    shouldSelectOnPressUp: {type: Boolean, default: false},
-    shouldFocusOnHover: {type: Boolean, default: false},
-    escapeKeyBehavior: {type: String as PropType<'clearSelection' | 'none'>, default: 'clearSelection'},
+    disallowEmptySelection: {type: Boolean, default: undefined},
+    orientation: {type: String as PropType<'vertical' | 'horizontal'>, default: undefined},
+    layout: {type: String as PropType<'stack' | 'grid'>, default: undefined},
+    autoFocus: {type: [Boolean, String] as PropType<boolean | 'first' | 'last' | undefined>, default: undefined},
+    shouldFocusWrap: {type: Boolean, default: undefined},
+    shouldSelectOnPressUp: {type: Boolean, default: undefined},
+    shouldFocusOnHover: {type: Boolean, default: undefined},
+    escapeKeyBehavior: {type: String as PropType<'clearSelection' | 'none'>, default: undefined},
     items: {type: Array as PropType<any[]>, default: undefined},
     id: {type: String, default: undefined},
     'aria-label': {type: String, default: undefined},
@@ -306,70 +306,48 @@ export const ListBox = defineComponent({
   emits: ['selectionchange', 'action'],
   setup(props, {slots, attrs, emit}) {
     const providedState = inject(ListStateContextKey, null)
+    const injectedCtx = (inject(ListBoxContextKey, undefined) || {}) as Record<string, any>
     const listRef = ref<HTMLElement | null>(null)
-
-    const renderedChildren = computed<VNode[]>(() => {
-      if (props.items) return renderDynamic()
-      const result = buildCollection(slots.default?.() ?? [], null, 0)
-      return result.rendered
-    })
-
-    const nodes = computed(() => {
-      if (providedState) return null
-      if (props.items) {
-        // dynamic items: slot is scoped per item; collection built from data
-        return buildNodesFromDynamicItems(props.items, slots.default as any)
-      }
-      const rendered = slots.default?.() ?? []
-      const result = buildCollection(rendered, null, 0)
-      return result.nodes
-    })
-
-    const localState = providedState ? null : useListState({
-      nodes: () => nodes.value ?? [],
-      selectionMode: () => props.selectionMode,
-      selectionBehavior: () => props.selectionBehavior,
-      selectedKeys: () => props.selectedKeys,
-      defaultSelectedKeys: () => props.defaultSelectedKeys as any,
-      disabledKeys: () => props.disabledKeys,
-      disallowEmptySelection: () => props.disallowEmptySelection,
-      onSelectionChange: (sel: Selection) => emit('selectionchange', sel),
-    } as any)
-
-    const state = (providedState ?? localState)!
-
-    provide(ListStateContextKey, state as any)
-    provide(ListBoxContextKey, props as any)
-
-    const {listBoxProps, labelProps, isFocused, isFocusVisible} = useListBox({
-      id: () => props.id,
-      'aria-label': () => props['aria-label'],
-      'aria-labelledby': () => props['aria-labelledby'],
-      label: () => props.label,
-      selectionMode: () => props.selectionMode,
-      selectionBehavior: () => props.selectionBehavior,
-      orientation: () => props.orientation,
-      layout: () => props.layout,
-      autoFocus: () => props.autoFocus,
-      shouldFocusWrap: () => props.shouldFocusWrap,
-      shouldSelectOnPressUp: () => props.shouldSelectOnPressUp,
-      shouldFocusOnHover: () => props.shouldFocusOnHover,
-      escapeKeyBehavior: () => props.escapeKeyBehavior,
-      disallowEmptySelection: () => props.disallowEmptySelection,
-      onAction: (key) => { props.onAction?.(key); emit('action', key) },
-    }, state as any, listRef)
-
-    const renderEmptyState = () => {
-      if (state.collection.value.size !== 0) return null
-      if (slots.empty) return slots.empty({})
-      if (props.renderEmptyState) return props.renderEmptyState({})
-      return null
+    const getExplicit = (name: string) => {
+      // best-effort: if prop differs from default and was likely passed, treat as explicit.
+      // We'll also check vnode props via attrs? not reliable. Use injected ctx fallback only when prop undefined.
+      return (props as any)[name] !== undefined
     }
+
+    const pick = <T,>(name: string, fallback: T): T => {
+      if (getExplicit(name)) return (props as any)[name] as T
+      if (injectedCtx && injectedCtx[name] !== undefined) return injectedCtx[name] as T
+      return fallback
+    }
+    const pickBool = (name: string, fallback: boolean): boolean => {
+      if (getExplicit(name)) return !!(props as any)[name]
+      if (injectedCtx && injectedCtx[name] !== undefined) return !!injectedCtx[name]
+      return fallback
+    }
+
+    const selectionMode = computed<'none' | 'single' | 'multiple'>(() => {
+      const v = getExplicit('selectionMode') ? (props.selectionMode as any) : injectedCtx.selectionMode
+      return (v ?? 'none') as any
+    })
+    const selectionBehavior = computed<'toggle' | 'replace'>(() => {
+      const v = getExplicit('selectionBehavior') ? (props.selectionBehavior as any) : injectedCtx.selectionBehavior
+      return (v ?? 'toggle') as any
+    })
+    const autoFocus = computed<any>(() => (getExplicit('autoFocus') ? props.autoFocus : injectedCtx.autoFocus) ?? false)
+    const shouldFocusWrap = computed<boolean>(() => pickBool('shouldFocusWrap', false))
+    const shouldSelectOnPressUp = computed<boolean>(() => pickBool('shouldSelectOnPressUp', false))
+    const shouldFocusOnHover = computed<boolean>(() => pickBool('shouldFocusOnHover', false))
+    const escapeKeyBehavior = computed<'clearSelection' | 'none'>(() => pick('escapeKeyBehavior', 'clearSelection' as any))
+    const orientation = computed<'vertical' | 'horizontal'>(() => pick('orientation', 'vertical' as any))
+    const layout = computed<'stack' | 'grid'>(() => pick('layout', 'stack' as any))
+    const disallowEmptySelection = computed<boolean>(() => pickBool('disallowEmptySelection', false))
+    const resolvedId = computed(() => (props.id ?? injectedCtx.id) as string | undefined)
+    const resolvedAriaLabelledby = computed(() => (props['aria-labelledby'] ?? injectedCtx['aria-labelledby']) as string | undefined)
+    const resolvedAriaLabel = computed(() => (props['aria-label'] ?? injectedCtx['aria-label']) as string | undefined)
 
     const renderDynamic = (): VNode[] => {
       const items = props.items ?? []
       const out: VNode[] = []
-      // if items are sections, render sections/items accordingly
       for (const item of items) {
         const isSection = item && (item.type === 'section' || Array.isArray(item.items) || Array.isArray(item.children))
         if (isSection) {
@@ -391,6 +369,62 @@ export const ListBox = defineComponent({
       return out
     }
 
+    const nodes = computed(() => {
+      if (providedState) return null
+      if (props.items) {
+        return buildNodesFromDynamicItems(props.items, slots.default as any)
+      }
+      const rendered = slots.default?.() ?? []
+      const result = buildCollection(rendered, null, 0)
+      return result.nodes
+    })
+
+    const localState = providedState ? null : useListState({
+      nodes: () => nodes.value ?? [],
+      selectionMode: () => selectionMode.value,
+      selectionBehavior: () => selectionBehavior.value,
+      selectedKeys: () => props.selectedKeys,
+      defaultSelectedKeys: () => props.defaultSelectedKeys as any,
+      disabledKeys: () => props.disabledKeys,
+      disallowEmptySelection: () => disallowEmptySelection.value,
+      onSelectionChange: (sel: Selection) => emit('selectionchange', sel),
+    } as any)
+
+    const state = (providedState ?? localState)!
+
+    // Provide state and merged context for children (Select passes listbox context via injection).
+    provide(ListStateContextKey, state as any)
+    provide(ListBoxContextKey, {...injectedCtx, ...props} as any)
+
+    const {listBoxProps, labelProps, isFocused, isFocusVisible} = useListBox({
+      id: () => resolvedId.value,
+      'aria-label': () => resolvedAriaLabel.value,
+      'aria-labelledby': () => resolvedAriaLabelledby.value,
+      label: () => props.label,
+      selectionMode: () => selectionMode.value,
+      selectionBehavior: () => selectionBehavior.value,
+      orientation: () => orientation.value,
+      layout: () => layout.value,
+      autoFocus: () => autoFocus.value,
+      shouldFocusWrap: () => shouldFocusWrap.value,
+      shouldSelectOnPressUp: () => shouldSelectOnPressUp.value,
+      shouldFocusOnHover: () => shouldFocusOnHover.value,
+      escapeKeyBehavior: () => escapeKeyBehavior.value,
+      disallowEmptySelection: () => disallowEmptySelection.value,
+      onAction: (key: Key) => {
+        const action = props.onAction ?? injectedCtx.onAction
+        action?.(key)
+        emit('action', key)
+      },
+    } as any, state as any, listRef)
+
+    const renderEmptyState = () => {
+      if (state.collection.value.size !== 0) return null
+      if (slots.empty) return slots.empty({})
+      if (props.renderEmptyState) return props.renderEmptyState({})
+      return null
+    }
+
     const renderChildren = (): VNode[] => {
       if (props.items) return renderDynamic()
       const result = buildCollection(slots.default?.() ?? [], null, 0)
@@ -400,10 +434,15 @@ export const ListBox = defineComponent({
     return () => {
       const isEmpty = state.collection.value.size === 0
       const domProps = mergeProps(listBoxProps, attrs, {
-        ref: (el: any) => { listRef.value = el },
+        ref: (el: any) => {
+          listRef.value = el
+          const ctxRef = injectedCtx.ref
+          if (typeof ctxRef === 'function') ctxRef(el)
+          else if (ctxRef && typeof ctxRef === 'object' && 'value' in ctxRef) ctxRef.value = el
+        },
         class: ['react-aria-ListBox', (attrs as any).class].filter(Boolean),
-        'data-layout': props.layout ?? 'stack',
-        'data-orientation': props.orientation ?? 'vertical',
+        'data-layout': layout.value ?? 'stack',
+        'data-orientation': orientation.value ?? 'vertical',
         ...toHeroDataAttrs({focused: isFocused.value, focusVisible: isFocusVisible.value}),
         ...(isEmpty ? {'data-empty': 'true'} : {}),
       })
@@ -411,8 +450,12 @@ export const ListBox = defineComponent({
       if (toValue(props.label) != null) {
         children.push(h('span', {...labelProps.value, class: ['react-aria-ListBoxLabel', (attrs as any).class].filter(Boolean)}, toValue(props.label)))
       }
-      if (isEmpty) children.push(renderEmptyState())
-      else children.push(...renderChildren())
+      if (isEmpty) {
+        const empty = renderEmptyState()
+        if (empty != null) children.push(empty as any)
+      } else {
+        children.push(...renderChildren())
+      }
       return h('div', domProps, children)
     }
   },
