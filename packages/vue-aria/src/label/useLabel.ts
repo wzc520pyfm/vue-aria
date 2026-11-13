@@ -81,7 +81,8 @@ export function useLabel(props: UseLabelProps = {}): LabelAria {
     labelElementType = 'label',
   } = props
 
-  const id = computed(() => toValue(idProp) ?? '')
+  const generatedId = useId()
+  const id = computed(() => toValue(idProp) ?? generatedId.value)
   const labelId = useId('vue-aria-label')
   const labelValue = computed(() => toValue(label))
   const labelledBy = computed(() => toValue(props['aria-labelledby']) as string | undefined)

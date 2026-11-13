@@ -75,6 +75,9 @@ export type {UsePreventScrollOptions} from './usePreventScroll'
 export {useFocusScope} from './useFocusScope'
 export type {UseFocusScopeOptions} from './useFocusScope'
 
+export {useFocusWithin} from './useFocusWithin'
+export type {FocusWithinProps} from './useFocusWithin'
+
 export {useInteractOutside} from './useInteractOutside'
 export type {InteractOutsideProps} from './useInteractOutside'
 
@@ -131,3 +134,13 @@ export type {VisuallyHiddenAria, VisuallyHiddenProps} from './VisuallyHidden'
 export {useCalendar, useCalendarGrid, useCalendarCell} from './useCalendar'
 export type {AriaCalendarProps, AriaCalendarGridProps, AriaCalendarCellProps, CalendarAria, CalendarGridAria, CalendarCellAria} from './useCalendar'
 export type {CalendarProps, DateValue} from 'vue-stately/useCalendarState'
+
+export {useDateField} from './useDateField'
+export {useDateSegment} from './useDateField'
+export type {AriaDateFieldProps, AriaDateFieldOptions, DateFieldAria} from './useDateField'
+export type {DateSegmentAria} from './useDateField'
+export type {MappedDateValue} from 'vue-stately/useDateFieldState'
+
+export {useTimeField} from './useTimeField'
+export type {AriaTimeFieldProps, AriaTimeFieldOptions} from './useTimeField'
+export type {TimeValue, MappedTimeValue} from 'vue-stately/useTimeFieldState'

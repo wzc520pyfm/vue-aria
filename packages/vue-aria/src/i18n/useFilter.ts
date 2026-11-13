@@ -2,10 +2,15 @@
  * Port of `react-aria@3.53.1` `useFilter`
  * (`packages/react-aria/src/i18n/useFilter.ts` at
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc),
- * adapted for Vue: no I18nProvider — the locale comes from `document.documentElement.lang`
- * (falling back to `en-US`). The collator uses `Intl.Collator({usage: 'search', ...options})`
- * and NFC normalization, like the official implementation. Empty substrings match.
+ * adapted for Vue: the collator locale now follows the `I18nProvider` locale
+ * via `useLocale` (falling back to the default-locale detection, and
+ * ultimately `document.documentElement.lang`), like the official hook which
+ * reads the I18nProvider. The collator uses
+ * `Intl.Collator({usage: 'search', ...options})` and NFC normalization.
+ * Empty substrings match.
  */
+
+import {useLocale} from './I18nProvider'
 
 export interface Filter {
   /** Returns whether a string starts with a given substring. */
@@ -18,17 +23,7 @@ export interface Filter {
 
 const collatorCache = new Map<string, Intl.Collator>()
 
-function getLocale(): string {
-  try {
-    if (typeof document !== 'undefined' && document.documentElement?.lang) {
-      return document.documentElement.lang
-    }
-  } catch {}
-  return 'en-US'
-}
-
-function getCollator(options?: Intl.CollatorOptions): Intl.Collator {
-  const locale = getLocale()
+function getCollator(locale: string, options?: Intl.CollatorOptions): Intl.Collator {
   const cacheKey =
     locale +
     (options
@@ -50,7 +45,14 @@ function getCollator(options?: Intl.CollatorOptions): Intl.Collator {
  * parameters.
  */
 export function useFilter(options?: Intl.CollatorOptions): Filter {
-  const collator = getCollator({usage: 'search', ...options})
+  // Follow the I18nProvider locale (like official useFilter), not only document.lang.
+  let locale = useLocale().locale
+  try {
+    Intl.Collator.supportedLocalesOf([locale])
+  } catch {
+    locale = 'en-US'
+  }
+  const collator = getCollator(locale, {usage: 'search', ...options})
 
   const startsWith = (string: string, substring: string): boolean => {
     if (substring.length === 0) return true

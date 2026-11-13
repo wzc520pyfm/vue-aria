@@ -54,3 +54,14 @@ export type {I18nProviderProps, Locale} from './I18nProvider'
 export {Calendar, CalendarGrid, CalendarGridHeader, CalendarGridBody, CalendarHeaderCell, CalendarCell, CalendarContext, CalendarStateContext} from './Calendar'
 export type {CalendarProps, CalendarRenderProps, CalendarGridProps, CalendarCellProps} from './Calendar'
 export type {DateValue, CalendarState, CalendarSelectionMode} from 'vue-stately/useCalendarState'
+
+export {DateField, DateInput, DateSegment, DateFieldContext, DateFieldStateContext} from './DateField'
+export type {DateFieldProps, DateFieldRenderProps, DateInputProps, DateInputRenderProps, DateSegmentProps, DateSegmentRenderProps} from './DateField'
+export type {DateFieldState} from 'vue-stately/useDateFieldState'
+
+export {TimeField, TimeFieldContext, TimeFieldStateContext} from './TimeField'
+export type {TimeFieldProps, TimeFieldRenderProps} from './TimeField'
+export type {TimeValue, TimeFieldState} from 'vue-stately/useTimeFieldState'
+
+export {Group, GroupContext} from './Group'
+export type {GroupProps, GroupRenderProps} from './Group'

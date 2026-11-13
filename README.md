@@ -59,7 +59,13 @@ This dates slice adds the first usable `Calendar` vertical:
 - `vue-aria`: `I18nProvider`, `useLocale`, `isRTL`, `useDateFormatter`, `useLocalizedStringFormatter`, `useLocalizedStringDictionary`, `useCalendar`, `useCalendarGrid`, `useCalendarCell`, `VisuallyHidden`, `useVisuallyHidden`
 - `vue-aria-components`: `Calendar`, `CalendarGrid`, `CalendarGridHeader`, `CalendarGridBody`, `CalendarHeaderCell`, `CalendarCell`, `CalendarContext`, `CalendarStateContext`, plus re-exports of `I18nProvider` / `useLocale` / `isRTL`
 
-RangeCalendar, calendar month/year pickers and heading components, DateField/TimeField/DatePicker/DateRangePicker/HiddenDateInput, Group, FieldError, Form, Autocomplete, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
+This DateField slice adds the first usable `DateField` / `TimeField` vertical (segments, placeholders, `IncompleteDate`):
+
+- `vue-stately`: `useDateFieldState`, `useTimeFieldState`
+- `vue-aria`: `useDateField`, `useDateSegment`, `useTimeField`, `useFocusWithin`
+- `vue-aria-components`: `DateField`, `TimeField`, `DateInput`, `DateSegment`, `DateFieldContext`, `TimeFieldContext`, `DateFieldStateContext`, `TimeFieldStateContext`, plus a minimal exported `Group` / `GroupContext`; each `DateField` / `TimeField` entry also re-exports `Label` and `Text`; `TimeField` uses a hidden input for the `timeValue` string and renders no `HiddenDateInput`
+
+DatePicker, DateRangePicker, RangeCalendar, `useDatePicker` / `useDateRangePicker` / `useDatePickerState` / `useDateRangePickerState` / `useRangeCalendarState`, `FieldError`, `Form`, `NumberField` (and their context stubs), calendar month/year pickers and heading components, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 

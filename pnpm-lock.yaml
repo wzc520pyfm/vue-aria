@@ -38,6 +38,9 @@ importers:
       '@internationalized/date':
         specifier: ^3.12.4
         version: 3.12.4
+      '@internationalized/number':
+        specifier: ^3.6.9
+        version: 3.6.9
       '@internationalized/string':
         specifier: ^3.2.10
         version: 3.2.10
@@ -70,6 +73,12 @@ importers:
       '@internationalized/date':
         specifier: ^3.12.4
         version: 3.12.4
+      '@internationalized/number':
+        specifier: ^3.6.9
+        version: 3.6.9
+      '@internationalized/string':
+        specifier: ^3.2.10
+        version: 3.2.10
     devDependencies:
       vue:
         specifier: ^3.5.13
@@ -439,6 +448,9 @@ packages:
 
   '@internationalized/date@3.12.4':
     resolution: {integrity: sha512-M1dEn4c1U1HsSlaVR8upZtSqvXrTkHDfv18H01uCSJyjVLDxnBR38v/fMxecmlwXKR4i9HeZcmgQAPE6A+aGJQ==}
+
+  '@internationalized/number@3.6.9':
+    resolution: {integrity: sha512-GgWy2caO/+hV9sT/oCTWGHvbjmJMPT9kkXzoKRLnkEq7adghhR7UprhvY9sXrKfrp3NcDfhF6QQHXR1KfQbB8g==}
 
   '@internationalized/string@3.2.10':
     resolution: {integrity: sha512-PDx6//vHSpRnHfxqMqto11zQvhsaU74O3mKv2F/0eicGZcl9NLjQmGlbHz/LsJh5tLKp4A4L7ZVTzN1/MmMTvA==}
@@ -1450,6 +1462,10 @@ snapshots:
     optional: true
 
   '@internationalized/date@3.12.4':
+    dependencies:
+      '@swc/helpers': 0.5.24
+
+  '@internationalized/number@3.6.9':
     dependencies:
       '@swc/helpers': 0.5.24
 
