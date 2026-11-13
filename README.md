@@ -31,7 +31,15 @@ This collections batch adds the collection foundation and a usable `ListBox`:
 - `vue-aria`: `useListBox`, `useOption`, `useListBoxSection`, `ListKeyboardDelegate`
 - `vue-aria-components`: `ListBox`, `ListBoxItem`, `ListBoxSection`, `Collection`, `Header`, `Text`
 
-Menu, Select, ComboBox, Sheet, dates, a full `I18nProvider`, and Storybook / Netlify remain deferred. Menu is the intended next follow-up.
+This Menu batch adds a usable Menu slice (no submenu):
+
+- `vue-stately`: `useMenuTriggerState` (root menu trigger state, including submenu stack API for future use)
+- `vue-aria`: `useMenu`, `useMenuItem`, `useMenuSection`, `useMenuTrigger`, `useSeparator`, `useKeyboard`
+- `vue-aria-components`: `Menu`, `MenuItem`, `MenuSection`, `MenuTrigger`, `Separator`, `Keyboard` (and Collection support in menus)
+
+Generated collection keys for id-less items/sections are path-based: `$$va-item-<path>` and `$$va-section-<path>` (with path segments reflecting nesting and indices).
+
+Select, ComboBox, Sheet, dates, submenu, a full `I18nProvider`, and Storybook / Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 
