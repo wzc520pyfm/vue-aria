@@ -82,3 +82,6 @@ export {useListBox, useOption, useListBoxSection} from './useListBox'
 export type {UseListBoxProps, ListBoxAria, AriaOptionProps, OptionAria, AriaListBoxSectionProps, ListBoxSectionAria} from './useListBox'
 export {ListKeyboardDelegate} from './ListKeyboardDelegate'
 export type {ListKeyboardDelegateOptions} from './ListKeyboardDelegate'
+
+export {useLabel} from './useLabel'
+export type {UseLabelProps, LabelAria} from './useLabel'

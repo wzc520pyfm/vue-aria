@@ -34,8 +34,9 @@ export const OVERLAY_COMPONENT_NAMES = new Set(['Modal', 'ModalOverlay', 'Popove
 // Collections
 export const ListBoxContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('ListBoxContext')
 export const ListStateContextKey: InjectionKey<ListState<unknown> | null> = Symbol('ListStateContext')
-export const CollectionContextKey: InjectionKey<{items?: unknown[]; dependencies?: unknown[]} | undefined> = Symbol('CollectionContext')
+export const CollectionContextKey: InjectionKey<{items: import('vue').ComputedRef<unknown[] | undefined>; dependencies: import('vue').ComputedRef<unknown[]>} | undefined> = Symbol('CollectionContext')
 export const ListBoxSectionContextKey: InjectionKey<{key: Key | null} | undefined> = Symbol('ListBoxSectionContext')
+export const HeaderContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('HeaderContext')
 export interface ListBoxItemContextValue {
   labelProps?: {id?: string}
   descriptionProps?: {id?: string}

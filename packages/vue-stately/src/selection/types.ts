@@ -146,6 +146,9 @@ export interface UseMultipleSelectionStateProps {
   disabledBehavior?: import('vue').MaybeRefOrGetter<DisabledBehavior>
 }
 
+/** Official alias of {@link UseMultipleSelectionStateProps}, matching react-stately. */
+export type MultipleSelectionStateProps = UseMultipleSelectionStateProps
+
 export interface ListProps<T> {
   /** The items of the list, for dynamic collections. */
   items?: Iterable<T>

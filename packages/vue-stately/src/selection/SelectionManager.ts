@@ -137,10 +137,14 @@ export class SelectionManager {
   }
 
   canSelectItem(key: Key): boolean {
-    if (this.state.selectionMode.value === 'none' || this.isDisabled(key)) return false
+    if (this.state.selectionMode.value === 'none') return false
+    // Official behavior: `disabledKeys` always reject selection, regardless of
+    // `disabledBehavior` (which only controls whether disabled items stay focusable).
+    if (this.state.disabledKeys.value.has(key)) return false
     const item = this.collection.getItem(key)
     if (!item) return false
-    return item.type === 'item'
+    if (item.props?.isDisabled) return false
+    return true
   }
 
   private getSelectAllKeys(): Key[] {

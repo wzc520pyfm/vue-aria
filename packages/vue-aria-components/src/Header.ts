@@ -1,4 +1,5 @@
-import {defineComponent, h} from 'vue'
+import {computed, defineComponent, h, inject} from 'vue'
+import {HeaderContextKey} from './context'
 
 export interface HeaderProps { id?: string }
 
@@ -9,10 +10,17 @@ export const Header = defineComponent({
     id: {type: String, default: undefined},
   },
   setup(props, {slots, attrs}) {
+    // When rendered inside a ListBoxSection, the section provides the resolved
+    // heading props (generated heading id, etc.) via context.
+    const headingContext = inject(HeaderContextKey, null)
+    const headingProps = computed(() => ({
+      ...(headingContext ?? {}),
+      ...(props.id ? {id: props.id} : {}),
+    }))
     return () => h('header', {
       ...attrs,
       class: ['react-aria-Header', (attrs as any).class].filter(Boolean),
-      ...(props.id ? {id: props.id} : {}),
+      ...headingProps.value,
       'data-slot': (attrs as any)['data-slot'] ?? 'header',
     }, slots.default?.())
   },

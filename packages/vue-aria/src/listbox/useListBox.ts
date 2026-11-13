@@ -1,10 +1,12 @@
-import {computed, toValue, type MaybeRefOrGetter, type Ref} from 'vue'
+import {computed, onMounted, ref, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref} from 'vue'
 import type {ListState} from 'vue-stately/useListState'
 import type {Key} from 'vue-stately/useListState'
 import {ListKeyboardDelegate} from './useListKeyboardDelegate'
 import {setListData} from './utils'
 import {useId} from '../utils/useId'
 import {useTypeSelect} from './useTypeSelect'
+import {useFocusVisible} from '../interactions/focusVisible'
+import {useLabel} from '../label/useLabel'
 
 export interface UseListBoxProps {
   id?: MaybeRefOrGetter<string | undefined>
@@ -35,7 +37,12 @@ export interface UseListBoxProps {
 
 export interface ListBoxAria {
   listBoxProps: Record<string, any>
-  labelProps: Record<string, any>
+  /** Props for the listbox's visual label element (if any). */
+  labelProps: ComputedRef<Record<string, any>>
+  /** Whether the listbox is currently focused. */
+  isFocused: ComputedRef<boolean>
+  /** Whether the listbox is currently keyboard focused. */
+  isFocusVisible: ComputedRef<boolean>
 }
 
 function isCtrlKeyPressed(e: KeyboardEvent) {
@@ -43,7 +50,7 @@ function isCtrlKeyPressed(e: KeyboardEvent) {
   return e.ctrlKey
 }
 
-export function useListBox<T>(props: UseListBoxProps, state: ListState<T>, ref: Ref<HTMLElement | null>): ListBoxAria {
+export function useListBox<T>(props: UseListBoxProps, state: ListState<T>, listRef: Ref<HTMLElement | null>): ListBoxAria {
   const selectionBehavior = computed(() => (toValue(props.selectionBehavior) ?? 'toggle') as 'toggle' | 'replace')
   const orientation = computed(() => (toValue(props.orientation) ?? 'vertical') as 'vertical' | 'horizontal')
   const escapeKeyBehavior = computed(() => (toValue(props.escapeKeyBehavior) ?? 'clearSelection') as 'clearSelection' | 'none')
@@ -75,7 +82,7 @@ export function useListBox<T>(props: UseListBoxProps, state: ListState<T>, ref: 
     if (provided) return provided
     return new ListKeyboardDelegate({
       collection: () => state.collection.value as any,
-      ref,
+      ref: listRef,
       collator,
       disabledKeys: () => state.selectionManager.disabledKeys,
       disabledBehavior: () => state.selectionManager.disabledBehavior as any,
@@ -90,6 +97,37 @@ export function useListBox<T>(props: UseListBoxProps, state: ListState<T>, ref: 
     selectionManager: state.selectionManager as any,
   })
 
+  const focusVisible = useFocusVisible()
+  const focusPropsOnFocus = focusVisible.focusProps.onFocus
+  const focusPropsOnBlur = focusVisible.focusProps.onBlur
+  const isFocused = computed(() => state.selectionManager.isFocused)
+  const isFocusVisible = computed(() => isFocused.value && focusVisible.isFocusVisible.value)
+
+  const onFocus = (e: FocusEvent) => {
+    if (!state.selectionManager.isFocused) {
+      state.selectionManager.setFocused(true)
+      props.onFocusChange?.(true)
+    }
+    focusPropsOnFocus(e)
+    const autoFocus = toValue(props.autoFocus)
+    if (state.selectionManager.focusedKey == null && autoFocus) {
+      let key: Key | null = null
+      if (autoFocus === 'last') key = delegate.value.getLastKey?.() ?? null
+      else key = state.selectionManager.firstSelectedKey ?? delegate.value.getFirstKey?.() ?? null
+      if (key != null) state.selectionManager.setFocusedKey(key)
+    }
+    props.onFocus?.(e)
+  }
+
+  const onBlur = (e: FocusEvent) => {
+    focusPropsOnBlur(e)
+    if (listRef.value && !(e.relatedTarget instanceof Node && listRef.value.contains(e.relatedTarget))) {
+      state.selectionManager.setFocused(false)
+      props.onFocusChange?.(false)
+    }
+    props.onBlur?.(e)
+  }
+
   const onKeyDown = (e: KeyboardEvent) => {
     typeSelectProps.onKeyDownCapture?.(e)
     if (e.defaultPrevented) return
@@ -99,12 +137,17 @@ export function useListBox<T>(props: UseListBoxProps, state: ListState<T>, ref: 
     const manager = state.selectionManager
     const d = delegate.value
     const focusedKey = manager.focusedKey
+    const isFocusOnContainer = listRef.value != null && document.activeElement === listRef.value
 
     switch (e.key) {
       case 'ArrowDown': {
         e.preventDefault()
-        const next = focusedKey == null ? d.getFirstKey?.() : d.getKeyBelow?.(focusedKey)
-        const key = next ?? (shouldFocusWrap.value ? d.getFirstKey?.() : null)
+        const next = focusedKey == null || isFocusOnContainer
+          ? (focusedKey ?? d.getFirstKey?.() ?? null)
+          : d.getKeyBelow?.(focusedKey)
+        const key = (focusedKey == null || isFocusOnContainer)
+          ? (next ?? d.getFirstKey?.() ?? null)
+          : (next ?? (shouldFocusWrap.value ? d.getFirstKey?.() : null))
         if (key != null) {
           manager.setFocusedKey(key)
           if (selectionBehavior.value === 'replace' && !e.shiftKey && !isCtrlKeyPressed(e)) manager.replaceSelection(key)
@@ -114,8 +157,12 @@ export function useListBox<T>(props: UseListBoxProps, state: ListState<T>, ref: 
       }
       case 'ArrowUp': {
         e.preventDefault()
-        const prev = focusedKey == null ? d.getLastKey?.() : d.getKeyAbove?.(focusedKey)
-        const key = prev ?? (shouldFocusWrap.value ? d.getLastKey?.() : null)
+        const prev = focusedKey == null || isFocusOnContainer
+          ? (focusedKey ?? d.getLastKey?.() ?? null)
+          : d.getKeyAbove?.(focusedKey)
+        const key = (focusedKey == null || isFocusOnContainer)
+          ? (prev ?? d.getLastKey?.() ?? null)
+          : (prev ?? (shouldFocusWrap.value ? d.getLastKey?.() : null))
         if (key != null) {
           manager.setFocusedKey(key)
           if (selectionBehavior.value === 'replace' && !e.shiftKey && !isCtrlKeyPressed(e)) manager.replaceSelection(key)
@@ -130,7 +177,11 @@ export function useListBox<T>(props: UseListBoxProps, state: ListState<T>, ref: 
           const next = e.key === 'ArrowRight'
             ? (focusedKey == null ? d.getFirstKey?.() : d.getKeyBelow?.(focusedKey))
             : (focusedKey == null ? d.getLastKey?.() : d.getKeyAbove?.(focusedKey))
-          if (next != null) manager.setFocusedKey(next)
+          if (next != null) {
+            manager.setFocusedKey(next)
+            if (selectionBehavior.value === 'replace' && !e.shiftKey && !isCtrlKeyPressed(e)) manager.replaceSelection(next)
+            else if (e.shiftKey && manager.selectionMode === 'multiple') manager.extendSelection(next)
+          }
         }
         break
       }
@@ -172,28 +223,13 @@ export function useListBox<T>(props: UseListBoxProps, state: ListState<T>, ref: 
     }
   }
 
-  const onFocus = (e: FocusEvent) => {
-    if (!state.selectionManager.isFocused) {
-      state.selectionManager.setFocused(true)
-      props.onFocusChange?.(true)
-    }
-    if (state.selectionManager.focusedKey == null) {
-      const autoFocus = toValue(props.autoFocus)
-      let key: Key | null = null
-      if (autoFocus === 'last') key = delegate.value.getLastKey?.() ?? null
-      else key = state.selectionManager.firstSelectedKey ?? delegate.value.getFirstKey?.() ?? null
-      if (key != null) state.selectionManager.setFocusedKey(key)
-    }
-    props.onFocus?.(e)
-  }
-
-  const onBlur = (e: FocusEvent) => {
-    if (ref.value && !(e.relatedTarget instanceof Node && ref.value.contains(e.relatedTarget))) {
-      state.selectionManager.setFocused(false)
-      props.onFocusChange?.(false)
-    }
-    props.onBlur?.(e)
-  }
+  const {labelProps, fieldProps} = useLabel({
+    id: () => toValue(props.id) as string | undefined,
+    label: () => toValue(props.label) as any,
+    'aria-label': () => toValue(props['aria-label']) as any,
+    'aria-labelledby': () => toValue(props['aria-labelledby']) as any,
+    labelElementType: 'span',
+  })
 
   const listBoxProps: Record<string, any> = {}
   Object.defineProperties(listBoxProps, {
@@ -206,9 +242,47 @@ export function useListBox<T>(props: UseListBoxProps, state: ListState<T>, ref: 
     onFocus: {value: onFocus, enumerable: true},
     onBlur: {value: onBlur, enumerable: true},
     'aria-label': {get: () => (toValue(props['aria-label']) ?? toValue(props.label)) as any, enumerable: true},
-    'aria-labelledby': {get: () => toValue(props['aria-labelledby']) as any, enumerable: true},
+    'aria-labelledby': {get: () => fieldProps.value['aria-labelledby'] as any, enumerable: true},
     'aria-multiselectable': {get: () => (state.selectionManager.selectionMode === 'multiple' ? 'true' : undefined), enumerable: true},
   })
 
-  return {listBoxProps, labelProps: {}}
+  // Official `autoFocus` behavior (ported from `useSelectableCollection` at
+  // adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc):
+  // focus the first / last selectable key on mount, honoring selected keys,
+  // and only clear the flag once the collection has items.
+  const autoFocusRef = ref(toValue(props.autoFocus))
+  onMounted(() => {
+    if (!autoFocusRef.value) return
+    const autoFocus = toValue(props.autoFocus)
+    let focusedKey: Key | null = null
+    if (autoFocus === 'first') focusedKey = delegate.value.getFirstKey?.() ?? null
+    else if (autoFocus === 'last') focusedKey = delegate.value.getLastKey?.() ?? null
+    const selectedKeys = state.selectionManager.selectedKeys
+    if (selectedKeys.size) {
+      for (const key of selectedKeys) {
+        if (state.selectionManager.canSelectItem(key)) {
+          focusedKey = key
+          break
+        }
+      }
+    }
+    state.selectionManager.setFocused(true)
+    state.selectionManager.setFocusedKey(focusedKey)
+    const selectOnFocus = selectionBehavior.value === 'replace'
+    if (focusedKey != null && selectOnFocus && selectedKeys.size === 0 && state.selectionManager.canSelectItem(focusedKey)) {
+      state.selectionManager.replaceSelection(focusedKey)
+    }
+    if (focusedKey == null && !toValue(props.shouldUseVirtualFocus) && listRef.value) {
+      try {
+        listRef.value.focus?.()
+      } catch {
+        // jsdom / environments without focus support
+      }
+    }
+    if (state.collection.value.size > 0) {
+      autoFocusRef.value = false
+    }
+  })
+
+  return {listBoxProps, labelProps, isFocused, isFocusVisible}
 }

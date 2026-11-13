@@ -19,16 +19,18 @@ export type {TooltipTriggerProps, TooltipTriggerState} from './useTooltipTrigger
 export {useMultipleSelectionState} from './useMultipleSelectionState'
 export type {
   UseMultipleSelectionStateProps,
+  MultipleSelectionStateProps,
   MultipleSelectionState,
   MultipleSelectionManager,
   FocusState,
   FocusStateRefs,
+  Selection,
   SelectionMode,
   SelectionBehavior,
   DisabledBehavior,
   FocusStrategy,
 } from './useMultipleSelectionState'
-export {Selection} from './Selection'
+export {Selection as SelectionClass} from './Selection'
 export {SelectionManager} from './SelectionManager'
 export {equalSets} from './equalSets'
 

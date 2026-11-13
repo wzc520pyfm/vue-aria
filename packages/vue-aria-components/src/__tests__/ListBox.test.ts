@@ -3,6 +3,7 @@ import {mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it} from 'vitest'
 import {dispatchKey, dispatchPointer} from '../../../../test/dom-events'
 import {Collection, Header, ListBox, ListBoxItem, ListBoxSection, Text} from 'vue-aria-components'
+import {useListState} from 'vue-stately/useListState'
 
 function mountInDoc(component: any, options: any = {}) {
   return mount(component, {attachTo: document.body, ...options})
@@ -234,7 +235,6 @@ describe('ListBox', () => {
     await nextTick()
     expect(changes.length).toBeGreaterThan(0)
   })
-})
 
   it('replace selectionBehavior: click replaces selection in single/multiple context as specified', async () => {
     const changes: any[] = []
@@ -397,3 +397,237 @@ describe('ListBox', () => {
     expect(lb.attributes('data-layout')).toBe('stack')
     expect(lb.attributes('data-orientation')).toBe('vertical')
   })
+
+  it('shows data-hovered when pointer hovers an option', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {ListBox, ListBoxItem},
+      template: `
+        <ListBox aria-label="Animals" selectionMode="single">
+          <ListBoxItem id="cat">Cat</ListBoxItem>
+          <ListBoxItem id="dog">Dog</ListBoxItem>
+        </ListBox>
+      `,
+    }))
+    await nextTick()
+    const options = wrapper.findAll('[role="option"]')
+    expect(options[0].attributes('data-hovered')).toBeUndefined()
+    dispatchPointer(options[0].element, 'pointerenter', {pointerType: 'mouse'})
+    await nextTick()
+    expect(options[0].attributes('data-hovered')).toBe('true')
+    expect(options[1].attributes('data-hovered')).toBeUndefined()
+    dispatchPointer(options[0].element, 'pointerleave', {pointerType: 'mouse'})
+    await nextTick()
+    expect(options[0].attributes('data-hovered')).toBeUndefined()
+  })
+
+  it('Collection with items and scoped slot renders selectable options', async () => {
+    const items = [{id: 'one', name: 'One'}, {id: 'two', name: 'Two'}]
+    const changes: any[] = []
+    const wrapper = mountInDoc(defineComponent({
+      components: {ListBox, ListBoxItem, Collection},
+      setup: () => ({items, onChange: (s: any) => changes.push(s)}),
+      template: `
+        <ListBox aria-label="Items" selectionMode="single" @selectionchange="onChange">
+          <Collection :items="items">
+            <template #default="{ item }">
+              <ListBoxItem :id="item.id">{{ item.name }}</ListBoxItem>
+            </template>
+          </Collection>
+        </ListBox>
+      `,
+    }))
+    await nextTick()
+    const options = wrapper.findAll('[role="option"]')
+    expect(options).toHaveLength(2)
+    expect(options.map(o => o.text())).toEqual(['One', 'Two'])
+    await press(options[1].element)
+    const sel = changes[changes.length - 1] as Set<any>
+    expect(sel.has('two')).toBe(true)
+    expect(options[1].attributes('data-selected')).toBe('true')
+  })
+
+  it('supports nested Collection inside ListBoxSection', async () => {
+    const fruits = [{id: 'apple', name: 'Apple'}]
+    const wrapper = mountInDoc(defineComponent({
+      components: {ListBox, ListBoxItem, ListBoxSection, Collection},
+      setup: () => ({fruits}),
+      template: `
+        <ListBox aria-label="Foods">
+          <ListBoxSection id="fruit" aria-label="Fruit">
+            <Collection :items="fruits">
+              <template #default="{ item }">
+                <ListBoxItem :id="item.id">{{ item.name }}</ListBoxItem>
+              </template>
+            </Collection>
+          </ListBoxSection>
+        </ListBox>
+      `,
+    }))
+    await nextTick()
+    expect(wrapper.find('[role="group"]').attributes('aria-label')).toBe('Fruit')
+    const options = wrapper.findAll('[role="option"]')
+    expect(options).toHaveLength(1)
+    expect(options[0].text()).toContain('Apple')
+  })
+
+  it('generates stable keys for items without id and selects via generated key', async () => {
+    const changes: any[] = []
+    const wrapper = mountInDoc(defineComponent({
+      components: {ListBox, ListBoxItem},
+      setup: () => ({onChange: (s: any) => changes.push(s)}),
+      template: `
+        <ListBox aria-label="Animals" selectionMode="single" @selectionchange="onChange">
+          <ListBoxItem>Cat</ListBoxItem>
+          <ListBoxItem>Dog</ListBoxItem>
+        </ListBox>
+      `,
+    }))
+    await nextTick()
+    const options = wrapper.findAll('[role="option"]')
+    expect(options).toHaveLength(2)
+    const listId = (wrapper.get('[role="listbox"]').element as HTMLElement).id
+    // generated keys are injected back via the public `id` prop
+    expect(options[0].attributes('id')).toBe(`${listId}-option-$$va-item-0`)
+    expect(options[1].attributes('id')).toBe(`${listId}-option-$$va-item-1`)
+    // clicking the generated-keyed item selects that generated key
+    await press(options[1].element)
+    const sel = changes[changes.length - 1] as Set<any>
+    expect(sel.has('$$va-item-1')).toBe(true)
+    expect(options[1].attributes('data-selected')).toBe('true')
+  })
+
+  it('ArrowDown moves focus through generated key options', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {ListBox, ListBoxItem},
+      template: `
+        <ListBox aria-label="Animals" selectionMode="single">
+          <ListBoxItem>Cat</ListBoxItem>
+          <ListBoxItem>Dog</ListBoxItem>
+        </ListBox>
+      `,
+    }))
+    await nextTick()
+    const listbox = wrapper.get('[role="listbox"]').element as HTMLElement
+    listbox.focus()
+    await nextTick()
+    dispatchKey(listbox, 'keydown', {key: 'ArrowDown'})
+    await nextTick()
+    expect((document.activeElement as HTMLElement)?.textContent).toContain('Cat')
+    dispatchKey(listbox, 'keydown', {key: 'ArrowDown'})
+    await nextTick()
+    expect((document.activeElement as HTMLElement)?.textContent).toContain('Dog')
+  })
+
+  it('renders section without id with selectable children', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {ListBox, ListBoxItem, ListBoxSection},
+      template: `
+        <ListBox aria-label="Foods" selectionMode="single">
+          <ListBoxSection aria-label="Fruit">
+            <ListBoxItem id="apple">Apple</ListBoxItem>
+          </ListBoxSection>
+        </ListBox>
+      `,
+    }))
+    await nextTick()
+    const group = wrapper.get('[role="group"]')
+    expect(group.attributes('aria-label')).toBe('Fruit')
+    const options = wrapper.findAll('[role="option"]')
+    expect(options).toHaveLength(1)
+    expect(options[0].text()).toContain('Apple')
+  })
+
+  it('renders visible label and wires aria-labelledby when label provided', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {ListBox},
+      template: `<ListBox aria-label="X" label="Pick a fruit" />`,
+    }))
+    await nextTick()
+    const listbox = wrapper.get('[role="listbox"]')
+    const labelledBy = listbox.attributes('aria-labelledby')
+    expect(labelledBy).toBeTruthy()
+    const label = wrapper.find('.react-aria-ListBoxLabel')
+    expect(label.exists()).toBe(true)
+    expect(label.text()).toBe('Pick a fruit')
+    expect(label.attributes('id')).toBe(labelledBy)
+  })
+
+  it('autoFocus focuses first option when autoFocus is set', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {ListBox, ListBoxItem},
+      template: `
+        <ListBox aria-label="Animals" selectionMode="single" auto-focus="first">
+          <ListBoxItem id="cat">Cat</ListBoxItem>
+          <ListBoxItem id="dog">Dog</ListBoxItem>
+        </ListBox>
+      `,
+    }))
+    await nextTick()
+    const options = wrapper.findAll('[role="option"]')
+    await nextTick()
+    expect(document.activeElement).toBe(options[0].element)
+  })
+
+  it('emits data-focused when listbox is focused', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {ListBox, ListBoxItem},
+      template: `
+        <ListBox aria-label="Animals" selectionMode="single">
+          <ListBoxItem id="cat">Cat</ListBoxItem>
+        </ListBox>
+      `,
+    }))
+    await nextTick()
+    const listbox = wrapper.get('[role="listbox"]')
+    expect(listbox.attributes('data-focused')).toBeUndefined()
+    ;(listbox.element as HTMLElement).focus()
+    await nextTick()
+    expect(listbox.attributes('data-focused')).toBe('true')
+  })
+
+  it('canSelectItem rejects disabledKeys regardless of disabledBehavior', () => {
+    const makeState = (disabledBehavior?: 'all' | 'none' | 'selection') =>
+      useListState({
+        selectionMode: 'single',
+        disabledBehavior,
+        disabledKeys: ['dog'],
+        items: [{id: 'cat', name: 'Cat'}, {id: 'dog', name: 'Dog'}],
+      } as any)
+
+    const defaultState = makeState()
+    expect(defaultState.selectionManager.canSelectItem('dog')).toBe(false)
+    expect(defaultState.selectionManager.canSelectItem('cat')).toBe(true)
+
+    const selectionState = makeState('selection')
+    // disabled keys stay focusable but are never selectable
+    expect(selectionState.selectionManager.isDisabled('dog')).toBe(false)
+    expect(selectionState.selectionManager.canSelectItem('dog')).toBe(false)
+    expect(selectionState.selectionManager.canSelectItem('cat')).toBe(true)
+  })
+
+  it('Collection re-renders scoped slot when dependencies change but items identity stays the same', async () => {
+    const items = [{id: 'one', name: 'One'}]
+    const wrapper = mountInDoc(defineComponent({
+      components: {ListBox, ListBoxItem, Collection},
+      setup() {
+        const dep = ref('a')
+        return {items, dep}
+      },
+      template: `
+        <ListBox aria-label="Items">
+          <Collection :items="items" :dependencies="[dep]">
+            <template #default="{ item }">
+              <ListBoxItem :id="item.id">{{ item.name }}-{{ dep }}</ListBoxItem>
+            </template>
+          </Collection>
+        </ListBox>
+      `,
+    }))
+    await nextTick()
+    expect(wrapper.get('[role="option"]').text()).toContain('One-a')
+
+    ;(wrapper.vm as any).dep = 'b'
+    await nextTick()
+    expect(wrapper.get('[role="option"]').text()).toContain('One-b')
+  })
+})

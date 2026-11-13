@@ -10,11 +10,12 @@ import {
   toValue,
   watch,
   watchEffect,
+  cloneVNode,
   type PropType,
   type VNode,
   type VNodeChild,
 } from 'vue'
-import {mergeProps, toHeroDataAttrs} from 'vue-aria'
+import {mergeProps, toHeroDataAttrs, useSelectable} from 'vue-aria'
 import {useListBox} from 'vue-aria/useListBox'
 import {useListState} from 'vue-stately/useListState'
 import {ListCollection} from 'vue-stately/ListCollection'
@@ -48,8 +49,17 @@ export interface ListBoxProps {
   onAction?: (key: Key) => void
 }
 
-let autoKey = 0
-function genKey(prefix = 'item') { return `$$va-${prefix}-${++autoKey}` }
+/**
+ * Generates a stable, path-based collection key: `$$va-item-<path>` /
+ * `$$va-section-<path>`. The path is derived from the nesting of the rendered
+ * collection (user ids and generated indices), so keys stay stable across
+ * re-renders of the same ListBox instance instead of bumping a module-global
+ * counter on every computed run.
+ */
+function genKey(prefix = 'item', ...segments: Array<string | number>): Key {
+  const suffix = segments.join('-')
+  return suffix ? `$$va-${prefix}-${suffix}` : `$$va-${prefix}`
+}
 
 function flatten(v: VNodeChild): VNode[] {
   if (v == null || typeof v === 'boolean') return []
@@ -80,73 +90,150 @@ function getComponentName(v: VNode): string | null {
   return t.name || t.__name || null
 }
 
-function buildNodesFromVNodes(vnodes: VNode[], parentKey: Key | null = null, level = 0): CollectionNode<any>[] {
+interface CollectionWalkResult {
+  nodes: CollectionNode<any>[]
+  rendered: VNode[]
+}
+
+/**
+ * Single walk over rendered collection vnodes that builds the collection
+ * state (nodes) and produces the renderable vnodes with generated keys
+ * injected back into ListBoxItem / ListBoxSection via the public `id` prop.
+ */
+function buildCollection(
+  vnodes: VNodeChild,
+  parentKey: Key | null = null,
+  level = 0,
+  path: Array<Key | number> = [],
+  seen: Set<Key> = new Set(),
+): CollectionWalkResult {
   const nodes: CollectionNode<any>[] = []
+  const rendered: VNode[] = []
   let index = 0
   for (const vnode of flatten(vnodes as any)) {
     const name = getComponentName(vnode)
     const props: any = vnode.props || {}
     if (name === 'Collection') {
-      // Collection component used for grouping in static/dynamic mix; render its slot children
-      // but if it has items prop for dynamic inside static, we can't fully evaluate scoped slot here; best effort for children
       const children = typeof vnode.children === 'object' && vnode.children && 'default' in (vnode.children as any)
-        ? ((vnode.children as any).default?.() ?? [])
+        ? ((vnode.children as any).default as any)
         : (vnode.children as any)
-      nodes.push(...buildNodesFromVNodes(flatten(children), parentKey, level))
+      const items = props.items as any[] | undefined
+      // Read dependencies so the collection computed invalidates when only deps change.
+      void props.dependencies
+      const childVNodes = items && Array.isArray(items) && items.length > 0
+        ? items.flatMap((item: any) => flatten(((children as any)?.({item})) ?? []))
+        : flatten(typeof children === 'function' ? ((children as any)() ?? []) : children)
+      const sub = buildCollection(childVNodes, parentKey, level, path, seen)
+      nodes.push(...sub.nodes)
+      rendered.push(...sub.rendered)
       continue
     }
     if (name === 'ListBoxSection' || props['data-section'] != null) {
-      const key = props.id ?? genKey('section')
-      const childSlot = typeof vnode.children === 'object' && vnode.children && 'default' in (vnode.children as any)
-        ? ((vnode.children as any).default?.() ?? [])
-        : []
-      const headerSlot = typeof vnode.children === 'object' && vnode.children && 'header' in (vnode.children as any)
-        ? ((vnode.children as any).header?.() ?? [])
-        : []
-      const childNodes = buildNodesFromVNodes(flatten(childSlot), key, level + 1)
-      const textValue = props.textValue || getTextContent(flatten(headerSlot))
-      const node: any = {
-        key,
+      const key = (props.id ?? null) as Key | null
+      const sectionKey = key ?? genKey('section', ...path, index)
+      const childSlotVNodes = resolveVNodesFromSlot(vnode)
+      const childPath = [...path, sectionKey]
+      const childResult = buildCollection(childSlotVNodes, sectionKey, level + 1, childPath, seen)
+      const sectionVnode = key ? cloneVNode(vnode, {id: sectionKey}) : cloneVNode(vnode, {id: sectionKey})
+      const children = vnode.children
+      const isScoped = typeof children === 'object' && children && !Array.isArray(children) && 'default' in (children as any)
+      if (isScoped) {
+        const originalSlot = (children as any).default
+        ;(sectionVnode as any).children = {
+          ...(children as any),
+          default: (...args: any[]) => {
+            const result = originalSlot(...args)
+            const arr = flatten(result)
+            let i = 0
+            const injected = arr.map((child: any) => {
+              const childName = getComponentName(child)
+              const childProps = child?.props || {}
+              if (childName === 'ListBoxItem') {
+                const childKey = (childProps.id ?? null) ?? genKey('item', ...childPath, i)
+                i += 1
+                return childProps.id ? child : cloneVNode(child, {id: childKey})
+              }
+              return child
+            })
+            return injected
+          },
+        }
+      } else {
+        ;(sectionVnode as any).children = injectGeneratedChildIds(childSlotVNodes, childPath)
+      }
+      nodes.push({
+        key: sectionKey,
         parentKey,
         type: 'section',
-        value: props.value ?? {key, 'aria-label': props['aria-label']},
+        value: props.value ?? {key: sectionKey, 'aria-label': props['aria-label']},
         props: {...props, title: props.title},
         index: index++,
         level,
         hasChildNodes: true,
-        childNodes,
-        textValue,
+        childNodes: childResult.nodes,
+        textValue: props.textValue || getTextContent(flatten(childSlotVNodes)),
         'aria-label': props['aria-label'],
-      }
-      nodes.push(node)
+      })
+      rendered.push(sectionVnode)
       continue
     }
-    if (name === 'ListBoxItem' || props['data-item'] != null || props.id != null || name == null && false) {
-      // heuristic: treat as item if it's ListBoxItem component
-    }
     if (name === 'ListBoxItem') {
-      const key = props.id ?? genKey('item')
-      const children = typeof vnode.children === 'object' && vnode.children && 'default' in (vnode.children as any)
-        ? ((vnode.children as any).default?.() ?? [])
-        : (Array.isArray(vnode.children) ? vnode.children : [])
-      const textValue = props.textValue || getTextContent(flatten(children))
-      const node: any = {
-        key,
+      const key = (props.id ?? null) as Key | null
+      const resolvedKey = key ?? genKey('item', ...path, index)
+      rendered.push(key ? vnode : cloneVNode(vnode, {id: resolvedKey}))
+      nodes.push({
+        key: resolvedKey,
         parentKey,
         type: 'item',
-        value: props.value ?? {key},
+        value: props.value ?? {key: resolvedKey},
         props: {...props, isDisabled: !!props.isDisabled},
         index: index++,
         level,
         hasChildNodes: false,
-        textValue,
+        textValue: props.textValue || getTextContent(flatten(resolveVNodesFromSlot(vnode))),
         'aria-label': props['aria-label'],
-      }
-      nodes.push(node)
+      })
       continue
     }
+    rendered.push(vnode)
   }
-  return nodes
+  return {nodes, rendered}
+}
+
+function resolveVNodesFromSlot(vnode: VNode): VNode[] {
+  const children = vnode.children
+  if (typeof children === 'object' && children && !Array.isArray(children) && 'default' in (children as any)) {
+    const result = (children as any).default?.() ?? []
+    return flatten(result)
+  }
+  if (Array.isArray(children)) return flatten(children)
+  return []
+}
+
+function injectGeneratedChildIds(vnodes: VNode[], path: Array<Key | number>): VNode[] {
+  const injected: VNode[] = []
+  let childIndex = 0
+  for (const vnode of vnodes) {
+    const name = getComponentName(vnode)
+    const props: any = vnode.props || {}
+    if (name === 'ListBoxItem') {
+      const key = (props.id ?? null) as Key | null
+      const resolvedKey = key ?? genKey('item', ...path, childIndex)
+      childIndex += 1
+      injected.push(key ? vnode : cloneVNode(vnode, {id: resolvedKey}))
+    } else if (name === 'ListBoxSection') {
+      const key = (props.id ?? null) as Key | null
+      const sectionKey = key ?? genKey('section', ...path, childIndex)
+      childIndex += 1
+      const nestedVnode = key ? cloneVNode(vnode, {id: sectionKey}) : cloneVNode(vnode, {id: sectionKey})
+      const nestedChildren = resolveVNodesFromSlot(vnode)
+      ;(nestedVnode as any).children = injectGeneratedChildIds(nestedChildren, [...path, sectionKey])
+      injected.push(nestedVnode)
+    } else {
+      injected.push(vnode)
+    }
+  }
+  return injected
 }
 
 function buildNodesFromDynamicItems<T>(items: any[] | undefined, slot: ((scope: any) => VNodeChild) | undefined, parentKey: Key | null = null, level = 0): CollectionNode<T>[] {
@@ -156,9 +243,9 @@ function buildNodesFromDynamicItems<T>(items: any[] | undefined, slot: ((scope: 
   for (const item of items) {
     const isSection = item && (item.type === 'section' || Array.isArray(item.items) || Array.isArray(item.children))
     if (isSection) {
-      const key = item.key ?? item.id ?? genKey('section')
+      const key = item.key ?? item.id ?? genKey('section', index)
       const childItems = item.items ?? item.children ?? []
-      const childNodes = buildNodesFromDynamicItems(childItems, slot, key, level + 1)
+      const childNodes = buildNodesFromDynamicItems<unknown>(childItems, slot, key, level + 1)
       nodes.push({
         key,
         parentKey,
@@ -173,7 +260,7 @@ function buildNodesFromDynamicItems<T>(items: any[] | undefined, slot: ((scope: 
         'aria-label': item['aria-label'] ?? item.ariaLabel,
       } as any)
     } else {
-      const key = item?.key ?? item?.id ?? item ?? genKey('item')
+      const key = item?.key ?? item?.id ?? item ?? genKey('item', index)
       const textValue = item?.textValue ?? (typeof item === 'string' ? item : item?.name)
       nodes.push({
         key,
@@ -221,6 +308,12 @@ export const ListBox = defineComponent({
     const providedState = inject(ListStateContextKey, null)
     const listRef = ref<HTMLElement | null>(null)
 
+    const renderedChildren = computed<VNode[]>(() => {
+      if (props.items) return renderDynamic()
+      const result = buildCollection(slots.default?.() ?? [], null, 0)
+      return result.rendered
+    })
+
     const nodes = computed(() => {
       if (providedState) return null
       if (props.items) {
@@ -228,7 +321,8 @@ export const ListBox = defineComponent({
         return buildNodesFromDynamicItems(props.items, slots.default as any)
       }
       const rendered = slots.default?.() ?? []
-      return buildNodesFromVNodes(flatten(rendered))
+      const result = buildCollection(rendered, null, 0)
+      return result.nodes
     })
 
     const localState = providedState ? null : useListState({
@@ -247,7 +341,7 @@ export const ListBox = defineComponent({
     provide(ListStateContextKey, state as any)
     provide(ListBoxContextKey, props as any)
 
-    const {listBoxProps} = useListBox({
+    const {listBoxProps, labelProps, isFocused, isFocusVisible} = useListBox({
       id: () => props.id,
       'aria-label': () => props['aria-label'],
       'aria-labelledby': () => props['aria-labelledby'],
@@ -272,29 +366,35 @@ export const ListBox = defineComponent({
       return null
     }
 
-    const renderDynamic = () => {
+    const renderDynamic = (): VNode[] => {
       const items = props.items ?? []
-      const out: VNodeChild[] = []
+      const out: VNode[] = []
       // if items are sections, render sections/items accordingly
       for (const item of items) {
         const isSection = item && (item.type === 'section' || Array.isArray(item.items) || Array.isArray(item.children))
         if (isSection) {
-          const key = item.key ?? item.id
+          const key = item.key ?? item.id ?? genKey('section', items.indexOf(item))
           const childItems = item.items ?? item.children ?? []
           out.push(h(ListBoxSection as any, {id: key, 'aria-label': item['aria-label'] ?? item.ariaLabel, title: item.title ?? item.name}, {
             default: () => childItems.map((child: any) => slots.default ? slots.default({item: child}) : null),
             ...(item.title || item.name ? {header: () => item.title ?? item.name} : {}),
           }))
         } else {
-          if (slots.default) out.push(slots.default({item}))
+          const vnode = slots.default ? flatten(slots.default({item}) as unknown as VNodeChild)[0] ?? null : null
+          const vnodeKey = item?.key ?? item?.id ?? item ?? genKey('item', items.indexOf(item))
+          if (vnode) {
+            const vnodeWithKey = (vnode as any)?.props?.id ? vnode : cloneVNode(vnode, {id: vnodeKey})
+            out.push(vnodeWithKey)
+          }
         }
       }
       return out
     }
 
-    const renderChildren = () => {
+    const renderChildren = (): VNode[] => {
       if (props.items) return renderDynamic()
-      return slots.default?.()
+      const result = buildCollection(slots.default?.() ?? [], null, 0)
+      return result.rendered
     }
 
     return () => {
@@ -304,9 +404,15 @@ export const ListBox = defineComponent({
         class: ['react-aria-ListBox', (attrs as any).class].filter(Boolean),
         'data-layout': props.layout ?? 'stack',
         'data-orientation': props.orientation ?? 'vertical',
+        ...toHeroDataAttrs({focused: isFocused.value, focusVisible: isFocusVisible.value}),
         ...(isEmpty ? {'data-empty': 'true'} : {}),
       })
-      const children = isEmpty ? [renderEmptyState()] : [renderChildren()]
+      const children: VNode[] = []
+      if (toValue(props.label) != null) {
+        children.push(h('span', {...labelProps.value, class: ['react-aria-ListBoxLabel', (attrs as any).class].filter(Boolean)}, toValue(props.label)))
+      }
+      if (isEmpty) children.push(renderEmptyState())
+      else children.push(...renderChildren())
       return h('div', domProps, children)
     }
   },
