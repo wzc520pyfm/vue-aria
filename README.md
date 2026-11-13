@@ -19,13 +19,19 @@ import {Button as ButtonSubpath} from 'vue-aria-components/Button'
 
 The first batch covers the monorepo scaffold, `usePress` / `useHover` / `useFocusVisible`, Button hooks, the `vue-aria-components` `Button`, and a Hero UI Vue behavior-layer contract.
 
-This overlays batch adds:
+The overlays batch adds:
 
 - `vue-stately`: `useOverlayTriggerState`, `useTooltipTriggerState` (official delays 1500 / 500)
 - `vue-aria`: `useOverlayTrigger`, `useDialog`, `useModal`, `useModalOverlay`, `usePopover`, `useTooltip` / `useTooltipTrigger`, `usePreventScroll`, `useFocusScope`, `useInteractOutside`
 - `vue-aria-components`: `Dialog`, `DialogTrigger`, `Modal`, `ModalOverlay`, `Popover`, `OverlayArrow`, `Tooltip`, `TooltipTrigger`, and a minimal `Heading` (`slot="title"`)
 
-Menu, Select, ComboBox, Sheet, collections, dates, a full `I18nProvider`, and Storybook / Netlify remain deferred.
+This collections batch adds the collection foundation and a usable `ListBox`:
+
+- `vue-stately`: `useMultipleSelectionState`, `useListState`, `Selection`, `SelectionManager`, `ListCollection`, `equalSets`
+- `vue-aria`: `useListBox`, `useOption`, `useListBoxSection`, `ListKeyboardDelegate`
+- `vue-aria-components`: `ListBox`, `ListBoxItem`, `ListBoxSection`, `Collection`, `Header`, `Text`
+
+Menu, Select, ComboBox, Sheet, dates, a full `I18nProvider`, and Storybook / Netlify remain deferred. Menu is the intended next follow-up.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 
