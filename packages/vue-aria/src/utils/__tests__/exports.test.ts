@@ -14,6 +14,10 @@ import {
   useHover,
   useInteractOutside,
   useInvalid,
+  useListBox,
+  useListBoxSection,
+  useOption,
+  ListKeyboardDelegate,
   useModal,
   useModalOverlay,
   useOverlayTrigger,
@@ -53,6 +57,10 @@ describe('vue-aria main entry', () => {
     expect(typeof usePreventScroll).toBe('function')
     expect(typeof useFocusScope).toBe('function')
     expect(typeof useInteractOutside).toBe('function')
+    expect(typeof useListBox).toBe('function')
+    expect(typeof useOption).toBe('function')
+    expect(typeof useListBoxSection).toBe('function')
+    expect(typeof ListKeyboardDelegate).toBe('function')
   })
 
   it('keeps all three interaction *Props objects unwrapped', () => {
@@ -123,5 +131,47 @@ describe('vue-aria main entry', () => {
     expect(typeof triggerProps?.onPress).toBe('function')
     expect(typeof dialogProps?.role).toBe('string')
     expect(tooltipProps?.role).toBe('tooltip')
+  })
+
+  it('keeps ListBox hook *Props objects unwrapped (not ComputedRef)', async () => {
+    const {useListState} = await import('vue-stately')
+    let listBoxProps: any
+    let optionProps: any
+    let labelProps: any
+    let descriptionProps: any
+    let sectionItemProps: any
+    let sectionHeadingProps: any
+    let sectionGroupProps: any
+
+    const Probe = defineComponent({
+      setup() {
+        const state = useListState({
+          selectionMode: 'single',
+          items: [{id: 'a', name: 'A'}],
+        } as any)
+        const refEl = ref<HTMLElement | null>(null)
+        listBoxProps = useListBox({'aria-label': 'x'}, state as any, refEl).listBoxProps
+        const opt = useOption({key: 'a'} as any, state as any, refEl)
+        optionProps = opt.optionProps
+        labelProps = opt.labelProps
+        descriptionProps = opt.descriptionProps
+        const sec = useListBoxSection({heading: 'H'})
+        sectionItemProps = sec.itemProps
+        sectionHeadingProps = sec.headingProps
+        sectionGroupProps = sec.groupProps
+        return () => null
+      },
+    })
+    mount(Probe)
+
+    expect(isRef(listBoxProps)).toBe(false)
+    expect(isRef(optionProps)).toBe(false)
+    expect(isRef(labelProps)).toBe(false)
+    expect(isRef(descriptionProps)).toBe(false)
+    expect(isRef(sectionItemProps)).toBe(false)
+    expect(isRef(sectionHeadingProps)).toBe(false)
+    expect(isRef(sectionGroupProps)).toBe(false)
+    expect(listBoxProps.role).toBe('listbox')
+    expect(optionProps.role).toBe('option')
   })
 })
