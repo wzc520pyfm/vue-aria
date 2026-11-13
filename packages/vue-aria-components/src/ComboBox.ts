@@ -367,8 +367,8 @@ export const ComboBox = defineComponent({
       isReadOnly: () => props.isReadOnly,
       validationBehavior: () => props.validationBehavior as any,
       onOpenChange: (isOpen: boolean, menuTrigger?: MenuTriggerAction) => emit('openchange', isOpen, menuTrigger),
-      items: props.items,
-      defaultItems: props.defaultItems as any,
+      items: () => props.items,
+      defaultItems: () => props.defaultItems as any,
       defaultFilter: props.defaultFilter || contains,
       nodes: buildNodes,
     } as any)
@@ -438,6 +438,7 @@ export const ComboBox = defineComponent({
     // Position the popover against the input (Group is deferred, so no Group ref).
     const popoverTriggerRef = computed(() => inputRef.value)
     const popoverCtx: any = {
+      ref: popoverRef as any,
       triggerRef: popoverTriggerRef as any,
       trigger: 'ComboBox',
       scrollRef: listBoxRef as any,
@@ -451,7 +452,11 @@ export const ComboBox = defineComponent({
     // ListBox needs context props (listBoxProps) and state.
     const listBoxCtx: any = live({...listBoxProps}, listBoxProps)
     Object.defineProperties(listBoxCtx, {
-      items: {get: () => props.items ?? (props.defaultItems as any), enumerable: true, configurable: true},
+      // Official: ListBoxContext does not pass items/defaultItems; the ComboBox state
+      // collection (filtered from defaultItems when uncontrolled) drives rendering.
+      // Only surface controlled `items` here so uncontrolled defaultItems flow through
+      // the state-collection rendering path.
+      items: {get: () => props.items, enumerable: true, configurable: true},
       renderFromCollection: {value: true, enumerable: true},
     })
     listBoxCtx.ref = (el: any) => { listBoxRef.value = el }

@@ -249,6 +249,11 @@ export const Popover = defineComponent({
               ref: (el: HTMLElement | null) => {
                 popoverRef.value = el
                 elRef.value = el
+                // Thread the mounted popover element back through the Popover context ref
+                // (official `ref` pattern) so consumers such as ComboBox/useComboBox can watch it.
+                const ctxRef = context?.ref
+                if (typeof ctxRef === 'function') ctxRef(el)
+                else if (ctxRef && typeof ctxRef === 'object' && 'value' in ctxRef) ctxRef.value = el
               },
             },
           ),

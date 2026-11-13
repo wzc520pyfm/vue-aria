@@ -20,6 +20,11 @@ import {
   useFilter,
 } from 'vue-aria-components'
 import {useComboBox, useFilter as ariaUseFilter, useTextField} from 'vue-aria'
+import {useComboBox as useComboBoxSub} from 'vue-aria/useComboBox'
+import {useFilter as useFilterSub} from 'vue-aria/useFilter'
+import {useTextField as useTextFieldSub} from 'vue-aria/useTextField'
+import {useComboBoxState as useComboBoxStateSub} from 'vue-stately/useComboBoxState'
+import {ComboBox as ComboBoxComponent, Input as InputComponent} from 'vue-aria-components/ComboBox'
 import type {
   AriaComboBoxProps,
   AriaComboBoxOptions,
@@ -1018,6 +1023,13 @@ describe('ComboBox', () => {
     expect(typeof ariaUseFilter).toBe('function')
     expect(typeof useTextField).toBe('function')
     expect(typeof useComboBoxState).toBe('function')
+    // Official-style subpath runtime imports (existing via package exports "./*").
+    expect(typeof useComboBoxSub).toBe('function')
+    expect(typeof useFilterSub).toBe('function')
+    expect(typeof useTextFieldSub).toBe('function')
+    expect(typeof useComboBoxStateSub).toBe('function')
+    expect(typeof ComboBoxComponent).toBe('object')
+    expect(typeof InputComponent).toBe('object')
     expect(typeof ComboBox).toBe('object')
     expect(typeof ComboBoxValue).toBe('object')
     expect(typeof Input).toBe('object')
@@ -1066,6 +1078,81 @@ describe('ComboBox', () => {
     expect(filter.contains('Apple', '')).toBe(true)
     expect(filter.startsWith('Apple', '')).toBe(true)
     expect(filter.endsWith('Apple', '')).toBe(true)
+  })
+
+  it('17. open popover is not aria-hidden/inert and input remains unhidden while open', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {ComboBox, Label, Input, Button, Popover, ListBox, ListBoxItem},
+      template: `
+        <ComboBox>
+          <Label>Favorite Animal</Label>
+          <Input />
+          <Button />
+          <Popover>
+            <ListBox>
+              <ListBoxItem id="1">Cat</ListBoxItem>
+              <ListBoxItem id="2">Dog</ListBoxItem>
+            </ListBox>
+          </Popover>
+        </ComboBox>
+      `,
+    }))
+    await tick(4)
+
+    const input = getInput(wrapper)
+    input.focus()
+    // Open via keyboard.
+    dispatchKey(input, 'keydown', {key: 'ArrowDown'})
+    await tick(4)
+
+    const popover = document.querySelector('.react-aria-Popover') as HTMLElement | null
+    expect(popover).toBeTruthy()
+    // The open popover must not be hidden from assistive tech.
+    expect(popover!.getAttribute('aria-hidden')).toBeFalsy()
+    expect((popover as any).inert ?? popover!.getAttribute?.('inert')).toBeFalsy()
+
+    // The input stays unhidden (it is an ariaHideOutside target).
+    expect(input.getAttribute('aria-hidden')).toBeFalsy()
+    expect((input as any).inert ?? input.getAttribute?.('inert')).toBeFalsy()
+    wrapper.unmount()
+  })
+
+  it('18. defaultItems are auto-filtered by typed input (typed "p" keeps Apple, drops Banana, empty sections dropped)', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      components: {ComboBox, Label, Input, Button, Popover, ListBox, ListBoxItem, ListBoxSection},
+      setup() {
+        const items = ref([
+          {id: '1', name: 'Apple'},
+          {id: '2', name: 'Banana'},
+          {type: 'section', title: 'Vegetables', items: [{id: '3', name: 'Carrot'}, {id: '4', name: 'Kale'}]},
+        ])
+        return {items}
+      },
+      template: `
+        <ComboBox :default-items="items">
+          <Label>Favorite Food</Label>
+          <Input />
+          <Button />
+          <Popover>
+            <ListBox>
+              <template #default="{ item }">
+                <ListBoxItem :id="item.id">{{ item.name }}</ListBoxItem>
+              </template>
+            </ListBox>
+          </Popover>
+        </ComboBox>
+      `,
+    }))
+    await tick(4)
+    const input = getInput(wrapper)
+    input.focus()
+    // Type "p": auto-filter over defaultItems keeps Apple and drops Banana.
+    await type(input, 'p')
+    await tick(4)
+    expect(input.getAttribute('aria-expanded')).toBe('true')
+    const filtered = getOptions()
+    expect(filtered.map(o => o.textContent?.trim())).toEqual(['Apple'])
+    wrapper.unmount()
   })
 })
 

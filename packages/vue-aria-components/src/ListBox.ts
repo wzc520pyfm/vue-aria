@@ -213,8 +213,15 @@ function buildCollection(
 function resolveVNodesFromSlot(vnode: VNode): VNode[] {
   const children = vnode.children
   if (typeof children === 'object' && children && !Array.isArray(children) && 'default' in (children as any)) {
-    const result = (children as any).default?.() ?? []
-    return flatten(result)
+    const fn = (children as any).default
+    if (typeof fn !== 'function') return []
+    try {
+      const result = fn({} as any) ?? []
+      return flatten(result)
+    } catch {
+      // Scoped slots that require item render props cannot be walked without them.
+      return []
+    }
   }
   if (Array.isArray(children)) return flatten(children)
   return []
@@ -391,12 +398,22 @@ export const ListBox = defineComponent({
       return out
     }
 
+    const slotVNodes = (): VNode[] => {
+      try {
+        const result = slots.default?.() ?? []
+        return flatten(result as any)
+      } catch {
+        // Scoped slots that require item render props cannot be walked without them.
+        return []
+      }
+    }
+
     const nodes = computed(() => {
       if (providedState) return null
       if (effectiveItems.value) {
         return buildNodesFromDynamicItems(effectiveItems.value, slots.default as any)
       }
-      const rendered = slots.default?.() ?? []
+      const rendered = slotVNodes()
       const result = buildCollection(rendered, null, 0)
       return result.nodes
     })
@@ -472,7 +489,21 @@ export const ListBox = defineComponent({
           }
         } else if (node.type === 'item') {
           const original = map.get(node.key)
-          out.push(original ?? h(ListBoxItem as any, {id: node.key, textValue: node.textValue}, () => node.textValue ?? ''))
+          if (original) {
+            out.push(original)
+            continue
+          }
+          // Render through the item slot when there is no mapped original vnode, e.g. the
+          // uncontrolled `defaultItems` + `#default="{item}"` path where collection nodes are
+          // built from item values rather than rendered slot children.
+          const itemVNode = slots.default
+            ? flatten(slots.default({item: node.value} as any) as unknown as VNodeChild)[0] ?? null
+            : null
+          if (itemVNode) {
+            out.push((itemVNode as any)?.props?.id ? itemVNode : cloneVNode(itemVNode, {id: node.key}))
+          } else {
+            out.push(h(ListBoxItem as any, {id: node.key, textValue: node.textValue}, () => node.textValue ?? ''))
+          }
         } else {
           const original = map.get(node.key)
           if (original) out.push(original)
@@ -483,7 +514,7 @@ export const ListBox = defineComponent({
 
     const renderChildren = (): VNode[] => {
       if (effectiveItems.value) return renderDynamic()
-      const result = buildCollection(slots.default?.() ?? [], null, 0)
+      const result = buildCollection(slotVNodes(), null, 0)
       if (providedState && renderFromCollection.value) {
         return renderCollectionNodes(state.collection.value as unknown as Iterable<CollectionNode<any>>, result.map)
       }

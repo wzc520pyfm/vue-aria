@@ -415,17 +415,37 @@ export function useComboBox<T, M extends SelectionMode = 'single'>(
   }
 
   // Hide everything outside the input and popover while open.
+  // Official: `useEffect(() => { if (state.isOpen) return ariaHideOutside([inputRef.current, popoverRef.current].filter(...) }, [state.isOpen, inputRef, popoverRef])`
+  // i.e. re-run when the popover element exists after open, not only on the isOpen transition.
   let restore: (() => void) | undefined
-  watch(state.isOpen, (isOpen) => {
+  const hideOutside = (isOpen: boolean) => {
     if (restore) {
       restore()
       restore = undefined
     }
     if (isOpen && typeof document !== 'undefined') {
       const targets = [inputRef.value, popoverRef.value].filter((el): el is Element => el != null)
-      restore = ariaHideOutside(targets)
+      if (targets.length > 0) {
+        restore = ariaHideOutside(targets)
+      }
     }
-  }, {flush: 'post'})
+  }
+  watch(
+    () => state.isOpen.value,
+    (isOpen) => {
+      hideOutside(isOpen)
+    },
+    {flush: 'post'},
+  )
+  watch(
+    () => popoverRef.value,
+    (el) => {
+      // Re-run when the popover element attaches (or detaches) so the hide-outside
+      // targets include the live popover element while open.
+      hideOutside(!!state.isOpen.value)
+    },
+    {flush: 'post'},
+  )
   onBeforeUnmount(() => {
     if (restore) {
       restore()
