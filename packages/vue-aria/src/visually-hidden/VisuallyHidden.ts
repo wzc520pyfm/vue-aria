@@ -28,7 +28,7 @@ export interface VisuallyHiddenProps {
 }
 
 export interface VisuallyHiddenAria {
-  visuallyHiddenProps: {value: Record<string, any>}
+  visuallyHiddenProps: Record<string, any>
 }
 
 export function useVisuallyHidden(props: VisuallyHiddenProps = {}): VisuallyHiddenAria {
@@ -50,12 +50,16 @@ export function useVisuallyHidden(props: VisuallyHiddenProps = {}): VisuallyHidd
     return styles
   })
 
-  return {
-    visuallyHiddenProps: computed(() => ({
-      ...(focusWithinProps as any),
-      style: combinedStyles.value,
-    })),
+  const visuallyHiddenProps: Record<string, any> = {
+    ...(focusWithinProps as any),
   }
+  Object.defineProperty(visuallyHiddenProps, 'style', {
+    get: () => combinedStyles.value,
+    enumerable: true,
+    configurable: true,
+  })
+
+  return {visuallyHiddenProps}
 }
 
 export const VisuallyHidden = defineComponent({
@@ -70,7 +74,7 @@ export const VisuallyHidden = defineComponent({
     return () =>
       h(
         props.elementType || 'div',
-        mergeProps(attrs, visuallyHiddenProps.value),
+        mergeProps(attrs, visuallyHiddenProps),
         slots.default?.(),
       )
   },

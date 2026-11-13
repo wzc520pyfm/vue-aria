@@ -7,12 +7,12 @@
 
 import {CalendarDate, startOfWeek, today} from '@internationalized/date'
 import type {CalendarSelectionMode, CalendarState} from 'vue-stately/useCalendarState'
-import {hookData, useVisibleRangeDescription} from './utils'
+import {defineLiveProps, hookData, useVisibleRangeDescription} from './utils'
 import {useDateFormatter} from '../i18n/useDateFormatter'
 // no useKeyboard shortcuts API in this codebase; handle keys directly
 import {useLabels} from '../label/useLabel'
 import {useLocale} from '../i18n/I18nProvider'
-import {computed, toValue, type ComputedRef, type MaybeRefOrGetter} from 'vue'
+import {computed, toValue, type MaybeRefOrGetter} from 'vue'
 
 export interface AriaCalendarGridProps {
   startDate?: MaybeRefOrGetter<CalendarDate | undefined>
@@ -22,10 +22,10 @@ export interface AriaCalendarGridProps {
 }
 
 export interface CalendarGridAria {
-  gridProps: ComputedRef<Record<string, any>>
-  headerProps: ComputedRef<Record<string, any>>
-  weekDays: ComputedRef<string[]>
-  weeksInMonth: ComputedRef<number>
+  gridProps: Record<string, any>
+  headerProps: Record<string, any>
+  weekDays: string[]
+  weeksInMonth: number
 }
 
 export function useCalendarGrid(
@@ -94,29 +94,44 @@ export function useCalendarGrid(
     () => true,
   )
 
-  const gridProps = computed(() => {
-    const data = hookData.get(state)
-    const ariaLabel = toValue(data?.ariaLabel)
-    const ariaLabelledBy = toValue(data?.ariaLabelledBy)
-    const labels = useLabels({
-      'aria-label': [ariaLabel, visibleRangeDescription.value].filter(Boolean).join(', ') || undefined,
-      'aria-labelledby': ariaLabelledBy || undefined,
-    })
-    return {
-      ...labels,
-      role: 'grid',
-      'aria-readonly': state.isReadOnly || undefined,
-      'aria-disabled': state.isDisabled || undefined,
-      'aria-multiselectable':
-        ('highlightedRange' in state || state.selectionMode === 'multiple') || undefined,
-      onFocus: () => state.setFocused(true),
-      onBlur: () => state.setFocused(false),
-      onKeydown: onKeyDown,
-      onKeyDown,
-    }
-  })
+  const gridProps = defineLiveProps(
+    [
+      'id',
+      'aria-label',
+      'aria-labelledby',
+      'role',
+      'aria-readonly',
+      'aria-disabled',
+      'aria-multiselectable',
+      'onFocus',
+      'onBlur',
+      'onKeydown',
+      'onKeyDown',
+    ],
+    () => {
+      const data = hookData.get(state)
+      const ariaLabel = toValue(data?.ariaLabel)
+      const ariaLabelledBy = toValue(data?.ariaLabelledBy)
+      const labels = useLabels({
+        'aria-label': [ariaLabel, visibleRangeDescription.value].filter(Boolean).join(', ') || undefined,
+        'aria-labelledby': ariaLabelledBy || undefined,
+      })
+      return {
+        ...labels,
+        role: 'grid',
+        'aria-readonly': state.isReadOnly || undefined,
+        'aria-disabled': state.isDisabled || undefined,
+        'aria-multiselectable':
+          ('highlightedRange' in state || state.selectionMode === 'multiple') || undefined,
+        onFocus: () => state.setFocused(true),
+        onBlur: () => state.setFocused(false),
+        onKeydown: onKeyDown,
+        onKeyDown,
+      }
+    },
+  )
 
-  const headerProps = computed(() => ({
+  const headerProps = defineLiveProps(['aria-hidden'], () => ({
     'aria-hidden': true,
   }))
 
@@ -140,5 +155,15 @@ export function useCalendarGrid(
 
   const weeksInMonth = computed(() => state.getWeeksInMonth(startDate.value))
 
-  return {gridProps, headerProps, weekDays, weeksInMonth}
+  const out: CalendarGridAria = {
+    gridProps,
+    headerProps,
+    weekDays: [],
+    weeksInMonth: 0,
+  }
+  Object.defineProperties(out, {
+    weekDays: {get: () => weekDays.value, enumerable: true, configurable: true},
+    weeksInMonth: {get: () => weeksInMonth.value, enumerable: true, configurable: true},
+  })
+  return out
 }

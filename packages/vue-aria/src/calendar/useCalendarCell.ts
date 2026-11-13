@@ -7,7 +7,7 @@
 
 import {isSameDay, isToday, type CalendarDate} from '@internationalized/date'
 import type {CalendarSelectionMode, CalendarState} from 'vue-stately/useCalendarState'
-import {getEraFormat, hookData} from './utils'
+import {defineLiveProps, getEraFormat, hookData} from './utils'
 import intlMessages from '../i18n/calendarStrings'
 import {useDateFormatter} from '../i18n/useDateFormatter'
 import {useLocalizedStringFormatter} from '../i18n/useLocalizedStringFormatter'
@@ -21,8 +21,8 @@ export interface AriaCalendarCellProps {
 }
 
 export interface CalendarCellAria {
-  cellProps: ComputedRef<Record<string, any>>
-  buttonProps: ComputedRef<Record<string, any>>
+  cellProps: Record<string, any>
+  buttonProps: Record<string, any>
   isPressed: Ref<boolean>
   isSelected: ComputedRef<boolean>
   isFocused: ComputedRef<boolean>
@@ -176,28 +176,45 @@ export function useCalendarCell(
     () => date.value?.compare(state.visibleRange.start) < 0 || date.value?.compare(state.visibleRange.end) > 0,
   )
 
-  const cellProps = computed(() => ({
+  const cellProps = defineLiveProps(['role', 'aria-disabled', 'aria-selected', 'aria-invalid'], () => ({
     role: 'gridcell',
     'aria-disabled': !isSelectable.value || undefined,
     'aria-selected': isSelected.value || undefined,
     'aria-invalid': isInvalid.value || undefined,
   }))
 
-  const buttonProps = computed(() => ({
+  const buttonProps: Record<string, any> = {
     ...(pressProps as any),
+    // Plain value (not a getter): mergeProps chains focus handlers, and a getter
+    // would be overwritten by the focus-ring handler instead of composed.
     onFocus: () => {
       if (!isCellDisabled.value) {
         state.setFocusedDate(date.value)
         state.setFocused(true)
       }
     },
-    tabIndex: tabIndex.value,
-    role: 'button',
-    'aria-disabled': !isSelectable.value || undefined,
-    'aria-label': label.value,
-    'aria-invalid': isInvalid.value || undefined,
-    'aria-describedby': [isInvalid.value ? errorMessageId.value : undefined].filter(Boolean).join(' ') || undefined,
-  }))
+  }
+  for (const key of [
+    'tabIndex',
+    'role',
+    'aria-disabled',
+    'aria-label',
+    'aria-invalid',
+    'aria-describedby',
+  ]) {
+    Object.defineProperty(buttonProps, key, {
+      get: () => ({
+        tabIndex: tabIndex.value,
+        role: 'button',
+        'aria-disabled': !isSelectable.value || undefined,
+        'aria-label': label.value,
+        'aria-invalid': isInvalid.value || undefined,
+        'aria-describedby': [isInvalid.value ? errorMessageId.value : undefined].filter(Boolean).join(' ') || undefined,
+      })[key],
+      enumerable: true,
+      configurable: true,
+    })
+  }
 
   return {
     cellProps,

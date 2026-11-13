@@ -5,25 +5,25 @@
  * adapted for Vue.
  */
 
-import {announce, hookData, useSelectedDateDescription, useVisibleRangeDescription} from './utils'
+import {announce, defineLiveProps, hookData, useSelectedDateDescription, useVisibleRangeDescription} from './utils'
 import intlMessages from '../i18n/calendarStrings'
 import {useLabels} from '../label/useLabel'
 import {useLocalizedStringFormatter} from '../i18n/useLocalizedStringFormatter'
 import {useSlotId} from '../utils/useId'
 import type {CalendarPropsBase, CalendarSelectionMode, CalendarState} from 'vue-stately/useCalendarState'
-import {computed, ref, toValue, watch, type ComputedRef, type MaybeRefOrGetter} from 'vue'
+import {ref, toValue, watch, type MaybeRefOrGetter} from 'vue'
 
 export interface CalendarAria {
   /** Props for the calendar grouping element. */
-  calendarProps: ComputedRef<Record<string, any>>
+  calendarProps: Record<string, any>
   /** Props for the next button. */
-  nextButtonProps: ComputedRef<Record<string, any>>
+  nextButtonProps: Record<string, any>
   /** Props for the previous button. */
-  prevButtonProps: ComputedRef<Record<string, any>>
+  prevButtonProps: Record<string, any>
   /** Props for the error message element, if any. */
-  errorMessageProps: ComputedRef<Record<string, any>>
+  errorMessageProps: Record<string, any>
   /** A description of the visible date range, for use in the calendar title. */
-  title: ComputedRef<string>
+  title: string
 }
 
 export interface AriaCalendarBaseProps extends CalendarPropsBase {
@@ -127,42 +127,57 @@ export function useCalendarBase(
     },
   )
 
-  const calendarProps = computed(() => {
-    const ariaLabel = [toValue(props['aria-label']), visibleRangeDescription.value].filter(Boolean).join(', ')
-    const labels = useLabels({
-      id: toValue(props.id),
-      'aria-label': ariaLabel || undefined,
-      'aria-labelledby': toValue(props['aria-labelledby']) || undefined,
-    })
-    return {
-      ...labels,
-      role: 'application',
-      'aria-details': toValue(props['aria-details']) || undefined,
-      'aria-describedby': toValue(props['aria-describedby']) || undefined,
-    }
-  })
+  const calendarProps = defineLiveProps(
+    ['id', 'aria-label', 'aria-labelledby', 'role', 'aria-details', 'aria-describedby'],
+    () => {
+      const ariaLabel = [toValue(props['aria-label']), visibleRangeDescription.value].filter(Boolean).join(', ')
+      const labels = useLabels({
+        id: toValue(props.id),
+        'aria-label': ariaLabel || undefined,
+        'aria-labelledby': toValue(props['aria-labelledby']) || undefined,
+      })
+      return {
+        ...labels,
+        role: 'application',
+        'aria-details': toValue(props['aria-details']) || undefined,
+        'aria-describedby': toValue(props['aria-describedby']) || undefined,
+      }
+    },
+  )
 
-  const nextButtonProps = computed(() => ({
-    onPress: () => state.focusNextPage(),
-    'aria-label': stringFormatter.format('next'),
-    isDisabled: Boolean(toValue(props.isDisabled)) || state.isNextVisibleRangeInvalid(),
-    onFocusChange: setNextFocused,
-  }))
+  const nextButtonProps = defineLiveProps(
+    ['onPress', 'aria-label', 'isDisabled', 'onFocusChange'],
+    () => ({
+      onPress: () => state.focusNextPage(),
+      'aria-label': stringFormatter.format('next'),
+      isDisabled: Boolean(toValue(props.isDisabled)) || state.isNextVisibleRangeInvalid(),
+      onFocusChange: setNextFocused,
+    }),
+  )
 
-  const prevButtonProps = computed(() => ({
-    onPress: () => state.focusPreviousPage(),
-    'aria-label': stringFormatter.format('previous'),
-    isDisabled: Boolean(toValue(props.isDisabled)) || state.isPreviousVisibleRangeInvalid(),
-    onFocusChange: setPreviousFocused,
-  }))
+  const prevButtonProps = defineLiveProps(
+    ['onPress', 'aria-label', 'isDisabled', 'onFocusChange'],
+    () => ({
+      onPress: () => state.focusPreviousPage(),
+      'aria-label': stringFormatter.format('previous'),
+      isDisabled: Boolean(toValue(props.isDisabled)) || state.isPreviousVisibleRangeInvalid(),
+      onFocusChange: setPreviousFocused,
+    }),
+  )
 
-  const errorMessageProps = computed(() => ({id: errorMessageId.value}))
+  const errorMessageProps = defineLiveProps(['id'], () => ({id: errorMessageId.value}))
 
-  return {
+  const out: CalendarAria = {
     calendarProps,
     nextButtonProps,
     prevButtonProps,
     errorMessageProps,
-    title: computed(() => title.value),
+    title: '',
   }
+  Object.defineProperty(out, 'title', {
+    get: () => title.value,
+    enumerable: true,
+    configurable: true,
+  })
+  return out
 }

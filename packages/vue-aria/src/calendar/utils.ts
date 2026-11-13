@@ -28,6 +28,26 @@ interface HookData {
 
 export const hookData: WeakMap<CalendarState<CalendarSelectionMode> | any, HookData> = new WeakMap()
 
+/**
+ * Creates a plain props object whose properties are live getters over `get`.
+ * Official consumers read `prevButtonProps['aria-label']` / `nextButtonProps.isDisabled`
+ * directly, so the hook contract must expose plain objects rather than ComputedRefs.
+ */
+export function defineLiveProps<T extends Record<string, any>>(
+  keys: readonly string[],
+  get: () => T,
+): T {
+  const result = {} as T
+  for (const key of keys) {
+    Object.defineProperty(result, key, {
+      get: () => get()[key as keyof T],
+      enumerable: true,
+      configurable: true,
+    })
+  }
+  return result
+}
+
 export function getEraFormat(date: CalendarDate | undefined): 'short' | undefined {
   return date?.calendar.identifier === 'gregory' && (date as any).era === 'BC' ? 'short' : undefined
 }

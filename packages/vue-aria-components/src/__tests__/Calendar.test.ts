@@ -1,8 +1,8 @@
 import {defineComponent, h, nextTick, ref} from 'vue'
 import {mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it} from 'vitest'
-import {CalendarDate} from '@internationalized/date'
-import {dispatchKey, dispatchPointer} from '../../../../test/dom-events'
+import {CalendarDate, JapaneseCalendar} from '@internationalized/date'
+import {dispatchClick, dispatchKey, dispatchPointer} from '../../../../test/dom-events'
 import {
   Button,
   Calendar,
@@ -32,7 +32,9 @@ function mountInDoc(component: any, options: any = {}) {
 async function click(el: Element) {
   dispatchPointer(el, 'pointerdown')
   dispatchPointer(el, 'pointerup')
-  dispatchPointer(el, 'click')
+  // Real user clicks have a non-zero detail; detail=0 is treated as a virtual
+  // (screen reader) click by usePress.
+  dispatchClick(el, {detail: 1})
   await nextTick()
 }
 
@@ -340,6 +342,88 @@ describe('Calendar slice', () => {
     expect(day15).toBeTruthy()
     // defaultValue makes it selected
     expect(day15?.getAttribute('data-selected')).toBe('true')
+  })
+
+  it('reflects parent updates to the controlled value', async () => {
+    const value = ref<any>(new CalendarDate(2024, 1, 15))
+    mountInDoc(defineComponent({
+      setup() {
+        return () => h(Calendar as any, {value: value.value, 'aria-label': 'Date'}, {
+          default: () => h(CalendarGrid as any, null, {default: (date: any) => h(CalendarCell as any, {date})})
+        })
+      }
+    }))
+    await tick(3)
+    const getDay = (n: number) => (Array.from(document.querySelectorAll('td [role="button"]')) as HTMLElement[])
+      .find(el => (el.textContent || '').trim() === String(n) && !el.hasAttribute('data-outside-month'))
+    expect(getDay(15)?.getAttribute('data-selected')).toBe('true')
+
+    value.value = new CalendarDate(2024, 1, 20)
+    await tick(3)
+    expect(getDay(20)?.getAttribute('data-selected')).toBe('true')
+    expect(getDay(15)?.getAttribute('data-selected')).not.toBe('true')
+  })
+
+  it('keeps non-Gregorian input values in their calendar system on emit', async () => {
+    const changes: any[] = []
+    mountInDoc(defineComponent({
+      setup() {
+        return () => h(Calendar as any, {
+          defaultValue: new CalendarDate(new JapaneseCalendar(), 2024, 1, 15),
+          'aria-label': 'Date',
+          onChange: (v: any) => changes.push(v),
+        }, {
+          default: () => h(CalendarGrid as any, null, {default: (date: any) => h(CalendarCell as any, {date})})
+        })
+      }
+    }))
+    await tick(3)
+    const day20 = (Array.from(document.querySelectorAll('td [role="button"]')) as HTMLElement[])
+      .find(el => (el.textContent || '').trim() === '20' && !el.hasAttribute('data-outside-month'))
+    expect(day20).toBeTruthy()
+    await click(day20!)
+    await tick(3)
+    expect(changes.length).toBeGreaterThan(0)
+    expect(changes[changes.length - 1].calendar.identifier).toBe('japanese')
+  })
+
+  it('emits data-hovered when pointer hovers a cell', async () => {
+    mountInDoc(defineComponent({
+      setup() {
+        return () => h(Calendar as any, {defaultValue: new CalendarDate(2024, 1, 15), 'aria-label': 'Date'}, {
+          default: () => h(CalendarGrid as any, null, {default: (date: any) => h(CalendarCell as any, {date})})
+        })
+      }
+    }))
+    await tick(3)
+    const cell = (Array.from(document.querySelectorAll('td [role="button"]')) as HTMLElement[])
+      .find(el => (el.textContent || '').trim() === '15' && !el.hasAttribute('data-outside-month'))!
+    expect(cell).toBeTruthy()
+    expect(cell.getAttribute('data-hovered')).toBeNull()
+    dispatchPointer(cell, 'pointerenter', {pointerType: 'mouse'})
+    await nextTick()
+    expect(cell.getAttribute('data-hovered')).toBe('true')
+    dispatchPointer(cell, 'pointerleave', {pointerType: 'mouse'})
+    await nextTick()
+    expect(cell.getAttribute('data-hovered')).toBeNull()
+  })
+
+  it('emits data-focus-visible when a cell is keyboard focused', async () => {
+    mountInDoc(defineComponent({
+      setup() {
+        return () => h(Calendar as any, {defaultValue: new CalendarDate(2024, 1, 15), 'aria-label': 'Date'}, {
+          default: () => h(CalendarGrid as any, null, {default: (date: any) => h(CalendarCell as any, {date})})
+        })
+      }
+    }))
+    await tick(3)
+    const cell = document.querySelector('td [tabindex="0"]') as HTMLElement
+    expect(cell).toBeTruthy()
+    document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Tab', bubbles: true}))
+    cell.focus()
+    await nextTick()
+    expect(cell.getAttribute('data-focused')).toBe('true')
+    expect(cell.getAttribute('data-focus-visible')).toBe('true')
   })
 
   it('CalendarGrid offset renders a second month and multiple selection toggles', async () => {

@@ -34,7 +34,7 @@ import {useCalendarGrid} from 'vue-aria/useCalendarGrid'
 import {useCalendarCell} from 'vue-aria/useCalendarCell'
 import {useLocale} from 'vue-aria/I18nProvider'
 import {VisuallyHidden} from 'vue-aria/VisuallyHidden'
-import {mergeProps} from 'vue-aria'
+import {mergeProps, useFocusVisible, useHover} from 'vue-aria'
 import {ButtonContextKey, HeadingContextKey} from './context'
 
 export interface CalendarRenderProps<M extends CalendarSelectionMode = 'single'> {
@@ -80,10 +80,10 @@ export const CalendarContext: InjectionKey<any> = Symbol('CalendarContext')
 export const CalendarStateContext: InjectionKey<CalendarState<CalendarSelectionMode> | null> = Symbol('CalendarStateContext')
 
 interface InternalCalendarGridContextValue {
-  headerProps: {value: Record<string, any>}
-  weekDays: {value: string[]}
+  headerProps: Record<string, any>
+  weekDays: string[]
   startDate: {value: CalendarDate}
-  weeksInMonth: {value: number}
+  weeksInMonth: number
 }
 const InternalCalendarGridContext: InjectionKey<InternalCalendarGridContextValue | null> = Symbol('InternalCalendarGridContext')
 
@@ -120,15 +120,38 @@ export const Calendar = defineComponent({
     id: {type: String, default: undefined},
     slot: {type: String, default: undefined},
   },
-  emits: ['change', 'focusChange'],
+  emits: ['change', 'focuschange'],
   setup(props, {slots, attrs, emit}) {
     const locale = useLocale()
+    // Pass live getters rather than spreading Vue props: spreading snapshots
+    // controlled inputs (value/defaultValue/focusedValue/min/max/etc.) at setup,
+    // so later parent updates would never reach the state.
     const state = useCalendarState({
-      ...props,
+      value: () => props.value,
+      defaultValue: () => props.defaultValue,
+      focusedValue: () => props.focusedValue,
+      defaultFocusedValue: () => props.defaultFocusedValue,
+      minValue: () => props.minValue,
+      maxValue: () => props.maxValue,
+      isDisabled: () => props.isDisabled,
+      isReadOnly: () => props.isReadOnly,
+      isInvalid: () => props.isInvalid,
+      validationState: () => props.validationState,
+      pageBehavior: () => props.pageBehavior,
+      firstDayOfWeek: () => props.firstDayOfWeek,
+      selectionAlignment: () => props.selectionAlignment,
+      weeksInMonth: () => props.weeksInMonth,
+      selectionMode: () => props.selectionMode,
+      // `useCalendarState` calls this directly (not via `toValue`), so forward
+      // through a function that reads the current prop on every call.
+      isDateUnavailable: (date: DateValue) => props.isDateUnavailable?.(date) ?? false,
+      visibleDuration: () => props.visibleDuration,
+      autoFocus: () => props.autoFocus,
+      errorMessage: () => props.errorMessage,
       locale: () => locale.locale,
       createCalendar: () => props.createCalendar || createDefaultCalendar,
       onChange: (value: any) => emit('change', value),
-      onFocusChange: (date: CalendarDate) => emit('focusChange', date),
+      onFocusChange: (date: CalendarDate) => emit('focuschange', date),
     } as any)
 
     const ariaProps = {
@@ -146,7 +169,8 @@ export const Calendar = defineComponent({
       maxValue: () => props.maxValue,
     }
 
-    const {calendarProps, prevButtonProps, nextButtonProps, title} = useCalendar(ariaProps as any, state as any)
+    const calendarAria = useCalendar(ariaProps as any, state as any)
+    const {calendarProps, prevButtonProps, nextButtonProps} = calendarAria
 
     const buttonCtx = reactive({
       slots: {
@@ -162,9 +186,9 @@ export const Calendar = defineComponent({
     provide(HeadingContextKey, headingCtx)
 
     return () => {
-      buttonCtx.slots.previous = prevButtonProps.value
-      buttonCtx.slots.next = nextButtonProps.value
-      headingCtx.children = title.value
+      buttonCtx.slots.previous = prevButtonProps
+      buttonCtx.slots.next = nextButtonProps
+      headingCtx.children = calendarAria.title
 
       const values = {
         state,
@@ -172,10 +196,10 @@ export const Calendar = defineComponent({
         isInvalid: state.isValueInvalid,
       }
       const renderProps = getRenderProps({class: attrs.class, style: attrs.style}, values, 'react-aria-Calendar')
-      const ariaLabel = (calendarProps.value as any)['aria-label']
+      const ariaLabel = (calendarProps as any)['aria-label']
       return h(
         'div',
-        mergeProps(attrs, calendarProps.value, {
+        mergeProps(attrs, calendarProps, {
           slot: props.slot || undefined,
           class: renderProps.class,
           style: renderProps.style,
@@ -188,8 +212,8 @@ export const Calendar = defineComponent({
           h(VisuallyHidden, null, {
             default: () =>
               h('button', {
-                'aria-label': nextButtonProps.value['aria-label'],
-                disabled: nextButtonProps.value.isDisabled || undefined,
+                'aria-label': nextButtonProps['aria-label'],
+                disabled: nextButtonProps.isDisabled || undefined,
                 onClick: () => state.focusNextPage(),
                 tabindex: -1,
                 type: 'button',
@@ -240,10 +264,10 @@ export const CalendarGrid = defineComponent({
     )
 
     provide(InternalCalendarGridContext, {
-      headerProps: gridState.headerProps,
-      weekDays: gridState.weekDays,
+      get headerProps() { return gridState.headerProps },
+      get weekDays() { return gridState.weekDays },
       startDate,
-      weeksInMonth: gridState.weeksInMonth,
+      get weeksInMonth() { return gridState.weeksInMonth },
     })
 
     return () => {
@@ -253,7 +277,7 @@ export const CalendarGrid = defineComponent({
         const header = h(CalendarGridHeader, null, {
           default: (day: string) => h(CalendarHeaderCell, null, {default: () => day}),
         })
-        const weeks = gridState.weeksInMonth.value
+        const weeks = gridState.weeksInMonth
         const rows: any[] = []
         for (let weekIndex = 0; weekIndex < weeks; weekIndex++) {
           const dates = state.getDatesInWeek(weekIndex, startDate.value)
@@ -293,7 +317,7 @@ export const CalendarGrid = defineComponent({
           const header = h(CalendarGridHeader, null, {
             default: (day: string) => h(CalendarHeaderCell, null, {default: () => day}),
           })
-          const weeks = gridState.weeksInMonth.value
+          const weeks = gridState.weeksInMonth
           const rows: any[] = []
           for (let weekIndex = 0; weekIndex < weeks; weekIndex++) {
             const dates = state.getDatesInWeek(weekIndex, startDate.value)
@@ -313,7 +337,7 @@ export const CalendarGrid = defineComponent({
           const header = h(CalendarGridHeader, null, {
             default: (day: string) => h(CalendarHeaderCell, null, {default: () => day}),
           })
-          const weeks = gridState.weeksInMonth.value
+          const weeks = gridState.weeksInMonth
           const rows: any[] = []
           for (let weekIndex = 0; weekIndex < weeks; weekIndex++) {
             const dates = state.getDatesInWeek(weekIndex, startDate.value)
@@ -334,7 +358,7 @@ export const CalendarGrid = defineComponent({
       }
       return h(
         'table',
-        mergeProps(attrs, gridState.gridProps.value, {
+        mergeProps(attrs, gridState.gridProps, {
           class: attrs.class ?? 'react-aria-CalendarGrid',
           style: attrs.style,
           cellpadding: 0,
@@ -354,14 +378,14 @@ export const CalendarGridHeader = defineComponent({
     return () =>
       h(
         'thead',
-        mergeProps(attrs, ctx.headerProps.value, {
+        mergeProps(attrs, ctx.headerProps, {
           class: attrs.class ?? 'react-aria-CalendarGridHeader',
           style: attrs.style,
         }),
         [
           h(
             'tr',
-            (ctx.weekDays.value || []).map((day, key) => {
+            (ctx.weekDays || []).map((day, key) => {
               const rendered = slots.default?.(day)
               if (Array.isArray(rendered) && rendered.length === 1) return rendered[0]
               if (rendered && !Array.isArray(rendered)) return rendered
@@ -397,7 +421,7 @@ export const CalendarGridBody = defineComponent({
     const ctx = inject(InternalCalendarGridContext, null)
     if (!state || !ctx) throw new Error('CalendarGridBody must be used within a CalendarGrid')
     return () => {
-      const weeks = ctx.weeksInMonth.value
+      const weeks = ctx.weeksInMonth
       const rows: any[] = []
       for (let weekIndex = 0; weekIndex < weeks; weekIndex++) {
         const dates = state.getDatesInWeek(weekIndex, ctx.startDate.value)
@@ -465,6 +489,13 @@ export const CalendarCell = defineComponent({
         buttonRef,
       )
 
+    const {hoverProps, isHovered} = useHover({
+      isDisabled: () => isDisabled.value || isUnavailable.value,
+    })
+    const {focusProps, isFocusVisible: isFocusVisibleRaw} = useFocusVisible()
+    // Official: `isFocusVisible &&= states.isFocused`.
+    const isFocusVisible = computed(() => isFocusVisibleRaw.value && isFocused.value)
+
     const isSelectionStart = computed(() => {
       if ('highlightedRange' in state && state.highlightedRange) {
         return isSameDay(props.date, state.highlightedRange.start)
@@ -482,13 +513,13 @@ export const CalendarCell = defineComponent({
       const values = {
         date: props.date,
         formattedDate: formattedDate.value,
-        isHovered: false,
+        isHovered: isHovered.value,
         isPressed: isPressed.value,
         isSelected: isSelected.value,
         isSelectionStart: isSelectionStart.value,
         isSelectionEnd: isSelectionEnd.value,
         isFocused: isFocused.value,
-        isFocusVisible: isFocused.value, // approximate; focus-visible tracking not separately wired
+        isFocusVisible: isFocusVisible.value,
         isDisabled: isDisabled.value,
         isOutsideVisibleRange: isOutsideVisibleRange.value,
         isOutsideMonth: isOutsideMonth.value,
@@ -500,11 +531,11 @@ export const CalendarCell = defineComponent({
 
       const dataAttrs = {
         'data-focused': isFocused.value ? 'true' : undefined,
-        'data-hovered': undefined,
+        'data-hovered': isHovered.value ? 'true' : undefined,
         'data-pressed': isPressed.value ? 'true' : undefined,
         'data-unavailable': isUnavailable.value ? 'true' : undefined,
         'data-disabled': isDisabled.value ? 'true' : undefined,
-        'data-focus-visible': undefined,
+        'data-focus-visible': isFocusVisible.value ? 'true' : undefined,
         'data-outside-visible-range': isOutsideVisibleRange.value ? 'true' : undefined,
         'data-outside-month': isOutsideMonth.value ? 'true' : undefined,
         'data-selected': isSelected.value ? 'true' : undefined,
@@ -514,10 +545,10 @@ export const CalendarCell = defineComponent({
         'data-today': isTodayDate.value ? 'true' : undefined,
       }
 
-      return h('td', cellProps.value, [
+      return h('td', cellProps, [
         h(
           'div',
-          mergeProps(attrs, buttonProps.value, dataAttrs, {
+          mergeProps(attrs, buttonProps, focusProps, hoverProps, dataAttrs, {
             ref: (el: any) => { buttonRef.value = el },
             class: renderProps.class,
             style: renderProps.style,
