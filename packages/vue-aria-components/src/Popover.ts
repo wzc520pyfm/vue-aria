@@ -1,4 +1,4 @@
-import {computed, defineComponent, h, inject, provide, ref, watch, Teleport, type PropType, type Ref} from 'vue'
+import {computed, defineComponent, getCurrentInstance, h, inject, provide, ref, watch, Teleport, type PropType, type Ref} from 'vue'
 import {
   mergeProps,
   toHeroDataAttrs,
@@ -31,8 +31,8 @@ export const Popover = defineComponent({
     defaultOpen: {type: Boolean, default: undefined},
     isNonModal: {type: Boolean, default: false},
     isKeyboardDismissDisabled: {type: Boolean, default: false},
-    placement: {type: String as PropType<Placement>, default: 'bottom'},
-    offset: {type: Number, default: 8},
+    placement: {type: String as PropType<Placement>, default: undefined},
+    offset: {type: Number, default: undefined},
     shouldFlip: {type: Boolean, default: true},
     'data-slot': {type: String, default: undefined},
     dataSlot: {type: String, default: undefined},
@@ -55,13 +55,32 @@ export const Popover = defineComponent({
 
     provide(OverlayTriggerStateKey, state)
 
+    const instance = getCurrentInstance()
+    const vnodeProps = (instance?.vnode.props || {}) as Record<string, any>
+    const placementExplicit = vnodeProps.placement != null || vnodeProps['placement'] != null
+    const offsetExplicit = vnodeProps.offset != null || vnodeProps['offset'] != null
+
     const popoverRef = ref<HTMLElement | null>(null)
     const fallbackTriggerRef = ref<Element | null>(null)
     const triggerRef: Ref<Element | null | undefined> =
       (props.triggerRef as Ref<Element | null | undefined> | undefined) ??
-      context?.triggerRef ??
+      (context?.triggerRef as any) ??
       triggerFromContext ??
       fallbackTriggerRef
+
+    const effectivePlacement = computed(() => {
+      if (placementExplicit && props.placement != null) return props.placement
+      if (context?.placement) return context.placement as Placement
+      return 'bottom' as Placement
+    })
+    const effectiveOffset = computed(() => {
+      if (offsetExplicit && props.offset != null) return props.offset
+      if (context?.offset != null) return context.offset
+      return props.offset ?? 8
+    })
+    const effectiveAriaLabelledby = computed(() => context?.['aria-labelledby'])
+    const effectiveId = computed(() => context?.id)
+    const dataTrigger = computed(() => context?.trigger)
 
     const {popoverProps, placement: resolved} = usePopover(
       {
@@ -69,8 +88,8 @@ export const Popover = defineComponent({
         popoverRef,
         isNonModal: () => props.isNonModal,
         isKeyboardDismissDisabled: () => props.isKeyboardDismissDisabled,
-        placement: () => props.placement,
-        offset: () => props.offset,
+        placement: () => effectivePlacement.value,
+        offset: () => effectiveOffset.value,
         shouldFlip: () => props.shouldFlip,
       },
       state,
@@ -161,6 +180,9 @@ export const Popover = defineComponent({
             presenceAttrs.value,
             placementAttrs.value,
             toHeroDataAttrs({slot: dataSlot.value}),
+            dataTrigger.value ? {'data-trigger': dataTrigger.value} : {},
+            effectiveAriaLabelledby.value && !(attrs as any)['aria-labelledby'] && !(attrs as any).ariaLabelledby ? {'aria-labelledby': effectiveAriaLabelledby.value} : {},
+            effectiveId.value && !(attrs as any).id ? {id: effectiveId.value} : {},
             isStandaloneDialog.value ? {role: 'dialog', tabIndex: -1} : {},
             {
               ref: (el: HTMLElement | null) => {
