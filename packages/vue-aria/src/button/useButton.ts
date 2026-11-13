@@ -21,6 +21,18 @@ export interface UseButtonProps extends PressEvents {
   /** Camel-case alias of `data-slot` for Vue prop fallthrough. */
   dataSlot?: MaybeRefOrGetter<string | undefined>
   /**
+   * Extra fields on {@link PressProps} are additive and do not break this contract.
+   * `useButton` additionally supports `preventFocusOnPress` (pointer presses do not move
+   * focus to the button) and `excludeFromTabOrder` (`tabIndex=-1`), implemented here without
+   * changing the frozen `usePress` helpers.
+   */
+  /** Whether pointer presses should not move focus to the button. @default false */
+  preventFocusOnPress?: MaybeRefOrGetter<boolean | undefined>
+  /** Whether the button is excluded from the tab order (`tabIndex=-1`). @default false */
+  excludeFromTabOrder?: MaybeRefOrGetter<boolean | undefined>
+  'aria-label'?: MaybeRefOrGetter<string | undefined>
+  'aria-labelledby'?: MaybeRefOrGetter<string | undefined>
+  /**
    * The native button click event handler.
    * @deprecated use `onPress` instead.
    */
@@ -88,6 +100,8 @@ export function useButton(props: UseButtonProps = {}): UseButtonReturn {
   const resolvedSlot = computed(
     () => toValue(props['data-slot']) ?? toValue(props.dataSlot) ?? 'button',
   )
+  const excludeFromTabOrder = computed(() => !!toValue(props.excludeFromTabOrder))
+  const preventFocusOnPress = computed(() => !!toValue(props.preventFocusOnPress))
 
   const additionalProps = computed(() => {
     if (resolvedElementType.value === 'button') {
@@ -95,23 +109,35 @@ export function useButton(props: UseButtonProps = {}): UseButtonReturn {
         type: resolvedType.value,
         // Native disabled only for isDisabled — not for isPending.
         disabled: resolvedDisabled.value ? true : undefined,
+        ...(excludeFromTabOrder.value ? {tabIndex: -1} : {}),
       }
     }
     return {
       role: 'button',
-      tabIndex: resolvedDisabled.value ? undefined : 0,
+      tabIndex: resolvedDisabled.value ? undefined : excludeFromTabOrder.value ? -1 : 0,
       type: resolvedElementType.value === 'input' ? resolvedType.value : undefined,
       disabled: resolvedElementType.value === 'input' && resolvedDisabled.value ? true : undefined,
     }
   })
 
+  // When `preventFocusOnPress` is set, pointer presses must not move focus to the button.
+  // Implemented here (not in the frozen `usePress`): preventDefault on pointerdown, which
+  // cancels the browser's default focus behavior.
+  const preventFocusProps = computed(() =>
+    preventFocusOnPress.value
+      ? {onPointerdown: (e: PointerEvent) => e.preventDefault()}
+      : {},
+  )
+
   const buttonProps = computed(() =>
-    mergeProps(hoverProps, pressProps, focusProps, additionalProps.value, {
+    mergeProps(hoverProps, pressProps, focusProps, additionalProps.value, preventFocusProps.value, {
       'aria-disabled': dataAttr(resolvedDisabled.value || resolvedPending.value),
       'aria-pressed': toValue(props['aria-pressed']),
       'aria-haspopup': toValue(props['aria-haspopup']),
       'aria-expanded': toValue(props['aria-expanded']),
       'aria-controls': toValue(props['aria-controls']),
+      'aria-label': toValue(props['aria-label']),
+      'aria-labelledby': toValue(props['aria-labelledby']),
     }, toHeroDataAttrs({
       slot: resolvedSlot.value,
       disabled: resolvedDisabled.value,

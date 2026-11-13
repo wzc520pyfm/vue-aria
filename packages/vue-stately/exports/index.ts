@@ -4,7 +4,7 @@
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
  * This batch adds overlay, tooltip, collection, selection/list, menu
- * trigger, and Select state. ComboBox / Tree / date state hooks remain deferred.
+ * trigger, Select, and ComboBox state. Tree / date state hooks remain deferred.
  */
 export {useOverlayTriggerState} from './useOverlayTriggerState'
 export type {
@@ -46,3 +46,6 @@ export type {Collection, CollectionNode, Key} from './useListState'
 
 export {useSelectState} from './useSelectState'
 export type {SelectProps, SelectState, SelectStateOptions, ValueType, ChangeValueType} from './useSelectState'
+
+export {useComboBoxState} from './useComboBoxState'
+export type {ComboBoxProps, ComboBoxStateOptions, ComboBoxState, ComboBoxValidationValue, MenuTriggerAction} from './useComboBoxState'

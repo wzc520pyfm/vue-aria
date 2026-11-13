@@ -40,6 +40,8 @@ export interface ListBoxProps {
   shouldSelectOnPressUp?: boolean
   shouldFocusOnHover?: boolean
   escapeKeyBehavior?: 'clearSelection' | 'none'
+  shouldUseVirtualFocus?: boolean
+  linkBehavior?: 'action' | 'selection' | 'override' | 'none'
   items?: any[]
   id?: string
   'aria-label'?: string
@@ -93,6 +95,8 @@ function getComponentName(v: VNode): string | null {
 interface CollectionWalkResult {
   nodes: CollectionNode<any>[]
   rendered: VNode[]
+  /** Original vnode for each generated section/item key, used to render a filtered collection. */
+  map: Map<Key, VNode>
 }
 
 /**
@@ -109,6 +113,7 @@ function buildCollection(
 ): CollectionWalkResult {
   const nodes: CollectionNode<any>[] = []
   const rendered: VNode[] = []
+  const map = new Map<Key, VNode>()
   let index = 0
   for (const vnode of flatten(vnodes as any)) {
     const name = getComponentName(vnode)
@@ -126,6 +131,7 @@ function buildCollection(
       const sub = buildCollection(childVNodes, parentKey, level, path, seen)
       nodes.push(...sub.nodes)
       rendered.push(...sub.rendered)
+      for (const [k, v] of sub.map) map.set(k, v)
       continue
     }
     if (name === 'ListBoxSection' || props['data-section'] != null) {
@@ -161,6 +167,8 @@ function buildCollection(
       } else {
         ;(sectionVnode as any).children = injectGeneratedChildIds(childSlotVNodes, childPath)
       }
+      map.set(sectionKey, sectionVnode)
+      for (const [k, v] of childResult.map) map.set(k, v)
       nodes.push({
         key: sectionKey,
         parentKey,
@@ -180,7 +188,9 @@ function buildCollection(
     if (name === 'ListBoxItem') {
       const key = (props.id ?? null) as Key | null
       const resolvedKey = key ?? genKey('item', ...path, index)
-      rendered.push(key ? vnode : cloneVNode(vnode, {id: resolvedKey}))
+      const itemVNode = key ? vnode : cloneVNode(vnode, {id: resolvedKey})
+      rendered.push(itemVNode)
+      map.set(resolvedKey, itemVNode)
       nodes.push({
         key: resolvedKey,
         parentKey,
@@ -197,7 +207,7 @@ function buildCollection(
     }
     rendered.push(vnode)
   }
-  return {nodes, rendered}
+  return {nodes, rendered, map}
 }
 
 function resolveVNodesFromSlot(vnode: VNode): VNode[] {
@@ -236,7 +246,7 @@ function injectGeneratedChildIds(vnodes: VNode[], path: Array<Key | number>): VN
   return injected
 }
 
-function buildNodesFromDynamicItems<T>(items: any[] | undefined, slot: ((scope: any) => VNodeChild) | undefined, parentKey: Key | null = null, level = 0): CollectionNode<T>[] {
+export function buildNodesFromDynamicItems<T>(items: any[] | undefined, slot: ((scope: any) => VNodeChild) | undefined, parentKey: Key | null = null, level = 0): CollectionNode<T>[] {
   const nodes: CollectionNode<T>[] = []
   if (!items) return nodes
   let index = 0
@@ -295,6 +305,8 @@ export const ListBox = defineComponent({
     shouldSelectOnPressUp: {type: Boolean, default: undefined},
     shouldFocusOnHover: {type: Boolean, default: undefined},
     escapeKeyBehavior: {type: String as PropType<'clearSelection' | 'none'>, default: undefined},
+    shouldUseVirtualFocus: {type: Boolean, default: undefined},
+    linkBehavior: {type: String as PropType<'action' | 'selection' | 'override' | 'none'>, default: undefined},
     items: {type: Array as PropType<any[]>, default: undefined},
     id: {type: String, default: undefined},
     'aria-label': {type: String, default: undefined},
@@ -338,15 +350,25 @@ export const ListBox = defineComponent({
     const shouldSelectOnPressUp = computed<boolean>(() => pickBool('shouldSelectOnPressUp', false))
     const shouldFocusOnHover = computed<boolean>(() => pickBool('shouldFocusOnHover', false))
     const escapeKeyBehavior = computed<'clearSelection' | 'none'>(() => pick('escapeKeyBehavior', 'clearSelection' as any))
+    const shouldUseVirtualFocus = computed<boolean>(() => pickBool('shouldUseVirtualFocus', false))
+    const linkBehavior = computed<'action' | 'selection' | 'override' | 'none' | undefined>(() => pick('linkBehavior', undefined as any))
     const orientation = computed<'vertical' | 'horizontal'>(() => pick('orientation', 'vertical' as any))
     const layout = computed<'stack' | 'grid'>(() => pick('layout', 'stack' as any))
     const disallowEmptySelection = computed<boolean>(() => pickBool('disallowEmptySelection', false))
     const resolvedId = computed(() => (props.id ?? injectedCtx.id) as string | undefined)
     const resolvedAriaLabelledby = computed(() => (props['aria-labelledby'] ?? injectedCtx['aria-labelledby']) as string | undefined)
     const resolvedAriaLabel = computed(() => (props['aria-label'] ?? injectedCtx['aria-label']) as string | undefined)
+    // Collection components (ComboBox) may provide `items` via context while the
+    // <ListBox> itself is rendered without an `items` prop.
+    const effectiveItems = computed<any[] | undefined>(() =>
+      getExplicit('items') ? (props.items as any[]) : ((injectedCtx as any).items as any[] | undefined),
+    )
+    // ComboBox provides the already-filtered displayed collection; render that
+    // instead of the unfiltered slot children so typed filtering is reflected.
+    const renderFromCollection = computed(() => !!(injectedCtx as any).renderFromCollection)
 
     const renderDynamic = (): VNode[] => {
-      const items = props.items ?? []
+      const items = effectiveItems.value ?? []
       const out: VNode[] = []
       for (const item of items) {
         const isSection = item && (item.type === 'section' || Array.isArray(item.items) || Array.isArray(item.children))
@@ -371,8 +393,8 @@ export const ListBox = defineComponent({
 
     const nodes = computed(() => {
       if (providedState) return null
-      if (props.items) {
-        return buildNodesFromDynamicItems(props.items, slots.default as any)
+      if (effectiveItems.value) {
+        return buildNodesFromDynamicItems(effectiveItems.value, slots.default as any)
       }
       const rendered = slots.default?.() ?? []
       const result = buildCollection(rendered, null, 0)
@@ -410,6 +432,8 @@ export const ListBox = defineComponent({
       shouldSelectOnPressUp: () => shouldSelectOnPressUp.value,
       shouldFocusOnHover: () => shouldFocusOnHover.value,
       escapeKeyBehavior: () => escapeKeyBehavior.value,
+      shouldUseVirtualFocus: () => shouldUseVirtualFocus.value,
+      linkBehavior: () => linkBehavior.value,
       disallowEmptySelection: () => disallowEmptySelection.value,
       onAction: (key: Key) => {
         const action = props.onAction ?? injectedCtx.onAction
@@ -425,9 +449,44 @@ export const ListBox = defineComponent({
       return null
     }
 
+    const renderCollectionNodes = (nodes: Iterable<CollectionNode<any>>, map: Map<Key, VNode>): VNode[] => {
+      const out: VNode[] = []
+      for (const node of nodes) {
+        if (node.type === 'section') {
+          const children = renderCollectionNodes(node.childNodes ?? [], map)
+          if (!children.length) continue
+          const original = map.get(node.key)
+          if (original) {
+            const originalChildren = (original as any).children
+            const nextChildren =
+              typeof originalChildren === 'object' && originalChildren && !Array.isArray(originalChildren) && 'default' in originalChildren
+                ? {...originalChildren, default: () => children}
+                : children
+            out.push(cloneVNode(original, {id: node.key}, nextChildren as any))
+          } else {
+            out.push(h(ListBoxSection as any, {
+              id: node.key,
+              'aria-label': node['aria-label'],
+              title: (node as any).props?.title ?? node.textValue,
+            }, {default: () => children}))
+          }
+        } else if (node.type === 'item') {
+          const original = map.get(node.key)
+          out.push(original ?? h(ListBoxItem as any, {id: node.key, textValue: node.textValue}, () => node.textValue ?? ''))
+        } else {
+          const original = map.get(node.key)
+          if (original) out.push(original)
+        }
+      }
+      return out
+    }
+
     const renderChildren = (): VNode[] => {
-      if (props.items) return renderDynamic()
+      if (effectiveItems.value) return renderDynamic()
       const result = buildCollection(slots.default?.() ?? [], null, 0)
+      if (providedState && renderFromCollection.value) {
+        return renderCollectionNodes(state.collection.value as unknown as Iterable<CollectionNode<any>>, result.map)
+      }
       return result.rendered
     }
 
