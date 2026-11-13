@@ -24,6 +24,12 @@ export interface UseFocusScopeOptions {
   autoFocus?: MaybeRefOrGetter<boolean | undefined>
   /** Whether to restore focus to the previously focused element on cleanup. @default true */
   restoreFocus?: MaybeRefOrGetter<boolean | undefined>
+  /**
+   * Optional explicit element to restore focus to on cleanup. When provided it
+   * wins over the element that was focused when the scope activated (used by
+   * overlays to restore focus to their trigger).
+   */
+  restoreTo?: MaybeRefOrGetter<Element | null | undefined>
   /** Whether the scope is currently active. @default true when the ref is mounted */
   isActive?: MaybeRefOrGetter<boolean | undefined>
 }
@@ -53,7 +59,8 @@ export function useFocusScope(options: UseFocusScopeOptions): void {
       if (!element || !isActive) return
       const doc = getOwnerDocument(element)
       if (restoreFocus && nodeToRestore.current == null) {
-        nodeToRestore.current = doc.activeElement
+        const explicit = toValue(options.restoreTo) as Element | null | undefined
+        nodeToRestore.current = explicit ?? doc.activeElement
       }
 
       if (autoFocus && element && !element.contains(doc.activeElement)) {
@@ -122,10 +129,31 @@ export function useFocusScope(options: UseFocusScopeOptions): void {
   })
 }
 
+function isInHiddenSubtree(el: HTMLElement, scope: HTMLElement): boolean {
+  let node: HTMLElement | null = el
+  while (node && node !== scope) {
+    if (node.getAttribute('aria-hidden') === 'true') return true
+    node = node.parentElement
+  }
+  return false
+}
+
+function hasPreventFocusMarker(el: HTMLElement, scope: HTMLElement): boolean {
+  let node: HTMLElement | null = el
+  while (node && node !== scope.parentElement) {
+    if (node.hasAttribute('data-react-aria-prevent-focus') || node.hasAttribute('data-a11y-ignore')) return true
+    if (node === scope) break
+    node = node.parentElement
+  }
+  return false
+}
+
 function getFocusable(scope: HTMLElement): HTMLElement[] {
   return Array.from(scope.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((el) => {
     if (el.hasAttribute('disabled') || el.getAttribute('aria-hidden') === 'true') return false
     if ((el as HTMLButtonElement | HTMLInputElement).disabled) return false
+    if (isInHiddenSubtree(el, scope)) return false
+    if (hasPreventFocusMarker(el, scope)) return false
     if (el.tabIndex < 0 && !el.hasAttribute('contenteditable')) {
       // query already excludes tabindex="-1", keep elements with no tabindex or >= 0
     }

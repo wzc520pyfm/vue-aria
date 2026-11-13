@@ -3,8 +3,8 @@
  * (`packages/react-stately/exports` at
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
- * This batch adds overlay, tooltip, collection, selection/list, and menu
- * trigger state. Select / ComboBox / Tree / date state hooks remain deferred.
+ * This batch adds overlay, tooltip, collection, selection/list, menu
+ * trigger, and Select state. ComboBox / Tree / date state hooks remain deferred.
  */
 export {useOverlayTriggerState} from './useOverlayTriggerState'
 export type {
@@ -43,3 +43,6 @@ export {ListCollection} from './ListCollection'
 export {useListState} from './useListState'
 export type {ListProps, ListState} from './useListState'
 export type {Collection, CollectionNode, Key} from './useListState'
+
+export {useSelectState} from './useSelectState'
+export type {SelectProps, SelectState, SelectStateOptions, ValueType, ChangeValueType} from './useSelectState'

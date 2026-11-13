@@ -5,7 +5,7 @@
  *
  * This batch adds overlay, dialog, tooltip, focus-scope, dismiss,
  * ListBox, and Menu hooks on top of the first-batch interaction hooks and
- * Hero UI Vue behavior contract. Select/ComboBox/Sheet, dates, and a full
+ * Hero UI Vue behavior contract. Select hooks are now included. ComboBox/Sheet, dates, and a full
  * I18nProvider remain deferred.
  */
 export {usePress} from './usePress'
@@ -85,6 +85,9 @@ export type {ListKeyboardDelegateOptions} from './ListKeyboardDelegate'
 
 export {useLabel} from './useLabel'
 export type {UseLabelProps, LabelAria} from './useLabel'
+
+export {useField} from './useField'
+export type {AriaFieldProps, FieldAria} from './useField'
 
 export {useMenu, useMenuItem, useMenuSection, useMenuTrigger, useSubmenuTrigger} from './useMenu'
 export type {MenuProps, AriaMenuProps, AriaMenuOptions, MenuAria, AriaMenuItemProps, MenuItemAria, AriaMenuSectionProps, MenuSectionAria, AriaMenuTriggerProps, MenuTriggerAria, AriaSubmenuTriggerProps, SubmenuTriggerAria} from './useMenu'

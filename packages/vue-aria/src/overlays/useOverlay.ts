@@ -49,6 +49,7 @@ export interface OverlayAria {
 
 // Submenu popovers are separate teleported overlays, so we track mounted overlays
 // to recognize interactions that happen inside a nested overlay.
+// The array is kept in open order; the last entry is the top-most overlay.
 const registeredOverlays: Array<Ref<Element | null | undefined>> = []
 
 export function useOverlay(props: AriaOverlayProps, ref: Ref<Element | null | undefined>): OverlayAria {
@@ -74,6 +75,32 @@ export function useOverlay(props: AriaOverlayProps, ref: Ref<Element | null | un
     if (toValue(props.isOpen) === false) return
     props.onClose?.()
   }
+
+  function onHideTopmost() {
+    // Only the top-most overlay hides on Escape.
+    if (registeredOverlays[registeredOverlays.length - 1] !== ref) return
+    onHide()
+  }
+
+  // Escape handling at the document level, mirroring official top-most semantics,
+  // so Escape closes the open overlay even when focus is outside it (e.g. on the trigger).
+  watch(
+    () => [Boolean(toValue(props.isOpen)), ref.value, Boolean(toValue(props.isKeyboardDismissDisabled))] as const,
+    ([isOpen, el, dismissDisabled], _prev, onCleanup) => {
+      if (!isOpen || !el || dismissDisabled) return
+      const doc = el.ownerDocument
+      const onKeydownDocument = (e: KeyboardEvent) => {
+        if (e.key !== 'Escape') return
+        if (registeredOverlays[registeredOverlays.length - 1] !== ref) return
+        e.stopPropagation()
+        e.preventDefault()
+        onHide()
+      }
+      doc.addEventListener('keydown', onKeydownDocument, true)
+      onCleanup(() => doc.removeEventListener('keydown', onKeydownDocument, true))
+    },
+    {immediate: true, flush: 'post'},
+  )
 
   watch(
     () => [Boolean(toValue(props.isOpen)), ref.value] as const,

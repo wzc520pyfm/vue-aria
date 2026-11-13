@@ -1,5 +1,5 @@
 import {defineComponent, h, inject} from 'vue'
-import {ListBoxItemContextKey} from './context'
+import {ListBoxItemContextKey, TextContextKey} from './context'
 
 export interface TextProps {
   elementType?: string
@@ -19,9 +19,13 @@ export const Text = defineComponent({
   },
   setup(props, {slots, attrs}) {
     const itemCtx = inject(ListBoxItemContextKey, null)
+    const textCtx = inject(TextContextKey, undefined)
     return () => {
       const slotName = (props.slot ?? (props as any)['data-slot'] ?? (attrs as any)['data-slot'] ?? (attrs as any).slot) as string | undefined
       let id = props.id
+      if (!id && slotName && textCtx?.slots?.[slotName]?.id) {
+        id = textCtx.slots[slotName].id
+      }
       if (!id && slotName === 'label') id = itemCtx?.labelProps?.id
       if (!id && slotName === 'description') id = itemCtx?.descriptionProps?.id
       return h(

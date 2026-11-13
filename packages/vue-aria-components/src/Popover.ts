@@ -146,7 +146,9 @@ export const Popover = defineComponent({
       ref: popoverRef,
       contain: () => shouldContainFocus.value,
       autoFocus: () => shouldAutoFocusPopover.value,
-      restoreFocus: () => shouldContainFocus.value,
+      // Restore focus to the trigger when the popover closes.
+      restoreTo: () => (triggerRef.value as Element | null | undefined) ?? null,
+      restoreFocus: () => true,
       isActive: () => shouldMount.value,
     })
 
@@ -209,6 +211,14 @@ export const Popover = defineComponent({
       placement: computed(() => resolved.value),
     })
 
+    // Select (and others) may request clearing contexts inside the popover.
+    const ctxClear = (context?.clearContexts as any[]) || []
+    if (Array.isArray(ctxClear)) {
+      for (const key of ctxClear) {
+        try { provide(key as any, undefined as any) } catch {}
+      }
+    }
+
     const dataSlot = computed(
       () => props['data-slot'] ?? props.dataSlot ?? (attrs['data-slot'] as string | undefined) ?? 'popover',
     )
@@ -232,6 +242,9 @@ export const Popover = defineComponent({
             effectiveAriaLabelledby.value && !(attrs as any)['aria-labelledby'] && !(attrs as any).ariaLabelledby ? {'aria-labelledby': effectiveAriaLabelledby.value} : {},
             effectiveId.value && !(attrs as any).id ? {id: effectiveId.value} : {},
             standaloneDialog ? {role: 'dialog', tabIndex: -1} : {},
+            {
+              class: ['react-aria-Popover', (attrs as any).class].filter(Boolean),
+            },
             {
               ref: (el: HTMLElement | null) => {
                 popoverRef.value = el

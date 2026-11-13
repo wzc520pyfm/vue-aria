@@ -18,6 +18,10 @@ export function mergeProps<T extends PropsArg[]>(...args: T): Props {
       const a = (result as any)[key]
       const b = (arg as any)[key]
       if (typeof a === 'function' && typeof b === 'function' && (!desc || ('value' in desc)) && (!existingDesc || ('value' in existingDesc))) {
+        if (a === b) {
+          // Identical reference already in the chain — do not double-invoke.
+          continue
+        }
         // Chain plain function handlers.
         Object.defineProperty(result, key, {value: chain(a, b), enumerable: true, configurable: true, writable: true})
         continue
