@@ -30,6 +30,7 @@ export interface OptionAria {
   isHovered: import('vue').Ref<boolean>
   allowsSelection: import('vue').ComputedRef<boolean>
   hasAction: import('vue').ComputedRef<boolean>
+  shouldUseVirtualFocus: import('vue').ComputedRef<boolean>
 }
 
 export function useOption<T>(props: AriaOptionProps, state: ListState<T>, ref: Ref<HTMLElement | null>): OptionAria {
@@ -56,6 +57,7 @@ export function useOption<T>(props: AriaOptionProps, state: ListState<T>, ref: R
 
   const shouldFocusOnHover = computed(() => (toValue(props.shouldFocusOnHover) ?? data.shouldFocusOnHover) || false)
   const shouldSelectOnPressUp = computed(() => (toValue(props.shouldSelectOnPressUp) ?? data.shouldSelectOnPressUp) || false)
+  const shouldUseVirtualFocus = computed(() => (toValue(props.shouldUseVirtualFocus) ?? data.shouldUseVirtualFocus) || false)
 
   const onSelect = (e?: any) => {
     if (!allowsSelection.value || isDisabled.value) return
@@ -110,13 +112,20 @@ export function useOption<T>(props: AriaOptionProps, state: ListState<T>, ref: R
   }
   Object.defineProperties(optionProps, {
     role: {value: 'option', enumerable: true},
-    id: {value: itemId.value, enumerable: true},
-    tabIndex: {get: () => (isFocused.value ? 0 : -1), enumerable: true},
+    id: {get: () => itemId.value, enumerable: true, configurable: true},
+    // With virtual focus the option is never in the tab order and never has DOM focus.
+    tabIndex: {get: () => (shouldUseVirtualFocus.value ? undefined : isFocused.value ? 0 : -1), enumerable: true, configurable: true},
+    'aria-label': {value: toValue(props['aria-label'] as any), enumerable: true},
     'aria-labelledby': {value: labelId.value, enumerable: true},
     'aria-describedby': {value: descriptionId.value, enumerable: true},
-    'aria-selected': {get: () => (manager.selectionMode !== 'none' ? isSelected.value : undefined), enumerable: true},
-    'aria-disabled': {get: () => (isDisabled.value ? true : undefined), enumerable: true},
+    'aria-selected': {get: () => (manager.selectionMode !== 'none' ? isSelected.value : undefined), enumerable: true, configurable: true},
+    'aria-disabled': {get: () => (isDisabled.value ? true : undefined), enumerable: true, configurable: true},
   })
+  if (shouldUseVirtualFocus.value) {
+    // Keep DOM focus on the input; prevent the option from taking focus on press.
+    optionProps.onMousedown = (e: MouseEvent) => e.preventDefault()
+    optionProps.onMouseDown = (e: MouseEvent) => e.preventDefault()
+  }
 
   return {
     optionProps,
@@ -130,5 +139,6 @@ export function useOption<T>(props: AriaOptionProps, state: ListState<T>, ref: R
     isHovered,
     allowsSelection,
     hasAction,
+    shouldUseVirtualFocus,
   }
 }

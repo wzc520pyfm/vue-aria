@@ -45,9 +45,15 @@ This Select batch adds:
 - `vue-aria`: `useSelect`, `useHiddenSelect`, `HiddenSelect`, `useField`
 - `vue-aria-components`: `Select`, `SelectValue`, `SelectContext`, `SelectValueContext`, `SelectStateContext`, `Label`, `LabelContext`
 
+This ComboBox batch adds:
+
+- `vue-stately`: `useComboBoxState`
+- `vue-aria`: `useComboBox`, `useFilter`, `useTextField`
+- `vue-aria-components`: `ComboBox`, `ComboBoxValue`, `ComboBoxContext`, `ComboBoxStateContext`, `ComboBoxValueContext`, `Input`, `InputContext` (and `useFilter` re-exported from the root / ComboBox entry)
+
 Generated collection keys for id-less items/sections are path-based: `$$va-item-<path>` and `$$va-section-<path>` (with path segments reflecting nesting and indices).
 
-ComboBox, Sheet, dates, a full `I18nProvider`, and Storybook / Netlify remain deferred.
+Sheet, dates, `Group`, `FieldError`/`Form`/`Autocomplete`, a full `I18nProvider`, and Storybook / Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 

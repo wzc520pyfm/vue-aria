@@ -6,7 +6,7 @@
  * This batch adds collections/ListBox and action/selection Menu components
  * on top of Button, overlays, and text primitives: ListBox, ListBoxItem,
  * ListBoxSection, Collection, Header, Text, Menu, MenuItem, MenuSection,
- * MenuTrigger, SubmenuTrigger, Separator, Keyboard. Select is now included. ComboBox, Sheet,
+ * MenuTrigger, SubmenuTrigger, Separator, Keyboard. Select and ComboBox are now included. Sheet,
  * dates, a full I18nProvider, and Storybook / Netlify remain deferred.
  */
 export {Button} from './Button'
@@ -39,5 +39,12 @@ export type {KeyboardProps} from './Keyboard'
 
 export {Select, SelectValue, SelectContext, SelectValueContext, SelectStateContext} from './Select'
 export type {SelectProps, SelectValueProps, SelectValueRenderProps, SelectRenderProps} from './Select'
+
+export {ComboBox, ComboBoxValue, ComboBoxContext, ComboBoxStateContext, ComboBoxValueContext} from './ComboBox'
+export type {ComboBoxProps, ComboBoxValueProps, ComboBoxValueRenderProps, ComboBoxRenderProps} from './ComboBox'
+export {Input, InputContext} from './Input'
+export type {InputProps, InputRenderProps} from './Input'
+export {useFilter} from 'vue-aria/useFilter'
+export type {Filter} from 'vue-aria/useFilter'
 export {Label, LabelContext} from './Label'
 export type {LabelProps} from './Label'

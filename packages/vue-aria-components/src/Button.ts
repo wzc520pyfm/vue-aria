@@ -85,6 +85,10 @@ export const Button = defineComponent({
       'aria-expanded': () => optsOut.value ? undefined : (mergedCtx.value['aria-expanded'] ?? trigger?.['aria-expanded']),
       'aria-haspopup': () => optsOut.value ? undefined : (mergedCtx.value['aria-haspopup'] ?? trigger?.['aria-haspopup'] as any),
       'aria-controls': () => optsOut.value ? undefined : (mergedCtx.value['aria-controls'] ?? trigger?.['aria-controls']),
+      'aria-label': () => optsOut.value ? undefined : mergedCtx.value['aria-label'],
+      'aria-labelledby': () => optsOut.value ? undefined : mergedCtx.value['aria-labelledby'],
+      preventFocusOnPress: () => optsOut.value ? undefined : mergedCtx.value.preventFocusOnPress,
+      excludeFromTabOrder: () => optsOut.value ? undefined : mergedCtx.value.excludeFromTabOrder,
       onPress: (event) => {
         emit('press', event)
         if (!optsOut.value) {

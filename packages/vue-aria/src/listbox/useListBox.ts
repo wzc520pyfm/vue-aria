@@ -257,6 +257,7 @@ export function useListBox<T>(props: UseListBoxProps, state: ListState<T>, listR
     let focusedKey: Key | null = null
     if (autoFocus === 'first') focusedKey = delegate.value.getFirstKey?.() ?? null
     else if (autoFocus === 'last') focusedKey = delegate.value.getLastKey?.() ?? null
+    else if (autoFocus) focusedKey = delegate.value.getFirstKey?.() ?? null
     const selectedKeys = state.selectionManager.selectedKeys
     if (selectedKeys.size) {
       for (const key of selectedKeys) {

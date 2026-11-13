@@ -41,7 +41,7 @@ export const ListBoxItem = defineComponent({
     // We'll expect id/key to be passed as prop `id` by our builder/renderer.
     const itemKey = computed<Key>(() => (props.id ?? null) as Key)
 
-    const {optionProps, labelProps, descriptionProps, isFocused, isFocusVisible, isSelected, isDisabled, isPressed, isHovered, allowsSelection, hasAction} = useOption(
+    const {optionProps, labelProps, descriptionProps, isFocused, isFocusVisible, isSelected, isDisabled, isPressed, isHovered, allowsSelection, hasAction, shouldUseVirtualFocus} = useOption(
       {
         key: itemKey,
         isDisabled: () => props.isDisabled,
@@ -75,8 +75,10 @@ export const ListBoxItem = defineComponent({
       return {...base, ...dataAttrs, ref: (el: any) => { itemRef.value = el as HTMLElement }}
     })
 
-    // focus element when manager focuses this key
+    // focus element when manager focuses this key (skip when the collection
+    // is virtually focused, e.g. inside a ComboBox — the input keeps DOM focus)
     watchEffect(() => {
+      if (shouldUseVirtualFocus.value) return
       if (isFocused.value && itemRef.value && document.activeElement !== itemRef.value) {
         itemRef.value.focus?.()
       }
