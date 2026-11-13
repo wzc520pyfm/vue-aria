@@ -3,9 +3,9 @@
  * (`packages/react-aria/exports` at
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
- * This batch adds overlay, dialog, tooltip, focus-scope, dismiss, and
- * ListBox hooks on top of the first-batch interaction hooks and Hero UI Vue
- * behavior contract. Menu/Select/ComboBox/Sheet, dates, and a full
+ * This batch adds overlay, dialog, tooltip, focus-scope, dismiss,
+ * ListBox, and Menu hooks on top of the first-batch interaction hooks and
+ * Hero UI Vue behavior contract. Select/ComboBox/Sheet, dates, and a full
  * I18nProvider remain deferred.
  */
 export {usePress} from './usePress'

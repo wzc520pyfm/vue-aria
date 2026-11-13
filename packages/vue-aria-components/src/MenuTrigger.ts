@@ -101,7 +101,7 @@ export const MenuTrigger = defineComponent({
     })
     const triggerRef = ref<Element | null>(null)
     const {menuTriggerProps, menuProps} = useMenuTrigger(
-      {type: 'menu', isDisabled: props.isDisabled, trigger: props.trigger},
+      {type: 'menu', isDisabled: () => props.isDisabled, trigger: () => props.trigger},
       state,
       triggerRef,
     )

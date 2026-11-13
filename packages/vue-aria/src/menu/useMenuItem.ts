@@ -18,7 +18,7 @@ import {getMenuData} from './utils'
 import {usePress} from '../interactions/press'
 import {useHover} from '../interactions/hover'
 import {useFocusVisible} from '../interactions/focusVisible'
-import {useId} from '../utils/useId'
+import {useId, useSlotId} from '../utils/useId'
 
 export interface AriaMenuItemProps {
   key: MaybeRefOrGetter<Key>
@@ -82,6 +82,9 @@ export function useMenuItem<T>(
   const labelId = useId('vue-aria-menuitem-label')
   const descriptionId = useId('vue-aria-menuitem-desc')
   const keyboardId = useId('vue-aria-menuitem-kbd')
+  const resolvedLabelId = useSlotId(labelId)
+  const resolvedDescriptionId = useSlotId(descriptionId)
+  const resolvedKeyboardId = useSlotId(keyboardId)
 
   const focusVisibleState = useFocusVisible()
   const isFocused = computed(() => manager.isFocused && manager.focusedKey === key.value)
@@ -96,32 +99,13 @@ export function useMenuItem<T>(
     if (mdata.onAction) mdata.onAction(key.value)
   }
 
-  const resolveShouldClose = (pointerType: string, keyboardKey?: string) => {
-    const itemClose = props.shouldCloseOnSelect ?? props.closeOnSelect
-    const menuClose = mdata.shouldCloseOnSelect ?? mdata.closeOnSelect
-    if (itemClose != null) return itemClose
-    if (menuClose != null) return menuClose
-    if (pointerType === 'keyboard') {
-      if (keyboardKey === 'Enter') return true
-      if (manager.selectionMode === 'none') return true
-      // links close - simplified
-      if (props.href) return true
-      return manager.selectionMode !== 'multiple'
-    }
-    if (props.href) return true
-    if (manager.selectionMode === 'multiple') return false
-    return true
-  }
-
   const interaction = ref<{pointerType: string; key?: string} | null>(null)
   const isPressedRef = ref(false)
 
   const {pressProps, isPressed} = usePress({
     isDisabled,
     onPressStart: (e) => {
-      if (e.pointerType === 'keyboard' && manager.selectionMode === 'none') {
-        interaction.value = {pointerType: 'keyboard', key: (e as any).key}
-      }
+      // Keyboard interaction key may be captured later in keydown/click paths.
     },
     onPress: (e) => {
       // selection/action on press for keyboard/virtual/touch per official behavior simplified
@@ -163,12 +147,19 @@ export function useMenuItem<T>(
     }
     performAction()
     const onClose = props.onClose || mdata.onClose || (mdata as any).rootClose
-    const shouldClose = resolveShouldClose(pointerType, kbdKey) || (pointerType === 'keyboard' && kbdKey === 'Enter')
+    const isLink = !!props.href
+    let shouldClose =
+      pointerType === 'keyboard'
+        ? // Always close when pressing Enter key, or if item is not selectable.
+          kbdKey === 'Enter' ||
+          manager.selectionMode === 'none' ||
+          isLink
+        : // Close except if multi-select is enabled.
+          manager.selectionMode !== 'multiple' || isLink
+
+    shouldClose = props.shouldCloseOnSelect ?? props.closeOnSelect ?? mdata.shouldCloseOnSelect ?? mdata.closeOnSelect ?? shouldClose
+
     if (onClose && shouldClose) {
-      onClose()
-    }
-    // Enter always closes (ensure even if shouldClose logic missed)
-    if (pointerType === 'keyboard' && kbdKey === 'Enter' && onClose) {
       onClose()
     }
     interaction.value = null
@@ -179,12 +170,8 @@ export function useMenuItem<T>(
     if (e.key === ' ' || e.key === 'Enter') {
       interaction.value = {pointerType: 'keyboard', key: e.key}
       e.preventDefault()
-      const el = itemRef.value as HTMLElement | null; if (el && typeof (el as any).click === "function") (el as any).click()
-      // Enter always closes
-      if (e.key === 'Enter') {
-        const onClose = props.onClose || mdata.onClose || (mdata as any).rootClose
-        if (onClose) setTimeout(() => onClose(), 0)
-      }
+      const el = itemRef.value as HTMLElement | null
+      if (el && typeof (el as any).click === 'function') (el as any).click()
     }
   }
 
@@ -192,8 +179,8 @@ export function useMenuItem<T>(
     onClick,
     onKeydown: onKeyDown,
   }
-  // merge press/hover handlers with our handlers (chain)
-  const mergedInteractionProps = {...pressProps, ...hoverProps}
+  // merge press/hover/focus handlers with our handlers (chain)
+  const mergedInteractionProps = {...pressProps, ...hoverProps, ...focusVisibleState.focusProps}
   for (const key of Object.keys(baseProps)) {
     const a = (mergedInteractionProps as any)[key]
     const b = (baseProps as any)[key]
@@ -211,10 +198,10 @@ export function useMenuItem<T>(
     role: {get: () => role, enumerable: true},
     'aria-disabled': {get: () => (isDisabled.value ? true : undefined), enumerable: true},
     'aria-label': {get: () => toValue(props['aria-label']), enumerable: true},
-    'aria-labelledby': {get: () => labelId.value, enumerable: true},
+    'aria-labelledby': {get: () => resolvedLabelId.value, enumerable: true},
     'aria-describedby': {
       get: () => {
-        const parts = [descriptionId.value, keyboardId.value].filter(Boolean)
+        const parts = [toValue((props as any)['aria-describedby']), resolvedDescriptionId.value, resolvedKeyboardId.value].filter(Boolean)
         return parts.length ? parts.join(' ') : undefined
       },
       enumerable: true,

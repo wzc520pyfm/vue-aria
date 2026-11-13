@@ -10,7 +10,7 @@
  * governing permissions and limitations under the License.
  */
 
-import type {Ref} from 'vue'
+import {toValue, type MaybeRefOrGetter, type Ref} from 'vue'
 import type {MenuTriggerState, MenuTriggerType} from 'vue-stately/useMenuTriggerState'
 import {useOverlayTrigger} from '../overlays/useOverlayTrigger'
 import {useId} from '../utils/useId'
@@ -19,9 +19,9 @@ export interface AriaMenuTriggerProps {
   /** The type of menu that the menu trigger opens. */
   type?: 'menu' | 'listbox'
   /** Whether menu trigger is disabled. */
-  isDisabled?: boolean
+  isDisabled?: MaybeRefOrGetter<boolean | undefined>
   /** How menu is triggered. @default 'press' */
-  trigger?: MenuTriggerType
+  trigger?: MaybeRefOrGetter<MenuTriggerType | undefined>
 }
 
 export interface MenuTriggerAria<T = unknown> {
@@ -50,9 +50,6 @@ export function useMenuTrigger<T = unknown>(
   triggerRef: Ref<Element | null>,
 ): MenuTriggerAria<T> {
   const type = props.type ?? 'menu'
-  const isDisabled = !!props.isDisabled
-  const trigger = props.trigger ?? 'press'
-
   const menuTriggerId = useId('vue-aria-menu-trigger')
   const {triggerProps, overlayProps} = useOverlayTrigger({type}, state)
 
@@ -62,7 +59,8 @@ export function useMenuTrigger<T = unknown>(
   }
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (isDisabled) return
+    if (!!toValue(props.isDisabled)) return
+    const trigger = (toValue(props.trigger) ?? 'press') as MenuTriggerType
     if (trigger === 'longPress' || trigger === 'contextMenu') {
       return
     }
@@ -80,7 +78,7 @@ export function useMenuTrigger<T = unknown>(
 
   let openedByPointerDown = false
   const onPointerDown = (e: PointerEvent) => {
-    if (isDisabled || trigger !== 'press') return
+    if (!!toValue(props.isDisabled) || (toValue(props.trigger) ?? 'press') !== 'press') return
     if (e.pointerType !== 'touch' && e.pointerType !== 'keyboard') {
       focusWithoutScrolling(triggerRef.value)
       state.open(e.pointerType === 'virtual' ? 'first' : null)
@@ -91,7 +89,7 @@ export function useMenuTrigger<T = unknown>(
   }
 
   const onPress = () => {
-    if (isDisabled || trigger !== 'press') return
+    if (!!toValue(props.isDisabled) || (toValue(props.trigger) ?? 'press') !== 'press') return
     if (openedByPointerDown) {
       openedByPointerDown = false
       return

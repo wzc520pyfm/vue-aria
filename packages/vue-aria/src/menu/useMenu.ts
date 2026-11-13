@@ -195,15 +195,6 @@ export function useMenu<T>(
         }
         break
       }
-      case 'Enter': {
-        // Enter always closes menus (including multiple selection mode)
-        if (props.onClose) {
-          // Let item activation happen first in bubble phase? this runs on menu; 
-          // schedule close so item handlers can run.
-          setTimeout(() => props.onClose?.(), 0)
-        }
-        break
-      }
       case 'a': {
         if ((e.ctrlKey || e.metaKey) && manager.selectionMode === 'multiple') {
           e.preventDefault()

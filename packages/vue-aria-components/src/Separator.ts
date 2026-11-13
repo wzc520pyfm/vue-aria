@@ -18,21 +18,22 @@ export const Separator = defineComponent({
     const ctx = inject(SeparatorContextKey, undefined)
     const elementType = computed(() => props.elementType ?? ctx?.elementType ?? 'hr')
     const orientation = computed(() => props.orientation ?? 'horizontal')
-
-    return () => {
+    const resolvedElement = computed(() => {
       let Element: any = elementType.value
       if (Element === 'hr' && orientation.value === 'vertical') {
         Element = 'div'
       }
-      const {separatorProps} = useSeparator({
-        orientation: orientation.value,
-        elementType: Element,
-      })
-      return h(Element, {
-        ...attrs,
-        ...separatorProps,
-        class: ['react-aria-Separator', (attrs as any).class].filter(Boolean),
-      })
-    }
+      return Element
+    })
+    const separatorProps = computed(() => useSeparator({
+      orientation: orientation.value,
+      elementType: resolvedElement.value,
+    }).separatorProps)
+
+    return () => h(resolvedElement.value, {
+      ...attrs,
+      ...separatorProps.value,
+      class: ['react-aria-Separator', (attrs as any).class].filter(Boolean),
+    })
   },
 })

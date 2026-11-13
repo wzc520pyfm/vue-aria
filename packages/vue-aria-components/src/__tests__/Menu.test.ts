@@ -145,6 +145,8 @@ describe('Menu', () => {
     outside.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}))
     await tick()
     expect(document.querySelector('[role="menu"]')).toBeNull()
+    expect(document.activeElement).toBe(btn)
+    outside.remove()
     wrapper.unmount()
   })
 
@@ -310,7 +312,20 @@ describe('Menu', () => {
     await press(items[1])
     await press(items[2])
     expect(actions.length).toBe(0)
-    // keyboard skip: ArrowDown from A should go to? B,C disabled so none focusable after A except wrap - but only A enabled
+    // keyboard skip: ArrowDown/ArrowUp skip items disabled via disabledKeys and isDisabled
+    const menu = document.querySelector('[role="menu"]') as HTMLElement
+    ;(items[0] as HTMLElement).focus()
+    await tick()
+    dispatchKey(menu, 'keydown', {key: 'ArrowDown'})
+    await tick()
+    expect(document.activeElement).toBe(items[0])
+    expect(document.activeElement).not.toBe(items[1])
+    expect(document.activeElement).not.toBe(items[2])
+    dispatchKey(menu, 'keydown', {key: 'ArrowUp'})
+    await tick()
+    expect(document.activeElement).toBe(items[0])
+    expect(document.activeElement).not.toBe(items[1])
+    expect(document.activeElement).not.toBe(items[2])
     wrapper.unmount()
   })
 
@@ -336,11 +351,20 @@ describe('Menu', () => {
     })
     const wrapper = mountInDoc(Wrapper)
     await press(wrapper.get('button').element)
+    await tick()
     const item = document.querySelectorAll('[role="menuitemradio"]')[0] as HTMLElement
     await press(item)
     expect(menuActions).toContain('a')
     expect(itemActions).toContain('a')
     expect(changes.length).toBeGreaterThan(0)
+    expect(document.querySelector('[role="menu"]')).not.toBeNull()
+    // Enter with explicit shouldCloseOnSelect={false} must not close.
+    ;(item as HTMLElement).focus()
+    await tick()
+    dispatchKey(item, 'keydown', {key: 'Enter'})
+    dispatchKey(item, 'keyup', {key: 'Enter'})
+    await tick()
+    await tick()
     expect(document.querySelector('[role="menu"]')).not.toBeNull()
     wrapper.unmount()
   })
@@ -366,7 +390,7 @@ describe('Menu', () => {
     await press(item)
     await tick()
     expect(document.querySelector('[role="menu"]')).not.toBeNull()
-    // Enter closes
+    // Enter closes by default when shouldCloseOnSelect is unset.
     const menuEl = document.querySelector('[role="menu"]') as HTMLElement
     const focusedItem = (document.querySelector('[role="menuitemcheckbox"][data-focused="true"]') || menuEl.querySelector('[role="menuitemcheckbox"]')) as HTMLElement
     ;(focusedItem || menuEl).focus?.()
@@ -374,7 +398,7 @@ describe('Menu', () => {
     dispatchKey(focusedItem || menuEl, 'keydown', {key: 'Enter'})
     dispatchKey(focusedItem || menuEl, 'keyup', {key: 'Enter'})
     for (let i = 0; i < 6; i++) await tick()
-    // Enter always closes
+    // Unset default: Enter still closes (explicit shouldCloseOnSelect=false would override).
     expect(document.querySelector('[role="menu"]')).toBeNull()
     wrapper.unmount()
   })
@@ -451,6 +475,7 @@ describe('Menu', () => {
     })
     const wrapper = mountInDoc(Wrapper)
     await press(wrapper.get('button').element)
+    await tick()
     const item = document.querySelector('[role="menuitem"]') as HTMLElement
     const kbd = item.querySelector('kbd') as HTMLElement
     expect(kbd).not.toBeNull()
@@ -460,21 +485,113 @@ describe('Menu', () => {
     wrapper.unmount()
   })
 
-  it('12. collection: static, dynamic items+scoped slot, nested Collection, id-less items get generated key', async () => {
-    // dynamic + nested + id-less
-    const items = [{id: 'a', name: 'A'}, {id: 'b', name: 'B'}]
+  it('plain-text MenuItem has no dangling aria-labelledby/aria-describedby after slot check', async () => {
     const Wrapper = defineComponent({
-      components: {MenuTrigger, Button, Popover, Menu, MenuItem, Collection},
-      setup: () => ({items}),
+      components: {MenuTrigger, Button, Popover, Menu, MenuItem},
       template: `
         <MenuTrigger>
           <Button>Edit</Button>
           <Popover>
             <Menu aria-label="Edit">
+              <MenuItem id="cut">Cut</MenuItem>
+            </Menu>
+          </Popover>
+        </MenuTrigger>
+      `,
+    })
+    const wrapper = mountInDoc(Wrapper)
+    await press(wrapper.get('button').element)
+    await tick()
+    await tick()
+    const item = document.querySelector('[role="menuitem"]') as HTMLElement
+    expect(item.getAttribute('aria-labelledby')).toBeFalsy()
+    expect(item.getAttribute('aria-describedby')).toBeFalsy()
+    expect(item.textContent).toContain('Cut')
+    wrapper.unmount()
+  })
+
+  it('MenuItem with Text slot label sets aria-labelledby to existing Text id', async () => {
+    const Wrapper = defineComponent({
+      components: {MenuTrigger, Button, Popover, Menu, MenuItem, Text},
+      template: `
+        <MenuTrigger>
+          <Button>Edit</Button>
+          <Popover>
+            <Menu aria-label="Edit">
+              <MenuItem id="copy">
+                <Text slot="label">Copy</Text>
+              </MenuItem>
+            </Menu>
+          </Popover>
+        </MenuTrigger>
+      `,
+    })
+    const wrapper = mountInDoc(Wrapper)
+    await press(wrapper.get('button').element)
+    await tick()
+    await tick()
+    const item = document.querySelector('[role="menuitem"]') as HTMLElement
+    const labelledby = item.getAttribute('aria-labelledby')
+    expect(labelledby).toBeTruthy()
+    const labelEl = document.getElementById(labelledby!)
+    expect(labelEl).not.toBeNull()
+    expect(labelEl?.textContent).toContain('Copy')
+    expect(item.getAttribute('aria-describedby')).toBeFalsy()
+    wrapper.unmount()
+  })
+
+  it('MenuItem with description/keyboard sets aria-describedby only for existing slot ids', async () => {
+    const Wrapper = defineComponent({
+      components: {MenuTrigger, Button, Popover, Menu, MenuItem, Text, Keyboard},
+      template: `
+        <MenuTrigger>
+          <Button>Edit</Button>
+          <Popover>
+            <Menu aria-label="Edit">
+              <MenuItem id="paste">
+                <Text slot="label">Paste</Text>
+                <Text slot="description">Paste from clipboard</Text>
+                <Keyboard>⌘V</Keyboard>
+              </MenuItem>
+            </Menu>
+          </Popover>
+        </MenuTrigger>
+      `,
+    })
+    const wrapper = mountInDoc(Wrapper)
+    await press(wrapper.get('button').element)
+    await tick()
+    await tick()
+    const item = document.querySelector('[role="menuitem"]') as HTMLElement
+    const described = item.getAttribute('aria-describedby') || ''
+    expect(described).toBeTruthy()
+    for (const id of described.split(/\s+/).filter(Boolean)) {
+      expect(document.getElementById(id)).not.toBeNull()
+    }
+    wrapper.unmount()
+  })
+
+  it('12. collection: static, dynamic items+scoped slot, nested Collection, id-less items get generated key', async () => {
+    // dynamic + nested collection + id-less generated key aligned with keyboard/selection
+    const items = [{id: 'a', name: 'A'}, {id: 'b', name: 'B'}]
+    const changes: any[] = []
+    const Wrapper = defineComponent({
+      components: {MenuTrigger, Button, Popover, Menu, MenuItem, Collection},
+      setup: () => ({items, changes}),
+      template: `
+        <MenuTrigger>
+          <Button>Edit</Button>
+          <Popover>
+            <Menu aria-label="Edit" selectionMode="single" :shouldCloseOnSelect="false" @selectionchange="(s) => changes.push(s)">
               <Collection :items="items">
                 <template #default="{ item }">
                   <MenuItem :id="item.id">{{ item.name }}</MenuItem>
                 </template>
+              </Collection>
+              <Collection>
+                <Collection>
+                  <MenuItem id="nested">Nested</MenuItem>
+                </Collection>
               </Collection>
               <MenuItem>NoId</MenuItem>
             </Menu>
@@ -484,14 +601,32 @@ describe('Menu', () => {
     })
     const wrapper = mountInDoc(Wrapper)
     await press(wrapper.get('button').element)
-    const menuItems = document.querySelectorAll('[role="menuitem"]')
-    expect(menuItems.length).toBe(3)
-    // keyboard/focus should work on id-less item
-    const menu = document.querySelector('[role="menu"]') as HTMLElement
-    menu.focus?.()
-    dispatchKey(menu, 'keydown', {key: 'ArrowDown'})
     await tick()
-    expect(document.activeElement).toBeTruthy()
+    const menuItems = Array.from(document.querySelectorAll('[role="menuitemradio"]')) as HTMLElement[]
+    expect(menuItems.length).toBe(4)
+    expect(menuItems.map((el) => el.textContent?.trim())).toEqual(['A', 'B', 'Nested', 'NoId'])
+
+    const noIdItem = menuItems[3]
+    expect(noIdItem.id).toContain('$$va-item-')
+    const generatedKey = '$$va-item-' + (noIdItem.id.split('$$va-item-')[1] ?? '')
+
+    // Keyboard to id-less item
+    const menu = document.querySelector('[role="menu"]') as HTMLElement
+    ;(menuItems[0] as HTMLElement).focus()
+    await tick()
+    dispatchKey(menu, 'keydown', {key: 'End'})
+    await tick()
+    expect(document.activeElement).toBe(noIdItem)
+
+    // Selection key lines up with generated key
+    await press(noIdItem)
+    await tick()
+    expect(noIdItem.getAttribute('aria-checked')).toBe('true')
+    expect(noIdItem.getAttribute('data-selected')).toBe('true')
+    const last = changes.at(-1)
+    const selected = last ? Array.from((last as Set<any>).values?.() ?? last) : []
+    expect(String(selected[0] ?? '')).toContain('$$va-item-')
+    expect(noIdItem.id).toContain(generatedKey)
     wrapper.unmount()
   })
 
@@ -524,7 +659,7 @@ describe('Menu', () => {
         <MenuTrigger>
           <Button>Edit</Button>
           <Popover>
-            <Menu aria-label="Edit" selectionMode="single">
+            <Menu aria-label="Edit" selectionMode="single" :shouldCloseOnSelect="false">
               <MenuItem id="a">A</MenuItem>
               <MenuItem id="b" :isDisabled="true">B</MenuItem>
             </Menu>
@@ -533,8 +668,21 @@ describe('Menu', () => {
       `,
     })
     const wrapper = mountInDoc(Wrapper)
-    await press(wrapper.get('button').element)
+    const btn = wrapper.get('button').element as HTMLElement
+    document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Tab', bubbles: true}))
+    btn.focus()
+    dispatchKey(btn, 'keydown', {key: 'ArrowDown'})
+    await tick()
+    await tick()
+    const menu = document.querySelector('[role="menu"]') as HTMLElement
+    if (menu) {
+      document.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true}))
+      dispatchKey(menu, 'keydown', {key: 'ArrowDown'})
+    }
+    await tick()
     const items = Array.from(document.querySelectorAll('[role="menuitemradio"]')) as HTMLElement[]
+    // focus-visible via keyboard
+    expect(items[0].getAttribute('data-focus-visible')).toBe('true')
     // hover
     dispatchPointer(items[0], 'pointerenter', {pointerType: 'mouse'})
     await tick()
@@ -545,17 +693,19 @@ describe('Menu', () => {
     expect(items[1].getAttribute('data-disabled')).toBe('true')
     // selection-mode
     expect(items[0].getAttribute('data-selection-mode')).toBe('single')
-    // select (single mode closes on select by default) - verify selected state appears
-    await press(items[0])
+    // pressed while pointer down (before pointerup/click completes)
+    dispatchPointer(items[0], 'pointerdown', {pointerType: 'mouse', button: 0, buttons: 1})
     await tick()
-    // reopen to verify item was selected; selection state may reset if menu remounted by Popover in this impl
-    await press(wrapper.get('button').element)
+    expect(items[0].getAttribute('data-pressed')).toBe('true')
+    dispatchPointer(items[0], 'pointerup', {pointerType: 'mouse'})
+    dispatchPointer(items[0], 'click', {pointerType: 'mouse'})
     await tick()
-    const items2 = Array.from(document.querySelectorAll('[role="menuitemradio"]')) as HTMLElement[]
-    // at minimum data-selection-mode present and no hover/aria-hover
-    expect(items2[0].getAttribute('data-selection-mode')).toBe('single')
-    expect(items2[0].getAttribute('data-hover')).toBeNull()
-    expect(items2[0].getAttribute('aria-hover')).toBeNull()
+    // selected stays visible because menu stays open
+    expect(items[0].getAttribute('data-selected')).toBe('true')
+    expect(items[0].getAttribute('aria-checked')).toBe('true')
+    // still no disallowed hover attrs
+    expect(items[0].getAttribute('data-hover')).toBeNull()
+    expect(items[0].getAttribute('aria-hover')).toBeNull()
     wrapper.unmount()
   })
 
@@ -594,6 +744,35 @@ describe('Menu', () => {
     })
     const wrapper = mountInDoc(Wrapper)
     await press(wrapper.get('button').element)
+    expect(document.querySelector('[role="menu"]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('MenuTrigger reacts to isDisabled changes', async () => {
+    const disabled = ref(false)
+    const Wrapper = defineComponent({
+      components: {MenuTrigger, Button, Popover, Menu, MenuItem},
+      setup: () => ({disabled}),
+      template: `
+        <MenuTrigger :isDisabled="disabled">
+          <Button>Edit</Button>
+          <Popover>
+            <Menu aria-label="Edit"><MenuItem id="a">A</MenuItem></Menu>
+          </Popover>
+        </MenuTrigger>
+      `,
+    })
+    const wrapper = mountInDoc(Wrapper)
+    await press(wrapper.get('button').element)
+    await tick()
+    expect(document.querySelector('[role="menu"]')).not.toBeNull()
+    dispatchKey(document.activeElement as HTMLElement || document.querySelector('[role="menu"]')!, 'keydown', {key: 'Escape'})
+    await tick()
+    expect(document.querySelector('[role="menu"]')).toBeNull()
+    disabled.value = true
+    await tick()
+    await press(wrapper.get('button').element)
+    await tick()
     expect(document.querySelector('[role="menu"]')).toBeNull()
     wrapper.unmount()
   })

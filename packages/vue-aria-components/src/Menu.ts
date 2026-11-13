@@ -342,14 +342,8 @@ export const Menu = defineComponent({
       onClose,
     } as any, state as any, menuRef)
 
-    const originalMenuKeyDown = (menuProps as any).onKeyDown
-    try {
-      Object.defineProperty(menuProps, 'onKeyDown', {value: (e: KeyboardEvent) => {
-        originalMenuKeyDown?.(e)
-        if (e.key === 'Enter') setTimeout(() => onClose(), 0)
-      }, enumerable: true, configurable: true, writable: true})
-      Object.defineProperty(menuProps, 'onKeydown', {value: (menuProps as any).onKeyDown, enumerable: true, configurable: true, writable: true})
-    } catch {}
+    // Close-on-select for Enter and other interactions is handled by useMenuItem,
+    // so menu-level key handling must not force-close on Enter.
 
     useFocusScope({
       ref: menuRef,
