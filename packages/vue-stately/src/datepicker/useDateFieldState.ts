@@ -226,7 +226,6 @@ export function useDateFieldState<T extends DateValue = DateValue>(
   const minValue = computed(() => toValue(props.minValue) ?? null)
   const maxValue = computed(() => toValue(props.maxValue) ?? null)
   const placeholderValue = computed(() => toValue(props.placeholderValue) ?? null)
-  const isDateUnavailable = props.isDateUnavailable
 
   // Preserve the undefined (uncontrolled) / null (controlled empty) distinction.
   const valueProp = computed(() => toValue(props.value) as DateValue | null | undefined)
@@ -419,7 +418,9 @@ export function useDateFieldState<T extends DateValue = DateValue>(
       value.value,
       minValue.value,
       maxValue.value,
-      isDateUnavailable,
+      // Read the current prop on every validation call — never snapshot the
+      // setup-time function reference (mirrors `validate`).
+      (date) => props.isDateUnavailable?.(date) ?? false,
       formatOpts.value,
     ),
   )

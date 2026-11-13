@@ -1,4 +1,4 @@
-import {defineComponent, h, nextTick, ref, isRef, provide} from 'vue'
+import {defineComponent, h, nextTick, ref, isRef, provide, shallowReactive} from 'vue'
 import {mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it} from 'vitest'
 import {
@@ -693,6 +693,69 @@ describe('DateField slice', () => {
     // Live getters: reading at different times tracks current state.
     expect(typeof fieldProps['aria-describedby']).toBe('string')
     expect(inputProps.value).toBe('2024-02-03')
+  })
+
+  it('re-reads isDateUnavailable when a direct useDateFieldState caller replaces it', async () => {
+    // Direct hook callers must get live validation too, not just the RAC wrapper.
+    const props = shallowReactive<any>({
+      defaultValue: new CalendarDate(2024, 2, 3),
+      locale: 'en-US',
+      createCalendar: () => createCalendar,
+      isDateUnavailable: (date: any) => date.day === 3,
+    })
+    let state: any
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          state = useDateFieldState(props)
+          return () => h('div')
+        },
+      }),
+    )
+    await nextTick()
+    expect(state.isInvalid).toBe(true)
+
+    props.isDateUnavailable = (date: any) => date.day === 4
+    await nextTick()
+    expect(state.isInvalid).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('re-reads a getter-backed isDateUnavailable on every validation pass', async () => {
+    const calls: string[] = []
+    const unavailable = ref<(date: any) => boolean>((date) => {
+      calls.push('first')
+      return date.day === 3
+    })
+    const props: any = {
+      defaultValue: new CalendarDate(2024, 2, 3),
+      locale: 'en-US',
+      createCalendar: () => createCalendar,
+      get isDateUnavailable() {
+        return unavailable.value
+      },
+    }
+    let state: any
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          state = useDateFieldState(props)
+          return () => h('div')
+        },
+      }),
+    )
+    await nextTick()
+    expect(state.isInvalid).toBe(true)
+    expect(calls).toContain('first')
+
+    unavailable.value = (date) => {
+      calls.push('second')
+      return date.day === 4
+    }
+    await nextTick()
+    expect(state.isInvalid).toBe(false)
+    expect(calls).toContain('second')
+    wrapper.unmount()
   })
 
   it('renders DateInput standalone through DateFieldContext (no field state)', async () => {

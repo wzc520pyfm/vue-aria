@@ -15,6 +15,7 @@ import {
   today,
   toTime,
   toZoned,
+  type DateValue,
 } from '@internationalized/date'
 import {computed, toValue, type MaybeRefOrGetter} from 'vue'
 import {useDateFieldState, type DateFieldState} from './useDateFieldState'
@@ -29,6 +30,11 @@ export interface TimeFieldStateOptions<T extends TimeValue = TimeValue>
   extends TimeFieldProps<T> {
   /** The locale to display and edit the value according to. */
   locale: MaybeRefOrGetter<string>
+  /**
+   * Callback that is called for each date of the field. If it returns true, then the date is
+   * unavailable.
+   */
+  isDateUnavailable?: (date: DateValue) => boolean
 }
 
 export interface TimeFieldState extends DateFieldState {
@@ -100,6 +106,9 @@ export function useTimeFieldState<T extends TimeValue = TimeValue>(
     // Calendar should not matter for time fields.
     createCalendar: () => new GregorianCalendar() as any,
     validate: (val) => props.validate?.(value.value as any) as any,
+    // Read the current prop on every validation call — never rely on the
+    // `...props` spread, which evaluates a getter only once at setup.
+    isDateUnavailable: (date) => props.isDateUnavailable?.(date) ?? false,
     locale: () => toValue(props.locale),
     isDisabled: () => toValue(props.isDisabled),
     isReadOnly: () => toValue(props.isReadOnly),
