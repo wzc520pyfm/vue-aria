@@ -35,6 +35,147 @@ export interface UseFocusScopeOptions {
 }
 
 /**
+ * Minimal focusable-tree walker matching official `getFocusableTreeWalker`
+ * (`packages/react-aria/src/focus/FocusScope.tsx`): iterates focusable
+ * descendants of `container` in document order. Used by the date field focus
+ * manager; the existing simplified focus trap is unchanged.
+ */
+export interface FocusableTreeWalker {
+  currentNode: HTMLElement | null
+  nextNode(): HTMLElement | null
+  previousNode(): HTMLElement | null
+  lastChild(): HTMLElement | null
+}
+
+export function getFocusableTreeWalker(
+  container: HTMLElement,
+  opts: {tabbable?: boolean} = {},
+): FocusableTreeWalker {
+  const nodes = getFocusable(container)
+  let index = -1
+  const walker: FocusableTreeWalker = {
+    get currentNode() {
+      return index >= 0 && index < nodes.length ? nodes[index] : null
+    },
+    set currentNode(node: HTMLElement | null) {
+      index = node ? nodes.indexOf(node) : -1
+    },
+    nextNode() {
+      if (index < nodes.length - 1) {
+        return nodes[++index]
+      }
+      return null
+    },
+    previousNode() {
+      if (index > 0) {
+        return nodes[--index]
+      }
+      // Without a current node, start from the end (official semantics when no
+      // element is focused yet).
+      if (index === -1 && nodes.length > 0) {
+        index = nodes.length - 1
+        return nodes[index]
+      }
+      return null
+    },
+    lastChild() {
+      // Emulate DOM TreeWalker.lastChild: move to the last node unless already
+      // there (then null, so the official `do { last = walker.lastChild() }`
+      // loop terminates).
+      if (nodes.length > 0 && index !== nodes.length - 1) {
+        index = nodes.length - 1
+        return nodes[index]
+      }
+      return null
+    },
+  }
+  return walker
+}
+
+export interface FocusManagerOptions {
+  /** The element to start from. Defaults to the currently focused element. */
+  from?: HTMLElement | null
+  /** Whether to include only tabbable elements. */
+  tabbable?: boolean
+}
+
+export interface FocusManager {
+  /** Focuses the next focusable element after the current one. Returns it, or null. */
+  focusNext(opts?: FocusManagerOptions): HTMLElement | null
+  /** Focuses the previous focusable element before the current one. Returns it, or null. */
+  focusPrevious(opts?: FocusManagerOptions): HTMLElement | null
+  /** Focuses the first focusable element in the container. */
+  focusFirst(opts?: FocusManagerOptions): void
+  /** Focuses the last focusable element in the container. */
+  focusLast(opts?: FocusManagerOptions): void
+}
+
+/**
+ * Minimal `createFocusManager` port (official
+ * `packages/react-aria/src/focus/FocusScope.tsx` `createFocusManager`), scoped
+ * to the container ref. Segment arrow navigation for DateField/TimeField is the
+ * only consumer in this slice; `focusNext`/`focusPrevious` return whether an
+ * element was focused, matching the official contract used by `useDateSegment`.
+ */
+export function createFocusManager(
+  ref: Ref<Element | null | undefined>,
+  opts: {tabbable?: boolean} = {},
+): FocusManager {
+  const getContainer = (): HTMLElement | null => (ref.value as HTMLElement) ?? null
+
+  const focusedElement = (container: HTMLElement): HTMLElement | null => {
+    const active = container.ownerDocument.activeElement
+    if (active instanceof HTMLElement && container.contains(active)) {
+      return active
+    }
+    return null
+  }
+
+  const focusNode = (node: HTMLElement | null): HTMLElement | null => {
+    if (node) {
+      node.focus({preventScroll: true})
+      return node
+    }
+    return null
+  }
+
+  return {
+    focusNext(optsNext: FocusManagerOptions = {}) {
+      const container = getContainer()
+      if (!container) return null
+      const walker = getFocusableTreeWalker(container, {tabbable: opts.tabbable ?? true})
+      walker.currentNode = optsNext.from ?? focusedElement(container)
+      return focusNode(walker.nextNode())
+    },
+    focusPrevious(optsPrev: FocusManagerOptions = {}) {
+      const container = getContainer()
+      if (!container) return null
+      const walker = getFocusableTreeWalker(container, {tabbable: opts.tabbable ?? true})
+      const from = optsPrev.from ?? focusedElement(container)
+      if (from) {
+        walker.currentNode = from
+        return focusNode(walker.previousNode())
+      }
+      // No focused element: official starts from the end and walks backwards.
+      return focusNode(walker.lastChild())
+    },
+    focusFirst(optsFirst: FocusManagerOptions = {}) {
+      const container = getContainer()
+      if (!container) return
+      const walker = getFocusableTreeWalker(container, {tabbable: opts.tabbable ?? true})
+      walker.currentNode = optsFirst.from ?? focusedElement(container)
+      focusNode(walker.nextNode() ?? walker.lastChild())
+    },
+    focusLast(optsLast: FocusManagerOptions = {}) {
+      const container = getContainer()
+      if (!container) return
+      const walker = getFocusableTreeWalker(container, {tabbable: opts.tabbable ?? true})
+      focusNode(walker.lastChild())
+    },
+  }
+}
+
+/**
  * Focus trap / auto-focus / restore for Modal and Dialog.
  *
  * Simplified port of official `FocusScope`
@@ -151,6 +292,7 @@ function hasPreventFocusMarker(el: HTMLElement, scope: HTMLElement): boolean {
 function getFocusable(scope: HTMLElement): HTMLElement[] {
   return Array.from(scope.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((el) => {
     if (el.hasAttribute('disabled') || el.getAttribute('aria-hidden') === 'true') return false
+    if (el.hasAttribute('hidden')) return false
     if ((el as HTMLButtonElement | HTMLInputElement).disabled) return false
     if (isInHiddenSubtree(el, scope)) return false
     if (hasPreventFocusMarker(el, scope)) return false

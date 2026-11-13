@@ -1042,7 +1042,8 @@ describe('ComboBox', () => {
     expect((components as any).useComboBoxState).toBeUndefined()
     expect((components as any).useComboBox).toBeUndefined()
     expect((components as any).useTextField).toBeUndefined()
-    for (const name of ['FieldError', 'Form', 'Group', 'Autocomplete', 'useTreeState', 'useAsyncList', 'HiddenSelect']) {
+    // DateField slice: `Group` is now exported (DateField/TimeField input group).
+    for (const name of ['FieldError', 'Form', 'Autocomplete', 'useTreeState', 'useAsyncList', 'HiddenSelect']) {
       expect((components as any)[name]).toBeUndefined()
     }
 

@@ -34,6 +34,15 @@ function onWindowKeyDown(event: KeyboardEvent) {
   modality = 'keyboard'
 }
 
+/**
+ * Sets the current interaction modality. Compatibly added for the DateField
+ * slice (official `setInteractionModality`); does not change the frozen
+ * `useFocusVisible` behavior contract.
+ */
+export function setInteractionModality(next: Modality) {
+  modality = next
+}
+
 function addGlobalModalityListeners() {
   if (typeof window === 'undefined') return
   listenerCount += 1

@@ -7,6 +7,7 @@
  */
 
 import {DateFormatter} from '@internationalized/date'
+import {toValue, type MaybeRefOrGetter} from 'vue'
 import {useLocale} from './I18nProvider'
 
 export interface DateFormatterOptions extends Intl.DateTimeFormatOptions {
@@ -17,14 +18,17 @@ export interface DateFormatterOptions extends Intl.DateTimeFormatOptions {
  * Provides localized date formatting for the current locale. Automatically
  * follows the `I18nProvider` locale at call time.
  *
- * @param options - Formatting options.
+ * @param options - Formatting options. May be a getter for live options
+ * (e.g. when the time zone follows the current field state).
  */
-export function useDateFormatter(options: DateFormatterOptions = {}): DateFormatter {
+export function useDateFormatter(
+  options: MaybeRefOrGetter<DateFormatterOptions> = {},
+): DateFormatter {
   const i18n = useLocale()
 
   // `@internationalized/date` caches the underlying Intl formatter per
   // locale + options, so constructing one per call is cheap.
-  const formatter = () => new DateFormatter(i18n.locale, options)
+  const formatter = () => new DateFormatter(i18n.locale, toValue(options))
 
   return {
     format(value: Date) {
