@@ -28,11 +28,15 @@ import {mergeProps} from '../utils/mergeProps'
 import {toValue, watch, type MaybeRefOrGetter, type Ref} from 'vue'
 
 // Private prop (internal): when `'presentation'`, the field is composed inside
-// a DatePicker — it renders `role="presentation"`, reuses the picker's outer
-// `aria-describedby` instead of adding its own selected-date description, and
-// disables arrow-key navigation (the picker's outer group handles it, so
-// Alt+ArrowDown/Up opens the popover exactly once).
+// a DatePicker or DateRangePicker — it renders `role="presentation"`, reuses
+// the picker's outer `aria-describedby` instead of adding its own selected-date
+// description, and disables arrow-key navigation (the picker's outer group owns
+// it, so Alt+ArrowDown/Up opens the popover exactly once).
 export const roleSymbol: string = '__vueAriaDateFieldRole'
+// Private prop (internal): a parent-provided FocusManager (e.g. the DateRangePicker
+// excludes its trigger button) that the field must use instead of creating its own.
+// Not exported from the package.
+export const focusManagerSymbol: string = '__vueAriaDateFieldFocusManager'
 
 export interface AriaDateFieldProps<T extends DateValue = DateValue> {
   /** The label for the field. */
@@ -187,10 +191,14 @@ export function useDateField<T extends DateValue = DateValue>(
       : [descProps['aria-describedby'], fieldProps['aria-describedby']].filter(Boolean).join(' ') ||
         undefined
 
-  const focusManager = createFocusManager(ref)
-  // A presentation field (inside a DatePicker) disables arrow-key navigation —
-  // the picker's outer group handles ArrowLeft/Right and Alt+ArrowDown/Up, so
-  // the inner field must not repeat them (the DOM events bubble once).
+  const propsFocusManager = (props as any)[focusManagerSymbol] as FocusManager | undefined
+  // A parent-provided manager (composed inside a DateRangePicker) is used as-is;
+  // otherwise create one for the field's own ref (official `useMemo` pair).
+  const focusManager = propsFocusManager ?? createFocusManager(ref)
+  // A presentation field (inside a DatePicker/DateRangePicker) disables arrow-key
+  // navigation — the picker's outer group handles ArrowLeft/Right and
+  // Alt+ArrowDown/Up, so the inner field must not repeat them (the DOM events
+  // bubble once).
   const groupProps = useDatePickerGroup(state, ref as any, isPresentation())
 
   // Pass labels and other information to segments.

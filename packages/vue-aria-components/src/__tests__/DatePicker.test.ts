@@ -973,11 +973,13 @@ describe('DatePicker (single-value)', () => {
     wrapper.unmount()
   })
 
-  it('exposes root and subpath exports and no DateRangePicker/Form/FieldError stubs', () => {
+  it('exposes root and subpath exports and no Form/FieldError stubs', () => {
     expect(typeof (components as any).DatePicker).toBe('object')
     expect((components as any).DatePickerContext).toBeDefined()
     expect((components as any).DatePickerStateContext).toBeDefined()
-    expect((components as any).DateRangePicker).toBeUndefined()
+    expect(typeof (components as any).DateRangePicker).toBe('object')
+    expect((components as any).DateRangePickerContext).toBeDefined()
+    expect((components as any).DateRangePickerStateContext).toBeDefined()
     expect((components as any).FieldError).toBeUndefined()
     expect((components as any).Form).toBeUndefined()
     expect(DatePickerSubpath).toBe((components as any).DatePicker)
@@ -985,6 +987,8 @@ describe('DatePicker (single-value)', () => {
     expect(useDatePickerSubpath).toBe((vueAria as any).useDatePicker)
     expect(typeof (vueStately as any).useDatePickerState).toBe('function')
     expect(useDatePickerStateSubpath).toBe((vueStately as any).useDatePickerState)
+    expect(typeof (vueStately as any).useDateRangePickerState).toBe('function')
+    expect(typeof (vueAria as any).useDateRangePicker).toBe('function')
   })
 
   it('useDatePickerState: controlled/uncontrolled value and open, pending date/time commits, granularity guard', async () => {

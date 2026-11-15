@@ -2,9 +2,8 @@
  * Port of `react-stately@3.51.0` datepicker utils
  * (`packages/react-stately/src/datepicker/utils.ts` at
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
- * Kept internal (not publicly exported) per the slice contract. The
- * range/reversed helpers belong to the deferred DateRangePicker and are not
- * ported.
+ * Kept internal (not publicly exported) per the slice contract. This includes
+ * the `getRangeValidationResult` helper used by `useDateRangePickerState`.
  */
 
 import {
@@ -20,6 +19,7 @@ import {
 } from '@internationalized/date'
 import {LocalizedStringDictionary, LocalizedStringFormatter} from '@internationalized/string'
 import type {Granularity, DateValue as DateValueType} from './types'
+import type {RangeValue} from '../calendar/types'
 import {mergeValidation, VALID_VALIDITY_STATE, type ValidationResult} from '../form/useFormValidationState'
 import datepickerStrings from './datepickerStrings'
 
@@ -100,6 +100,49 @@ export function getValidationResult(
       valid: !isInvalid,
     },
   }
+}
+
+export function getRangeValidationResult(
+  value: RangeValue<DateValue | null> | null,
+  minValue: DateValue | null | undefined,
+  maxValue: DateValue | null | undefined,
+  isDateUnavailable: ((v: DateValue) => boolean) | undefined,
+  options: FormatterOptions,
+): ValidationResult {
+  const startValidation = getValidationResult(
+    value?.start ?? null,
+    minValue,
+    maxValue,
+    isDateUnavailable,
+    options,
+  )
+
+  const endValidation = getValidationResult(
+    value?.end ?? null,
+    minValue,
+    maxValue,
+    isDateUnavailable,
+    options,
+  )
+
+  let result = mergeValidation(startValidation, endValidation)
+  if (value?.end != null && value.start != null && value.end.compare(value.start) < 0) {
+    const strings =
+      LocalizedStringDictionary.getGlobalDictionaryForPackage('@react-stately/datepicker') ||
+      dictionary
+    result = mergeValidation(result, {
+      isInvalid: true,
+      validationErrors: [strings.getStringForLocale('rangeReversed', getLocale())],
+      validationDetails: {
+        ...VALID_VALIDITY_STATE,
+        rangeUnderflow: true,
+        rangeOverflow: true,
+        valid: false,
+      },
+    })
+  }
+
+  return result
 }
 
 export type FieldOptions = Pick<

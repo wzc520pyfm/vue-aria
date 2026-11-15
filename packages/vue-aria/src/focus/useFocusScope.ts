@@ -49,32 +49,52 @@ export interface FocusableTreeWalker {
 
 export function getFocusableTreeWalker(
   container: HTMLElement,
-  opts: {tabbable?: boolean} = {},
+  opts: {tabbable?: boolean; accept?: (node: HTMLElement) => boolean} = {},
 ): FocusableTreeWalker {
-  const nodes = getFocusable(container)
-  let index = -1
+  const nodes = getFocusable(container, opts.accept)
+  let current: HTMLElement | null = null
+  // TreeWalker document-order semantics: `nextNode` returns the first matched
+  // node strictly after `current` and `previousNode` the last matched node
+  // strictly before it — even when `current` itself was rejected by `accept`
+  // (e.g. the trigger button when the picker's shared manager excludes it).
+  const FOLLOWING = Node.DOCUMENT_POSITION_FOLLOWING
+  const PRECEDING = Node.DOCUMENT_POSITION_PRECEDING
+  const nextIndex = () => {
+    if (!current) return 0
+    for (let i = 0; i < nodes.length; i++) {
+      if (current.compareDocumentPosition(nodes[i]) & FOLLOWING) return i
+    }
+    return nodes.length
+  }
+  const previousIndex = () => {
+    if (!current) return nodes.length - 1
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      if (current.compareDocumentPosition(nodes[i]) & PRECEDING) return i
+    }
+    return -1
+  }
   const walker: FocusableTreeWalker = {
     get currentNode() {
-      return index >= 0 && index < nodes.length ? nodes[index] : null
+      return current
     },
     set currentNode(node: HTMLElement | null) {
-      index = node ? nodes.indexOf(node) : -1
+      current = node
     },
     nextNode() {
-      if (index < nodes.length - 1) {
-        return nodes[++index]
+      const i = nextIndex()
+      if (i < nodes.length) {
+        current = nodes[i]
+        return current
       }
       return null
     },
     previousNode() {
-      if (index > 0) {
-        return nodes[--index]
-      }
       // Without a current node, start from the end (official semantics when no
       // element is focused yet).
-      if (index === -1 && nodes.length > 0) {
-        index = nodes.length - 1
-        return nodes[index]
+      const i = previousIndex()
+      if (i >= 0 && i < nodes.length) {
+        current = nodes[i]
+        return current
       }
       return null
     },
@@ -82,9 +102,9 @@ export function getFocusableTreeWalker(
       // Emulate DOM TreeWalker.lastChild: move to the last node unless already
       // there (then null, so the official `do { last = walker.lastChild() }`
       // loop terminates).
-      if (nodes.length > 0 && index !== nodes.length - 1) {
-        index = nodes.length - 1
-        return nodes[index]
+      if (nodes.length > 0 && current !== nodes[nodes.length - 1]) {
+        current = nodes[nodes.length - 1]
+        return current
       }
       return null
     },
@@ -97,6 +117,8 @@ export interface FocusManagerOptions {
   from?: HTMLElement | null
   /** Whether to include only tabbable elements. */
   tabbable?: boolean
+  /** Filter which elements are considered. Matches the official `accept` option. */
+  accept?: (node: HTMLElement) => boolean
 }
 
 export interface FocusManager {
@@ -116,10 +138,12 @@ export interface FocusManager {
  * to the container ref. Segment arrow navigation for DateField/TimeField is the
  * only consumer in this slice; `focusNext`/`focusPrevious` return whether an
  * element was focused, matching the official contract used by `useDateSegment`.
+ * The official `accept` option (an element filter applied to every walker,
+ * merged with per-call overrides) is supported the same way.
  */
 export function createFocusManager(
   ref: Ref<Element | null | undefined>,
-  opts: {tabbable?: boolean} = {},
+  opts: {tabbable?: boolean; accept?: (node: HTMLElement) => boolean} = {},
 ): FocusManager {
   const getContainer = (): HTMLElement | null => (ref.value as HTMLElement) ?? null
 
@@ -143,14 +167,20 @@ export function createFocusManager(
     focusNext(optsNext: FocusManagerOptions = {}) {
       const container = getContainer()
       if (!container) return null
-      const walker = getFocusableTreeWalker(container, {tabbable: opts.tabbable ?? true})
+      const walker = getFocusableTreeWalker(container, {
+        tabbable: optsNext.tabbable ?? opts.tabbable ?? true,
+        accept: optsNext.accept ?? opts.accept,
+      })
       walker.currentNode = optsNext.from ?? focusedElement(container)
       return focusNode(walker.nextNode())
     },
     focusPrevious(optsPrev: FocusManagerOptions = {}) {
       const container = getContainer()
       if (!container) return null
-      const walker = getFocusableTreeWalker(container, {tabbable: opts.tabbable ?? true})
+      const walker = getFocusableTreeWalker(container, {
+        tabbable: optsPrev.tabbable ?? opts.tabbable ?? true,
+        accept: optsPrev.accept ?? opts.accept,
+      })
       const from = optsPrev.from ?? focusedElement(container)
       if (from) {
         walker.currentNode = from
@@ -162,14 +192,20 @@ export function createFocusManager(
     focusFirst(optsFirst: FocusManagerOptions = {}) {
       const container = getContainer()
       if (!container) return
-      const walker = getFocusableTreeWalker(container, {tabbable: opts.tabbable ?? true})
+      const walker = getFocusableTreeWalker(container, {
+        tabbable: optsFirst.tabbable ?? opts.tabbable ?? true,
+        accept: optsFirst.accept ?? opts.accept,
+      })
       walker.currentNode = optsFirst.from ?? focusedElement(container)
       focusNode(walker.nextNode() ?? walker.lastChild())
     },
     focusLast(optsLast: FocusManagerOptions = {}) {
       const container = getContainer()
       if (!container) return
-      const walker = getFocusableTreeWalker(container, {tabbable: opts.tabbable ?? true})
+      const walker = getFocusableTreeWalker(container, {
+        tabbable: optsLast.tabbable ?? opts.tabbable ?? true,
+        accept: optsLast.accept ?? opts.accept,
+      })
       focusNode(walker.lastChild())
     },
   }
@@ -289,8 +325,9 @@ function hasPreventFocusMarker(el: HTMLElement, scope: HTMLElement): boolean {
   return false
 }
 
-function getFocusable(scope: HTMLElement): HTMLElement[] {
+function getFocusable(scope: HTMLElement, accept?: (node: HTMLElement) => boolean): HTMLElement[] {
   return Array.from(scope.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((el) => {
+    if (accept && !accept(el)) return false
     if (el.hasAttribute('disabled') || el.getAttribute('aria-hidden') === 'true') return false
     if (el.hasAttribute('hidden')) return false
     if ((el as HTMLButtonElement | HTMLInputElement).disabled) return false

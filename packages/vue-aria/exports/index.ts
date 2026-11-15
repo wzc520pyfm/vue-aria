@@ -4,10 +4,9 @@
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
  * This batch adds overlay, dialog, tooltip, focus-scope, dismiss,
- * ListBox, Menu, Select, ComboBox, I18n primitives, the first
- * Calendar hooks slice, and the list/range calendar hook on top of the
- * interaction hooks and Hero UI Vue behavior contract. Sheet, the remaining
- * dates work, and the range date picker remain deferred.
+ * ListBox, Menu, Select, ComboBox, I18n primitives, the Calendar hooks
+ * slice, the DatePicker slice, and the DateRangePicker hook on top of the
+ * interaction hooks and Hero UI Vue behavior contract.
  */
 export {usePress} from './usePress'
 export type {PressEvent, PressEvents, PressProps, PressPropsEl, UsePressOptions, UsePressReturn, PointerType} from './usePress'
@@ -148,6 +147,9 @@ export type {MappedDateValue} from 'vue-stately/useDateFieldState'
 
 export {useDatePicker} from './useDatePicker'
 export type {AriaDatePickerProps, DatePickerAria} from './useDatePicker'
+
+export {useDateRangePicker} from './useDateRangePicker'
+export type {AriaDateRangePickerProps, DateRangePickerAria} from './useDateRangePicker'
 
 export {useTimeField} from './useTimeField'
 export type {AriaTimeFieldProps, AriaTimeFieldOptions} from './useTimeField'
