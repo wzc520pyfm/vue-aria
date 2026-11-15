@@ -804,7 +804,6 @@ describe('DateField slice', () => {
     expect((components as any).GroupContext).toBeDefined()
     for (const name of [
       'DateRangePicker',
-      'RangeCalendar',
       'FieldError',
       'Form',
       'HiddenDateInput',
@@ -834,7 +833,6 @@ describe('DateField slice', () => {
     expect(typeof (vueStately as any).useDatePickerState).toBe('function')
     for (const name of [
       'useDateRangePickerState',
-      'useRangeCalendarState',
       'IncompleteDate',
       'useFormValidationState',
     ]) {

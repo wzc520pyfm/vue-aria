@@ -205,6 +205,11 @@ function isVirtualClick(event: MouseEvent): boolean {
   return event.detail === 0 && !pointerEvent.pointerType
 }
 
+function isVirtualPointerEvent(e: PointerEvent): boolean {
+  // If the pointer size is zero, then we assume it's from a screen reader.
+  return e.width === 0 && e.height === 0
+}
+
 function createEventBase(
   target: EventTarget | null,
   event: {
@@ -366,6 +371,15 @@ export function usePress(props: PressProps = {}): UsePressReturn {
         return
       }
 
+      // Screen readers (e.g. VoiceOver) fire pointerdown events with zero
+      // contact geometry. Ignore and let the following click event handle it
+      // (matches official `isVirtualPointerEvent`). Importantly, do NOT call
+      // stopPropagation here so the window-level listener can observe it.
+      if (isVirtualPointerEvent(e)) {
+        state.pointerType = 'virtual'
+        return
+      }
+
       state.pointerType = (e.pointerType as PointerType) || 'mouse'
       if (!state.isPressed) {
         state.isPressed = true
@@ -386,6 +400,21 @@ export function usePress(props: PressProps = {}): UsePressReturn {
       }
     },
     onPointerup(e) {
+      if (!containsEventTarget(e.currentTarget, e.target) || state.pointerType === 'virtual') {
+        return
+      }
+
+      // Official: a left-click pointerup over a cell fires onPressUp even when
+      // the cell was never pressed (e.g. releasing a range drag over a cell).
+      // If the cell is pressed, onPressUp fires through endActivePress instead.
+      if (e.button === 0 && !state.isPressed) {
+        if (isDisabledLike()) {
+          return
+        }
+        triggerPressUp(createEventBase(e.currentTarget as Element, e), (e.pointerType as PointerType) || 'mouse')
+        return
+      }
+
       if (state.activePointerId != null && e.pointerId !== state.activePointerId) return
       if (!state.isPressed || isDisabledLike()) return
       const pointerType = state.pointerType || (e.pointerType as PointerType) || 'mouse'

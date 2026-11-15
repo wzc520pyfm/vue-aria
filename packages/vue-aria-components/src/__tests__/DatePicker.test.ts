@@ -973,12 +973,11 @@ describe('DatePicker (single-value)', () => {
     wrapper.unmount()
   })
 
-  it('exposes root and subpath exports and no DateRangePicker/RangeCalendar stubs', () => {
+  it('exposes root and subpath exports and no DateRangePicker/Form/FieldError stubs', () => {
     expect(typeof (components as any).DatePicker).toBe('object')
     expect((components as any).DatePickerContext).toBeDefined()
     expect((components as any).DatePickerStateContext).toBeDefined()
     expect((components as any).DateRangePicker).toBeUndefined()
-    expect((components as any).RangeCalendar).toBeUndefined()
     expect((components as any).FieldError).toBeUndefined()
     expect((components as any).Form).toBeUndefined()
     expect(DatePickerSubpath).toBe((components as any).DatePicker)

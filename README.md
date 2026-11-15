@@ -71,9 +71,17 @@ This DatePicker slice adds the single-value `DatePicker` (date and date+time), c
 - `vue-aria`: `useDatePicker`
 - `vue-aria-components`: `DatePicker`, `DatePickerContext`, `DatePickerStateContext`; reuses `DateField` / `DateInput` / `DateSegment` / `Group` / `Button` / `Popover` / `Dialog` / `Calendar` / `Label` / `Text`
 
-Scope: single-value DatePicker only (date and date+time). Selecting a date from the calendar and typing in the segments stay in sync, the popover commits a pending date (plus a placeholder time) on close when a time has not been chosen, and `shouldCloseOnSelect` accepts a boolean, getter, ref, or callback and is re-read on every selection. DateRangePicker, RangeCalendar, `useDateRangePicker` / `useDatePickerState` / `useDateRangePickerState` / `useRangeCalendarState`, `Form`, `FieldError`, and their context stubs remain deferred and are not exported.
+Scope: single-value DatePicker only (date and date+time). Selecting a date from the calendar and typing in the segments stay in sync, the popover commits a pending date (plus a placeholder time) on close when a time has not been chosen, and `shouldCloseOnSelect` accepts a boolean, getter, ref, or callback and is re-read on every selection. DateRangePicker, `useDateRangePicker` / `useDateRangePickerState`, `Form`, `FieldError`, and their context stubs remain deferred and are not exported.
 
-DateRangePicker, RangeCalendar, `useDateRangePicker` / `useDateRangePickerState` / `useRangeCalendarState`, `FieldError`, `Form`, `NumberField` (and their context stubs), calendar month/year pickers and heading components, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
+This RangeCalendar slice adds:
+
+- `vue-stately`: `useRangeCalendarState`
+- `vue-aria`: `useRangeCalendar`
+- `vue-aria-components`: `RangeCalendar`, `RangeCalendarContext`, `RangeCalendarStateContext`; reuses `CalendarGrid` / `CalendarGridBody` / `CalendarCell` from the Calendar slice; Grid/Cell also fall back to `RangeCalendarStateContext` when no single `CalendarStateContext` is present
+
+Scope: RangeCalendar only. Range selection works by two clicks or by mouse drag (touch drags are delayed 200 ms); keyboard selection (Enter/Space) uses `focusNearestAvailableDate`; dragging the start or end of the highlighted range adjusts the existing range; `commitBehavior` defaults to `'select'` when a pointer is released outside the calendar or focus leaves it, and is not triggered by the previous/next month buttons; `isDateUnavailable(date, anchorDate)` receives the live anchor date on every call; `allowsNonContiguousRanges` tightens the available range to the nearest unavailable date on each side when `false`; emitted dates keep the input calendar system (otherwise Gregorian) and preserve time. DateRangePicker, Form, FieldError, `useDateRangePicker` / `useDateRangePickerState`, and their context stubs remain deferred and are not exported.
+
+DateRangePicker, `useDateRangePicker` / `useDateRangePickerState`, `FieldError`, `Form`, `NumberField` (and their context stubs), calendar month/year pickers and heading components, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 

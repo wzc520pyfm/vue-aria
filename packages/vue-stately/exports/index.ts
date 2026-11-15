@@ -3,9 +3,10 @@
  * (`packages/react-stately/exports` at
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
- * This batch adds overlay, tooltip, collection, selection/list, menu
- * trigger, Select, ComboBox, and Calendar state. Tree state and the range
- * calendar state remain deferred.
+ * This batch adds overlay, collection, selection/list, menu
+ * trigger, Select, ComboBox, Calendar, Date/Time Field and DatePicker state on
+ * top of the interaction hooks and Hero UI Vue behavior contract. Tree state
+ * and the date/time range picker state remain deferred.
  */
 export {useOverlayTriggerState} from './useOverlayTriggerState'
 export type {
@@ -62,6 +63,15 @@ export type {
   CalendarValueType,
   MappedDateValue,
 } from './useCalendarState'
+
+export {useRangeCalendarState} from './useRangeCalendarState'
+export type {
+  DateRange,
+  RangeCalendarProps,
+  RangeCalendarStateOptions,
+  RangeCalendarState,
+  RangeValue,
+} from './useRangeCalendarState'
 
 export {useDateFieldState} from './useDateFieldState'
 export type {

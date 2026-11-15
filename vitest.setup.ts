@@ -14,11 +14,11 @@ if (typeof globalThis.PointerEvent === 'undefined') {
 
     constructor(type: string, params: PointerEventInit = {}) {
       super(type, params)
-      this.pointerId = params.pointerId ?? 0
+      this.pointerId = params.pointerId ?? 1
       this.pointerType = params.pointerType ?? ''
       this.isPrimary = params.isPrimary ?? true
-      this.width = params.width ?? 0
-      this.height = params.height ?? 0
+      this.width = params.width ?? 1
+      this.height = params.height ?? 1
       this.pressure = params.pressure ?? 0
       this.tiltX = params.tiltX ?? 0
       this.tiltY = params.tiltY ?? 0
