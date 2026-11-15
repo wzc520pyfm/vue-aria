@@ -43,6 +43,15 @@ export function setInteractionModality(next: Modality) {
   modality = next
 }
 
+/**
+ * Returns the current interaction modality. Compatibly added for the internal
+ * `focusSafely` util (official `getInteractionModality`); does not change the
+ * frozen `useFocusVisible` behavior contract.
+ */
+export function getInteractionModality(): Modality {
+  return modality
+}
+
 function addGlobalModalityListeners() {
   if (typeof window === 'undefined') return
   listenerCount += 1

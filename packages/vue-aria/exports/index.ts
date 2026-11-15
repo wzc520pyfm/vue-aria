@@ -5,8 +5,9 @@
  *
  * This batch adds overlay, dialog, tooltip, focus-scope, dismiss,
  * ListBox, Menu, Select, ComboBox, I18n primitives, the Calendar hooks
- * slice, the DatePicker slice, and the DateRangePicker hook on top of the
- * interaction hooks and Hero UI Vue behavior contract.
+ * slice, the DatePicker slice, the DateRangePicker hook, and the
+ * Checkbox / Radio / Switch hooks on top of the interaction hooks and
+ * Hero UI Vue behavior contract.
  */
 export {usePress} from './usePress'
 export type {PressEvent, PressEvents, PressProps, PressPropsEl, UsePressOptions, UsePressReturn, PointerType} from './usePress'
@@ -166,3 +167,15 @@ export type {AriaDateRangePickerProps, DateRangePickerAria} from './useDateRange
 export {useTimeField} from './useTimeField'
 export type {AriaTimeFieldProps, AriaTimeFieldOptions} from './useTimeField'
 export type {TimeValue, MappedTimeValue} from 'vue-stately/useTimeFieldState'
+
+export {useCheckbox} from './useCheckbox'
+export type {CheckboxAria, CheckboxProps, AriaCheckboxProps} from './useCheckbox'
+
+export {useCheckboxGroup, useCheckboxGroupItem} from './useCheckboxGroup'
+export type {AriaCheckboxGroupProps, CheckboxGroupAria, AriaCheckboxGroupItemProps} from './useCheckboxGroup'
+
+export {useRadio, useRadioGroup} from './useRadioGroup'
+export type {RadioProps, AriaRadioProps, RadioAria, AriaRadioGroupProps, RadioGroupAria} from './useRadioGroup'
+
+export {useSwitch} from './useSwitch'
+export type {SwitchProps, AriaSwitchProps, SwitchAria} from './useSwitch'
