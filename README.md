@@ -65,7 +65,15 @@ This DateField slice adds the first usable `DateField` / `TimeField` vertical (s
 - `vue-aria`: `useDateField`, `useDateSegment`, `useTimeField`, `useFocusWithin`
 - `vue-aria-components`: `DateField`, `TimeField`, `DateInput`, `DateSegment`, `DateFieldContext`, `TimeFieldContext`, `DateFieldStateContext`, `TimeFieldStateContext`, plus a minimal exported `Group` / `GroupContext`; each `DateField` / `TimeField` entry also re-exports `Label` and `Text`; `TimeField` uses a hidden input for the `timeValue` string and renders no `HiddenDateInput`
 
-DatePicker, DateRangePicker, RangeCalendar, `useDatePicker` / `useDateRangePicker` / `useDatePickerState` / `useDateRangePickerState` / `useRangeCalendarState`, `FieldError`, `Form`, `NumberField` (and their context stubs), calendar month/year pickers and heading components, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
+This DatePicker slice adds the single-value `DatePicker` (date and date+time), composed from a `DateField`-style inner field, a calendar popover, and a trigger button:
+
+- `vue-stately`: `useDatePickerState`
+- `vue-aria`: `useDatePicker`
+- `vue-aria-components`: `DatePicker`, `DatePickerContext`, `DatePickerStateContext`; reuses `DateField` / `DateInput` / `DateSegment` / `Group` / `Button` / `Popover` / `Dialog` / `Calendar` / `Label` / `Text`
+
+Scope: single-value DatePicker only (date and date+time). Selecting a date from the calendar and typing in the segments stay in sync, the popover commits a pending date (plus a placeholder time) on close when a time has not been chosen, and `shouldCloseOnSelect` accepts a boolean, getter, ref, or callback and is re-read on every selection. DateRangePicker, RangeCalendar, `useDateRangePicker` / `useDatePickerState` / `useDateRangePickerState` / `useRangeCalendarState`, `Form`, `FieldError`, and their context stubs remain deferred and are not exported.
+
+DateRangePicker, RangeCalendar, `useDateRangePicker` / `useDateRangePickerState` / `useRangeCalendarState`, `FieldError`, `Form`, `NumberField` (and their context stubs), calendar month/year pickers and heading components, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 

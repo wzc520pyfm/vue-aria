@@ -19,17 +19,32 @@ interface DisplayNames {
 
 /** @private */
 export function useDisplayNames(): DisplayNames {
-  const {locale} = useLocale()
+  const i18n = useLocale()
   const dictionary = useLocalizedStringDictionary(
     datepickerStrings as any,
     '@react-aria/datepicker',
   )
-  // Try to use Intl.DisplayNames if possible. It may be supported in browsers, but not support
-  // the dateTimeField type as that was only added in v2. https://github.com/tc39/intl-displaynames-v2
-  try {
-    return new Intl.DisplayNames(locale, {type: 'dateTimeField'}) as unknown as DisplayNames
-  } catch {
-    return new DisplayNamesPolyfill(locale, dictionary as LocalizedStringDictionary<Field, string>)
+  // Resolve DisplayNames lazily per locale so a post-mount I18nProvider locale
+  // switch is honored (official reads the provider locale at format time).
+  const cache = new Map<string, DisplayNames>()
+  const resolve = (): DisplayNames => {
+    const locale = i18n.locale
+    let displayNames = cache.get(locale)
+    if (displayNames) {
+      return displayNames
+    }
+    try {
+      displayNames = new Intl.DisplayNames(locale, {type: 'dateTimeField'}) as unknown as DisplayNames
+    } catch {
+      displayNames = new DisplayNamesPolyfill(locale, dictionary as LocalizedStringDictionary<Field, string>)
+    }
+    cache.set(locale, displayNames)
+    return displayNames
+  }
+  return {
+    of(field: Field) {
+      return resolve().of(field)
+    },
   }
 }
 

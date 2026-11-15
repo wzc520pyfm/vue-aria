@@ -6,6 +6,41 @@
  */
 
 import type {LocalizedStrings} from '@internationalized/string'
+
+/**
+ * Compile the raw ICU message strings at module load. The official packages
+ * ship these via `@internationalized/string-compiler` at publish time; the raw
+ * committed JSON keeps `{placeholder}` templates, so we wrap any message that
+ * contains a placeholder in a compiled `(variables) => string` function here.
+ */
+function isLocalizedString(value: unknown): value is (variables: any) => string {
+  return typeof value === 'function'
+}
+
+function compileMessage(message: unknown): any {
+  if (typeof message !== 'string' || !message.includes('{')) {
+    return message
+  }
+  return (variables?: Record<string, string | number | boolean>) =>
+    message.replace(/\{(\w+)\}/g, (match, key) =>
+      variables?.[key] != null ? String(variables[key]) : match,
+    )
+}
+
+function compileStrings(
+  strings: Record<string, Record<string, unknown>>,
+): Record<string, Record<string, any>> {
+  const out: Record<string, Record<string, any>> = {}
+  for (const locale of Object.keys(strings)) {
+    const entry = strings[locale]
+    const compiled: Record<string, any> = {}
+    for (const key of Object.keys(entry)) {
+      compiled[key] = compileMessage(entry[key])
+    }
+    out[locale] = compiled
+  }
+  return out
+}
 import arAE from '../../intl/datepicker/ar-AE.json'
 import bgBG from '../../intl/datepicker/bg-BG.json'
 import csCZ from '../../intl/datepicker/cs-CZ.json'
@@ -41,7 +76,7 @@ import ukUA from '../../intl/datepicker/uk-UA.json'
 import zhCN from '../../intl/datepicker/zh-CN.json'
 import zhTW from '../../intl/datepicker/zh-TW.json'
 
-const datepickerStrings: LocalizedStrings<string, string> = {
+const datepickerStrings: LocalizedStrings<string, any> = compileStrings({
   'ar-AE': arAE,
   'bg-BG': bgBG,
   'cs-CZ': csCZ,
@@ -76,7 +111,7 @@ const datepickerStrings: LocalizedStrings<string, string> = {
   'uk-UA': ukUA,
   'zh-CN': zhCN,
   'zh-TW': zhTW,
-}
+}) as LocalizedStrings<string, any>
 
 export default datepickerStrings
 export {datepickerStrings}

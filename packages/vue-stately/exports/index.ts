@@ -73,6 +73,10 @@ export type {
 } from './useDateFieldState'
 export type {DateFieldProps, Granularity} from './useDateFieldState'
 
+export {useDatePickerState} from './useDatePickerState'
+export type {DatePickerStateOptions, DatePickerState} from './useDatePickerState'
+export type {DatePickerProps} from './useDatePickerState'
+
 export {useTimeFieldState} from './useTimeFieldState'
 export type {TimeFieldStateOptions, TimeFieldState} from './useTimeFieldState'
 export type {TimeValue, TimeFieldProps, MappedTimeValue} from './useTimeFieldState'

@@ -32,6 +32,7 @@ import {getPlaceholder} from './placeholders'
 import {IncompleteDate} from './IncompleteDate'
 import {
   useFormValidationState,
+  privateValidationStateProp,
   type FormValidationState,
 } from '../form/useFormValidationState'
 import {useControlledState} from '../utils/useControlledState'
@@ -426,6 +427,10 @@ export function useDateFieldState<T extends DateValue = DateValue>(
   )
 
   const validation = useFormValidationState<MappedDateValue<T>>({
+    // Private parent-validation takeover (e.g. DatePicker) — internal channel only.
+    ...((props as any)[privateValidationStateProp]
+      ? {[privateValidationStateProp]: (props as any)[privateValidationStateProp]}
+      : {}),
     value: () => value.value as MappedDateValue<T> | null,
     // Read the current prop on every validation call.
     isInvalid: () => toValue(props.isInvalid),
@@ -442,7 +447,17 @@ export function useDateFieldState<T extends DateValue = DateValue>(
   )
 
   const state: DateFieldState = {
-    ...validation,
+    // Live delegation — spreading `validation` would flatten the getters and
+    // freeze display/realtime validation at setup time.
+    get realtimeValidation() {
+      return validation.realtimeValidation
+    },
+    get displayValidation() {
+      return validation.displayValidation
+    },
+    updateValidation: (result) => validation.updateValidation(result),
+    resetValidation: () => validation.resetValidation(),
+    commitValidation: () => validation.commitValidation(),
     get value() {
       return calendarValue.value as DateValue | null
     },

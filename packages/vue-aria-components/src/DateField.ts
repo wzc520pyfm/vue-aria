@@ -551,6 +551,17 @@ const DateInputStandalone = defineComponent({
     const fieldRef = ref<Element | null>(null)
     const inputRef = ref<HTMLInputElement | null>(null)
 
+    // Forward the picker-owned validation state and the presentation role:
+    // the inner field takes over the parent's validation instead of computing
+    // its own, and renders role="presentation" so the outer picker group owns
+    // the group semantics (no duplicated group role, description, or arrow keys).
+    const forwardedPrivateValidation =
+      ctx[privateValidationStateProp] !== undefined
+        ? {[privateValidationStateProp]: ctx[privateValidationStateProp]}
+        : {}
+    const forwardedRole =
+      ctx[roleSymbol] !== undefined ? {[roleSymbol]: ctx[roleSymbol]} : {}
+
     const state = useDateFieldState({
       value: () => ctx.value,
       defaultValue: () => ctx.defaultValue,
@@ -578,6 +589,7 @@ const DateInputStandalone = defineComponent({
       onChange: (value: any) => ctx.onChange?.(value),
       locale: () => locale.locale,
       createCalendar: () => ctx.createCalendar ?? createDefaultCalendar,
+      ...forwardedPrivateValidation,
     } as any)
 
     const fieldAria = useDateField(
@@ -597,6 +609,7 @@ const DateInputStandalone = defineComponent({
         form: () => ctx.form,
         autoFocus: () => ctx.autoFocus,
         inputRef,
+        ...forwardedRole,
       } as any,
       state as any,
       fieldRef as any,
@@ -658,6 +671,12 @@ const DateInputInner = defineComponent({
     }
   },
 })
+
+// Internal keys shared with `vue-aria` and `vue-stately`. Not part of the
+// public surface of any package — kept as literals so the packages agree on
+// the strings without public exports.
+const roleSymbol: string = '__vueAriaDateFieldRole'
+const privateValidationStateProp: string = '__vueAriaFormValidationState'
 
 export interface DateSegmentRenderProps {
   isHovered: boolean

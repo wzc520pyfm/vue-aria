@@ -45,6 +45,13 @@ export type ValidationFunction<T> = (
   value: T,
 ) => true | string | string[] | null | undefined
 
+/**
+ * Private prop carrying a parent validation state (e.g. DatePicker) that the
+ * child field state takes over instead of computing its own. Internal channel
+ * — not part of the public surface.
+ */
+export const privateValidationStateProp: string = '__vueAriaFormValidationState'
+
 export interface FormValidationProps<T> {
   isInvalid?: MaybeRefOrGetter<boolean | undefined>
   validationState?: MaybeRefOrGetter<'valid' | 'invalid' | undefined>
@@ -72,6 +79,23 @@ export interface FormValidationState {
 }
 
 export function useFormValidationState<T>(props: FormValidationProps<T>): FormValidationState {
+  // Private prop for parent components to pass state to children.
+  const parent = (props as any)[privateValidationStateProp] as FormValidationState | undefined
+  if (parent) {
+    // Live delegation — never snapshot the parent's validation state.
+    return {
+      get realtimeValidation() {
+        return parent.realtimeValidation
+      },
+      get displayValidation() {
+        return parent.displayValidation
+      },
+      updateValidation: (value) => parent.updateValidation(value),
+      resetValidation: () => parent.resetValidation(),
+      commitValidation: () => parent.commitValidation(),
+    }
+  }
+
   // If the isInvalid prop is controlled, update validation result in realtime.
   const controlledError = computed<ValidationResult | null>(() => {
     const isInvalid = toValue(props.isInvalid)

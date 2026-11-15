@@ -2,9 +2,9 @@
  * Port of `react-stately@3.51.0` datepicker types
  * (`packages/react-stately/src/datepicker/types.ts` at
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc),
- * adapted for Vue getter-based props. DatePicker/DateRangePicker props
- * (DateRangePickerProps) remain deferred with their components; only the
- * DateField / TimeField surface is public in this slice.
+ * adapted for Vue getter-based props. DatePicker/DateRangePicker component
+ * props stay with their components; `DatePickerProps` here is the shared
+ * official props (single-value DatePicker lands in this slice).
  */
 
 import type {
@@ -14,6 +14,8 @@ import type {
   ZonedDateTime,
 } from '@internationalized/date'
 import type {MaybeRefOrGetter} from 'vue'
+import type {OverlayTriggerProps} from '../overlays/useOverlayTriggerState'
+import type {PageBehavior} from '../calendar/types'
 
 export type DateValue = CalendarDate | CalendarDateTime | ZonedDateTime
 export type MappedDateValue<T> = T extends ZonedDateTime
@@ -136,10 +138,21 @@ export interface DateFieldProps<T extends DateValue> extends DateFieldBase<T> {
 }
 
 /**
- * Props used internally by `useDateFieldState` (official `DatePickerProps` minus the
- * overlay/page props that belong to the deferred DatePicker components).
+ * Props for `useDatePickerState` (official `DatePickerProps`): the field base
+ * plus overlay trigger props and the calendar page behavior / first day of week.
  */
-export interface DatePickerProps<T extends DateValue> extends DateFieldBase<T> {
+export interface DatePickerProps<T extends DateValue> extends DateFieldBase<T>, OverlayTriggerProps {
+  /**
+   * Controls the behavior of paging. Pagination either works by advancing the visible page by
+   * visibleDuration (default) or one unit of visibleDuration.
+   *
+   * @default visible
+   */
+  pageBehavior?: MaybeRefOrGetter<PageBehavior | undefined>
+  /**
+   * The day that starts the week.
+   */
+  firstDayOfWeek?: MaybeRefOrGetter<'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | undefined>
   /** The current value (controlled). */
   value?: MaybeRefOrGetter<T | null | undefined>
   /** The default value (uncontrolled). */

@@ -46,13 +46,18 @@ function getCollator(locale: string, options?: Intl.CollatorOptions): Intl.Colla
  */
 export function useFilter(options?: Intl.CollatorOptions): Filter {
   // Follow the I18nProvider locale (like official useFilter), not only document.lang.
-  let locale = useLocale().locale
-  try {
-    Intl.Collator.supportedLocalesOf([locale])
-  } catch {
-    locale = 'en-US'
+  // Resolved lazily at call time so a post-mount I18nProvider locale switch is
+  // honored (the collator cache is keyed by locale, so this stays cheap).
+  const i18n = useLocale()
+  const collator = () => {
+    let locale = i18n.locale
+    try {
+      Intl.Collator.supportedLocalesOf([locale])
+    } catch {
+      locale = 'en-US'
+    }
+    return getCollator(locale, {usage: 'search', ...options})
   }
-  const collator = getCollator(locale, {usage: 'search', ...options})
 
   const startsWith = (string: string, substring: string): boolean => {
     if (substring.length === 0) return true
@@ -60,7 +65,7 @@ export function useFilter(options?: Intl.CollatorOptions): Filter {
     // Normalize both strings so we can slice safely
     string = string.normalize('NFC')
     substring = substring.normalize('NFC')
-    return collator.compare(string.slice(0, substring.length), substring) === 0
+    return collator().compare(string.slice(0, substring.length), substring) === 0
   }
 
   const endsWith = (string: string, substring: string): boolean => {
@@ -68,7 +73,7 @@ export function useFilter(options?: Intl.CollatorOptions): Filter {
 
     string = string.normalize('NFC')
     substring = substring.normalize('NFC')
-    return collator.compare(string.slice(-substring.length), substring) === 0
+    return collator().compare(string.slice(-substring.length), substring) === 0
   }
 
   const contains = (string: string, substring: string): boolean => {
@@ -80,7 +85,7 @@ export function useFilter(options?: Intl.CollatorOptions): Filter {
     const sliceLen = substring.length
     for (let scan = 0; scan + sliceLen <= string.length; scan++) {
       const slice = string.slice(scan, scan + sliceLen)
-      if (collator.compare(substring, slice) === 0) {
+      if (collator().compare(substring, slice) === 0) {
         return true
       }
     }

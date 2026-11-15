@@ -42,24 +42,19 @@ export function useDateSegment(
 ): DateSegmentAria {
   const enteredKeys = {current: ''}
   const seg = () => toValue(segment)
-  const {locale, direction} = useLocale()
+  const i18n = useLocale()
   const displayNames = useDisplayNames()
   const hookDataValue = hookData.get(state)
   if (!hookDataValue) {
     throw new Error('useDateSegment must be used within a field (DateField/TimeField)')
   }
-  const {ariaLabel, ariaLabelledBy, ariaDescribedBy, focusManager} = {
-    get ariaLabel() {
-      return hookData.get(state)?.ariaLabel
-    },
-    get ariaLabelledBy() {
-      return hookData.get(state)?.ariaLabelledBy
-    },
-    get ariaDescribedBy() {
-      return hookData.get(state)?.ariaDescribedBy
-    },
-    focusManager: hookDataValue.focusManager,
-  }
+  // Never destructure the hookData getters — destructuring evaluates them
+  // once at setup and freezes aria labels/descriptions. Read live instead.
+  const hookDataAt = () => hookData.get(state)
+  const ariaLabel = () => hookDataAt()?.ariaLabel
+  const ariaLabelledBy = () => hookDataAt()?.ariaLabelledBy
+  const ariaDescribedBy = () => hookDataAt()?.ariaDescribedBy
+  const focusManager = hookDataValue.focusManager
 
   // Formatters are created eagerly in setup (hooks/inject only run there) with
   // live options so the time zone and locale stay current (official useMemo).
@@ -120,16 +115,27 @@ export function useDateSegment(
     },
   })
 
-  const parser = new NumberParser(locale, {maximumFractionDigits: 0})
+  // NumberParser is locale-specific — cache one per locale so a post-mount
+  // I18nProvider locale switch is honored without recreating segments.
+  const parsers = new Map<string, NumberParser>()
+  const parser = () => {
+    const loc = i18n.locale
+    let p = parsers.get(loc)
+    if (!p) {
+      p = new NumberParser(loc, {maximumFractionDigits: 0})
+      parsers.set(loc, p)
+    }
+    return p
+  }
 
   const backspace = () => {
     const s = seg()
     if (s.text === s.placeholder) {
       focusManager.focusPrevious()
     }
-    if (parser.isValidPartialNumber(s.text) && !state.isReadOnly && !s.isPlaceholder) {
+    if (parser().isValidPartialNumber(s.text) && !state.isReadOnly && !s.isPlaceholder) {
       let newValue = s.text.slice(0, -1)
-      const parsed = parser.parse(newValue)
+      const parsed = parser().parse(newValue)
       newValue = parsed === 0 ? '' : newValue
       if (newValue.length === 0 || parsed === 0) {
         state.clearSegment(s.type)
@@ -241,14 +247,14 @@ export function useDateSegment(
       case 'second':
       case 'month':
       case 'year': {
-        if (!parser.isValidPartialNumber(newValue)) {
+        if (!parser().isValidPartialNumber(newValue)) {
           return
         }
 
-        const numberValue = parser.parse(newValue)
+        const numberValue = parser().parse(newValue)
         let segmentValue = numberValue
         if (s.maxValue !== undefined && numberValue > s.maxValue) {
-          segmentValue = parser.parse(key)
+          segmentValue = parser().parse(key)
         }
 
         if (isNaN(numberValue)) {
@@ -314,7 +320,7 @@ export function useDateSegment(
     switch (event.inputType) {
       case 'deleteContentBackward':
       case 'deleteContentForward':
-        if (parser.isValidPartialNumber(s.text) && !state.isReadOnly) {
+        if (parser().isValidPartialNumber(s.text) && !state.isReadOnly) {
           backspace()
         }
         break
@@ -400,8 +406,8 @@ export function useDateSegment(
       get: () => {
         const s = seg()
         const name = s.type === 'literal' ? '' : displayNames.of(s.type)
-        const composedLabel = `${name}${ariaLabel ? `, ${ariaLabel}` : ''}${
-          ariaLabelledBy ? ', ' : ''
+        const composedLabel = `${name}${ariaLabel() ? `, ${ariaLabel()}` : ''}${
+          ariaLabelledBy() ? ', ' : ''
         }`
         return composedLabel
       },
@@ -410,7 +416,7 @@ export function useDateSegment(
     },
     'aria-labelledby': {
       get: () => {
-        let resolvedLabelledBy = ariaLabelledBy?.trim()
+        let resolvedLabelledBy = ariaLabelledBy()?.trim()
         if (resolvedLabelledBy) {
           resolvedLabelledBy = resolvedLabelledBy.split(/\s+/).filter(Boolean).join(' ')
         }
@@ -432,7 +438,7 @@ export function useDateSegment(
 
   const segmentStyle = (): Record<string, string> => {
     const style: Record<string, string> = {caretColor: 'transparent'}
-    if (direction === 'rtl') {
+    if (i18n.direction === 'rtl') {
       // While the bidirectional algorithm seems to work properly on inline elements with actual values, it returns different results for placeholder strings.
       // To ensure placeholder render in correct format, we apply the CSS equivalent of LRE (left-to-right embedding). See https://www.unicode.org/reports/tr9/#Explicit_Directional_Embeddings.
       // However, we apply this to both placeholders and date segments with an actual value because the date segments will shift around when deleting otherwise.
@@ -462,7 +468,7 @@ export function useDateSegment(
         // read every time the user navigates to a new segment.
         const firstSegment = state.segments.find((s) => s.isEditable)
         const described = seg() === firstSegment || state.isInvalid
-        return described ? ariaDescribedBy : undefined
+        return described ? ariaDescribedBy() : undefined
       },
       enumerable: true,
       configurable: true,
