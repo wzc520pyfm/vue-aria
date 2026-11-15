@@ -200,6 +200,8 @@ function numberFieldAriaProps(
     formatOptions: () => props.formatOptions,
     autoFocus: () => props.autoFocus,
     isWheelDisabled: () => props.isWheelDisabled,
+    incrementAriaLabel: () => props.incrementAriaLabel,
+    decrementAriaLabel: () => props.decrementAriaLabel,
     placeholder: () => props.placeholder,
     id: () => props.id,
     'aria-label': () => props['aria-label'],
@@ -220,8 +222,8 @@ function provideFieldContexts(
   fieldRef: Ref<Element | null>,
   inputRef: Ref<HTMLInputElement | null>,
   stateContextKey: InjectionKey<any>,
-  isDisabled: boolean,
-  isReadOnly: boolean,
+  isDisabled: () => boolean,
+  isReadOnly: () => boolean,
 ) {
   provide(stateContextKey, state)
 
@@ -231,8 +233,8 @@ function provideFieldContexts(
   }
   Object.defineProperties(groupCtx, {
     isInvalid: {get: () => state.displayValidation.isInvalid, enumerable: true, configurable: true},
-    isDisabled: {get: () => isDisabled, enumerable: true, configurable: true},
-    isReadOnly: {get: () => isReadOnly, enumerable: true, configurable: true},
+    isDisabled: {get: isDisabled, enumerable: true, configurable: true},
+    isReadOnly: {get: isReadOnly, enumerable: true, configurable: true},
   })
   provide(GroupContextKey, groupCtx)
 
@@ -352,8 +354,8 @@ export const NumberField = defineComponent({
       fieldRef,
       inputRef,
       NumberFieldStateContextKey,
-      props.isDisabled || false,
-      props.isReadOnly || false,
+      () => Boolean(props.isDisabled),
+      () => Boolean(props.isReadOnly),
     )
 
     const groupPropsForRender = fieldAria.groupProps as Record<string, any>

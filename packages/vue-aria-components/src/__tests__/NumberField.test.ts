@@ -404,4 +404,57 @@ describe('NumberField component', () => {
     expect(NumberFieldContext).toBeDefined()
     expect(NumberFieldStateContext).toBeDefined()
   })
+
+  it('forwards incrementAriaLabel and decrementAriaLabel to stepper buttons', async () => {
+    const {wrapper} = mountField({
+      defaultValue: 1,
+      incrementAriaLabel: 'Increase amount',
+      decrementAriaLabel: 'Decrease amount',
+    })
+    await tick()
+    expect(getIncButton().getAttribute('aria-label')).toBe('Increase amount')
+    expect(getDecButton().getAttribute('aria-label')).toBe('Decrease amount')
+    wrapper.unmount()
+  })
+
+  it('updates child Group data-disabled and data-readonly live when props toggle after mount', async () => {
+    const isDisabled = ref(false)
+    const isReadOnly = ref(false)
+    const wrapper = mountInDoc(
+      defineComponent({
+        setup() {
+          return () =>
+            h(
+              NumberField as any,
+              {
+                defaultValue: 1,
+                isDisabled: isDisabled.value,
+                isReadOnly: isReadOnly.value,
+              },
+              defaultSlots(),
+            )
+        },
+      }),
+    )
+    await tick()
+    const group = document.querySelector('[role="group"]') as HTMLElement
+    expect(group).toBeTruthy()
+    expect(group.getAttribute('data-disabled')).toBeNull()
+    expect(group.getAttribute('data-readonly')).toBeNull()
+
+    isDisabled.value = true
+    await tick()
+    expect(group.getAttribute('data-disabled')).toBe('true')
+
+    isDisabled.value = false
+    isReadOnly.value = true
+    await tick()
+    expect(group.getAttribute('data-disabled')).toBeNull()
+    expect(group.getAttribute('data-readonly')).toBe('true')
+
+    isReadOnly.value = false
+    await tick()
+    expect(group.getAttribute('data-readonly')).toBeNull()
+    wrapper.unmount()
+  })
 })
