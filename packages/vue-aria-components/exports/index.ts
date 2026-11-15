@@ -5,9 +5,10 @@
  *
  * This batch adds collections/ListBox, action/selection Menu components,
  * Select, ComboBox, I18n primitives, the Calendar slice, the single-value
- * DatePicker slice, the RangeCalendar slice, and the DateRangePicker slice on
- * top of Button, overlays, and text primitives. Sheet, Form, and FieldError
- * remain deferred.
+ * DatePicker slice, the RangeCalendar slice, the DateRangePicker slice, and the
+ * NumberField slice on top of Button, overlays, and text primitives. The
+ * TextField slice adds `TextField` / `TextArea` / `SearchField`. Sheet, Form,
+ * and FieldError remain deferred.
  */
 export {Button} from './Button'
 export type {ButtonType} from './Button'
@@ -78,6 +79,15 @@ export type {TimeValue, TimeFieldState} from 'vue-stately/useTimeFieldState'
 export {NumberField, NumberFieldContext, NumberFieldStateContext} from './NumberField'
 export type {NumberFieldProps, NumberFieldRenderProps} from './NumberField'
 export type {NumberFieldState} from 'vue-stately/useNumberFieldState'
+
+export {TextField, TextFieldContext} from './TextField'
+export type {TextFieldProps, TextFieldRenderProps} from './TextField'
+export {TextArea, TextAreaContext} from './TextArea'
+export type {TextAreaProps} from './TextArea'
+
+export {SearchField, SearchFieldContext} from './SearchField'
+export type {SearchFieldProps, SearchFieldRenderProps} from './SearchField'
+export type {SearchFieldState} from 'vue-stately/useSearchFieldState'
 
 export {Group, GroupContext} from './Group'
 export type {GroupProps, GroupRenderProps} from './Group'

@@ -85,6 +85,7 @@ export const ComboBoxContextKey: InjectionKey<Record<string, any> | undefined> =
 export const ComboBoxStateContextKey: InjectionKey<any | null> = Symbol('ComboBoxStateContext')
 export const ComboBoxValueContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('ComboBoxValueContext')
 export const InputContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('InputContext')
+export const TextAreaContextKey: InjectionKey<Record<string, any> | undefined> = Symbol('TextAreaContext')
 
 export const ButtonContextKey: InjectionKey<Record<string, any> | null | undefined> = Symbol('ButtonContext')
 export const HeadingContextKey: InjectionKey<Record<string, any> | null | undefined> = Symbol('HeadingContext')

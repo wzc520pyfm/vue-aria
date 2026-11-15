@@ -97,7 +97,15 @@ This NumberField slice adds:
 
 Scope: NumberField only. Controlled/uncontrolled values, typing, blur commit/format, `commitBehavior` (`snap` default vs `validate`), increment/decrement buttons with press-and-hold, keyboard and wheel stepping, min/max/step, format options and locale, validation, and an optional hidden input for form submission. Form, `FieldError`, and their context stubs remain deferred and are not exported.
 
-Form, `FieldError`, calendar month/year pickers and heading components, a public `useEvent`, `TextField` / `TextArea` / `SearchField`, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
+This TextField slice adds:
+
+- `vue-stately`: `useSearchFieldState`
+- `vue-aria`: completed `useTextField` (controlled/uncontrolled values, full native/ARIA form-validation machinery via the internal `useFormValidationState` / `useFormValidation` / `useFormReset`, live `inputElementType` for `Input` / `TextArea`) and new `useSearchField` (`Escape` clears a non-empty value and emits lowercase `clear`; `Enter` submits only when `onSubmit` is provided, otherwise the native form submit proceeds)
+- `vue-aria-components`: `TextField` / `TextFieldContext`, `TextArea` / `TextAreaContext`, `SearchField` / `SearchFieldContext`; reuses `Group` / `Input` / `TextArea` / `Label` / `Button` (clear button via `ButtonContext`, `aria-label` "Clear search") / `Text`
+
+Scope: TextField / TextArea / SearchField only. `TextField` supports both `Input` and `TextArea` (detected via the input ref; a textarea never receives `type` / `pattern`); controlled and uncontrolled values; typing with a lowercase Vue `change` event; label / description / errorMessage; `form` / `name` / `id` (`id` only on the input); outer `data-disabled` / `data-invalid` / `data-readonly` / `data-required` / `data-empty` (SearchField) as the string `"true"` or omitted; custom `data-*` only on the outer element; hover / focus data-* still work on the input / textarea. `*Props` and contexts are plain objects with live getters. `isRequired` with the default `'native'` validationBehavior renders `required` (not `aria-required`) at the component level; the hook default is `'aria'`. Official has no `TextFieldStateContext` / `SearchFieldStateContext` — none are provided. Form, `FieldError`, and their context stubs remain deferred and are not exported; `FieldErrorContext` is not backfilled into existing field components, and RAC cases that rely on `FieldError` are covered with native validity + `Text slot="errorMessage"` / `isInvalid` instead.
+
+Form, `FieldError`, calendar month/year pickers and heading components, a public `useEvent`, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 

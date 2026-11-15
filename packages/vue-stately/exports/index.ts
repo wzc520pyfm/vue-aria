@@ -96,3 +96,6 @@ export type {TimeValue, TimeFieldProps, MappedTimeValue} from './useTimeFieldSta
 
 export {useNumberFieldState} from './useNumberFieldState'
 export type {NumberFieldStateOptions, NumberFieldProps, NumberFieldState} from './useNumberFieldState'
+
+export {useSearchFieldState} from './useSearchFieldState'
+export type {SearchFieldProps, SearchFieldState} from './useSearchFieldState'

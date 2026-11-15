@@ -42,20 +42,41 @@ export const Button = defineComponent({
     })
     const optsOut = computed(() => slotName.value === null)
 
-    const activeCtx = computed<Record<string, any>>(() => {
+    // Descriptor-preserving copy of the flat (trigger + button) context: accessors
+    // stay live getters instead of being snapshotted at setup time. Plain values
+    // are copied as-is, so existing contexts behave exactly as before.
+    const flatCtx = (): Record<string, any> => {
+      if (optsOut.value) return {}
+      const flat: Record<string, any> = {}
+      for (const source of [trigger, buttonCtx]) {
+        if (!source) continue
+        for (const key of Object.keys(source)) {
+          if (key === 'slots') continue
+          Object.defineProperty(
+            flat,
+            key,
+            Object.getOwnPropertyDescriptor(source, key) ?? {value: (source as any)[key], enumerable: true},
+          )
+        }
+      }
+      return flat
+    }
+
+    // Note: evaluated per read (not a cached computed) so accessor keys in a
+    // flat context (e.g. a clear button's live `isDisabled`) stay reactive.
+    const activeCtx = (): Record<string, any> => {
       if (optsOut.value) return {}
       const name = slotName.value
       if (name && buttonCtx?.slots && buttonCtx.slots[name]) {
         return buttonCtx.slots[name]
       }
       // Flat context (trigger + button ctx) for existing consumers.
-      const {slots: _slots, ...restButton} = (buttonCtx || {})
-      return {...(trigger || {}), ...restButton}
-    })
+      return flatCtx()
+    }
 
     const isDisabled = computed(() => {
       if (props.isDisabled != null) return props.isDisabled
-      if (!optsOut.value && activeCtx.value.isDisabled != null) return !!activeCtx.value.isDisabled
+      if (!optsOut.value && activeCtx().isDisabled != null) return !!activeCtx().isDisabled
       return false
     })
 
@@ -68,7 +89,7 @@ export const Button = defineComponent({
     const setRefs = (el: any) => {
       internalRef.value = el
       if (!optsOut.value) {
-        const r = activeCtx.value.ref
+        const r = activeCtx().ref
         if (typeof r === 'function') r(el)
         else if (r && typeof r === 'object' && 'value' in r) r.value = el
       }
@@ -76,7 +97,7 @@ export const Button = defineComponent({
 
     onMounted(() => {
       if (optsOut.value) return
-      const autoFocus = props.autoFocus ?? activeCtx.value.autoFocus
+      const autoFocus = props.autoFocus ?? activeCtx().autoFocus
       if (autoFocus && internalRef.value && typeof (internalRef.value as any).focus === 'function') {
         try { (internalRef.value as any).focus() } catch {}
       }
@@ -88,29 +109,29 @@ export const Button = defineComponent({
       type: () => props.type,
       elementType: () => props.elementType,
       'data-slot': () => dataSlot.value,
-      'aria-expanded': () => optsOut.value ? undefined : activeCtx.value['aria-expanded'],
-      'aria-haspopup': () => optsOut.value ? undefined : activeCtx.value['aria-haspopup'],
-      'aria-controls': () => optsOut.value ? undefined : activeCtx.value['aria-controls'],
-      'aria-label': () => optsOut.value ? undefined : activeCtx.value['aria-label'],
-      'aria-labelledby': () => optsOut.value ? undefined : activeCtx.value['aria-labelledby'],
-      preventFocusOnPress: () => optsOut.value ? undefined : activeCtx.value.preventFocusOnPress,
-      excludeFromTabOrder: () => optsOut.value ? undefined : activeCtx.value.excludeFromTabOrder,
+      'aria-expanded': () => optsOut.value ? undefined : activeCtx()['aria-expanded'],
+      'aria-haspopup': () => optsOut.value ? undefined : activeCtx()['aria-haspopup'],
+      'aria-controls': () => optsOut.value ? undefined : activeCtx()['aria-controls'],
+      'aria-label': () => optsOut.value ? undefined : activeCtx()['aria-label'],
+      'aria-labelledby': () => optsOut.value ? undefined : activeCtx()['aria-labelledby'],
+      preventFocusOnPress: () => optsOut.value ? undefined : activeCtx().preventFocusOnPress,
+      excludeFromTabOrder: () => optsOut.value ? undefined : activeCtx().excludeFromTabOrder,
       onPress: (event) => {
         emit('press', event)
         if (!optsOut.value) {
-          activeCtx.value.onPress?.(event)
+          activeCtx().onPress?.(event)
         }
         if (slotName.value === 'close') close?.()
       },
-      onPressStart: (event) => { if (!optsOut.value) activeCtx.value.onPressStart?.(event); emit('pressstart', event) },
-      onPressEnd: (event) => { if (!optsOut.value) activeCtx.value.onPressEnd?.(event); emit('pressend', event) },
-      onPressUp: (event) => { if (!optsOut.value) activeCtx.value.onPressUp?.(event); emit('pressup', event) },
-      onPressChange: (isPressed) => { if (!optsOut.value) activeCtx.value.onPressChange?.(isPressed); emit('presschange', isPressed) },
-      onClick: (event) => { if (!optsOut.value) activeCtx.value.onClick?.(event); emit('click', event) },
+      onPressStart: (event) => { if (!optsOut.value) activeCtx().onPressStart?.(event); emit('pressstart', event) },
+      onPressEnd: (event) => { if (!optsOut.value) activeCtx().onPressEnd?.(event); emit('pressend', event) },
+      onPressUp: (event) => { if (!optsOut.value) activeCtx().onPressUp?.(event); emit('pressup', event) },
+      onPressChange: (isPressed) => { if (!optsOut.value) activeCtx().onPressChange?.(isPressed); emit('presschange', isPressed) },
+      onClick: (event) => { if (!optsOut.value) activeCtx().onClick?.(event); emit('click', event) },
     })
 
     return () => {
-      const ctx = optsOut.value ? {} : activeCtx.value
+      const ctx = optsOut.value ? {} : activeCtx()
       // Event handlers from context run before press handlers (official order:
       // context/DOMProps first, then useButton press props), so handlers like
       // useMenuTrigger's onKeyDown see the event before press preventDefaults it.

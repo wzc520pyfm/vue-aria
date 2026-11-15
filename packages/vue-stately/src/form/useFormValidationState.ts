@@ -97,18 +97,19 @@ export function useFormValidationState<T>(props: FormValidationProps<T>): FormVa
   }
 
   // If the isInvalid prop is controlled, update validation result in realtime.
+  // Backward compatibility (official): `validationState: 'invalid'` is treated
+  // as `isInvalid` even when `isInvalid` is unset.
   const controlledError = computed<ValidationResult | null>(() => {
-    const isInvalid = toValue(props.isInvalid)
+    let isInvalid = toValue(props.isInvalid)
+    const validationState = toValue(props.validationState)
+    if (validationState) {
+      isInvalid ||= validationState === 'invalid'
+    }
     if (isInvalid === undefined) {
       return null
     }
-    let combined = isInvalid
-    const validationState = toValue(props.validationState)
-    if (validationState === 'invalid') {
-      combined ||= true
-    }
     return {
-      isInvalid: combined,
+      isInvalid,
       validationErrors: [],
       validationDetails: CUSTOM_VALIDITY_STATE,
     }
