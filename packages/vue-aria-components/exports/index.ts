@@ -75,5 +75,9 @@ export {TimeField, TimeFieldContext, TimeFieldStateContext} from './TimeField'
 export type {TimeFieldProps, TimeFieldRenderProps} from './TimeField'
 export type {TimeValue, TimeFieldState} from 'vue-stately/useTimeFieldState'
 
+export {NumberField, NumberFieldContext, NumberFieldStateContext} from './NumberField'
+export type {NumberFieldProps, NumberFieldRenderProps} from './NumberField'
+export type {NumberFieldState} from 'vue-stately/useNumberFieldState'
+
 export {Group, GroupContext} from './Group'
 export type {GroupProps, GroupRenderProps} from './Group'

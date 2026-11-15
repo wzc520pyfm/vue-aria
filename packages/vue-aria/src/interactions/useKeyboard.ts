@@ -9,6 +9,7 @@
  * limitations under the License.
  */
 
+import {toValue, type MaybeRefOrGetter} from 'vue'
 import {chain} from '../utils/chain'
 import {
   createKeyboardShortcutHandler,
@@ -16,8 +17,8 @@ import {
 } from './createKeyboardShortcutHandler'
 
 export interface KeyboardProps {
-  /** Whether the keyboard events should be disabled. */
-  isDisabled?: boolean
+  /** Whether the keyboard events should be disabled. May be a live getter/ref. */
+  isDisabled?: MaybeRefOrGetter<boolean | undefined>
   onKeyDown?: (e: KeyboardEvent) => void
   onKeyUp?: (e: KeyboardEvent) => void
   /** Keyboard shortcuts to handle. Compatible extension of the existing hook. */
@@ -41,11 +42,15 @@ export interface KeyboardResult {
  * `nodeContains(currentTarget, target)` guard and synthetic
  * `continuePropagation` mechanics do not apply — non-matching keys propagate
  * natively. Shortcut handlers run through `createKeyboardShortcutHandler`.
+ * `isDisabled` is read live at event time (a boolean, ref, or getter is accepted)
+ * so a field that becomes disabled after setup stops handling keys without a
+ * remount — existing static boolean callers keep the same behavior.
  */
 export function useKeyboard(props: KeyboardProps): KeyboardResult {
-  if (props.isDisabled) {
-    return {keyboardProps: {}}
-  }
+  // Live disabled check — never snapshot at setup. Early returning `{keyboardProps: {}}`
+  // would freeze the setup-time disabled state, so handlers are always returned and the
+  // flag is honored when the event fires instead.
+  const isDisabled = () => Boolean(toValue(props.isDisabled))
 
   const {shortcuts, allowRepeats = false, allowComposing = false} = props
 
@@ -54,6 +59,9 @@ export function useKeyboard(props: KeyboardProps): KeyboardResult {
   if (shortcuts) {
     const shortcutHandler = createKeyboardShortcutHandler(shortcuts)
     const shortcutOnKeyDown = (e: KeyboardEvent) => {
+      if (isDisabled()) {
+        return
+      }
       if (
         (e.repeat && !allowRepeats) ||
         (e.isComposing && !allowComposing)
@@ -69,6 +77,27 @@ export function useKeyboard(props: KeyboardProps): KeyboardResult {
   } else {
     onKeyDown = props.onKeyDown
     onKeyUp = props.onKeyUp
+  }
+
+  // Wrap so plain (non-shortcut) handlers respect a live disabled flag too —
+  // mirrors the official early return, evaluated at event time instead of setup time.
+  if (onKeyDown) {
+    const userOnKeyDown = onKeyDown
+    onKeyDown = (e: KeyboardEvent) => {
+      if (isDisabled()) {
+        return
+      }
+      userOnKeyDown(e)
+    }
+  }
+  if (onKeyUp) {
+    const userOnKeyUp = onKeyUp
+    onKeyUp = (e: KeyboardEvent) => {
+      if (isDisabled()) {
+        return
+      }
+      userOnKeyUp(e)
+    }
   }
 
   const keyboardProps: Record<string, any> = {}
