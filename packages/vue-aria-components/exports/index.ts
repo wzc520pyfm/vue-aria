@@ -4,9 +4,10 @@
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
  * This batch adds collections/ListBox, action/selection Menu components,
- * Select, ComboBox, I18n primitives, the first Calendar slice, and the
- * single-value DatePicker on top of Button, overlays, and text primitives.
- * Sheet, DateRangePicker/RangeCalendar, Form, and FieldError remain deferred.
+ * Select, ComboBox, I18n primitives, the Calendar slice, the single-value
+ * DatePicker, and the RangeCalendar slice on top of Button, overlays, and
+ * text primitives. Sheet, DateRangePicker, Form, and FieldError remain
+ * deferred.
  */
 export {Button} from './Button'
 export type {ButtonType} from './Button'
@@ -54,6 +55,10 @@ export type {I18nProviderProps, Locale} from './I18nProvider'
 export {Calendar, CalendarGrid, CalendarGridHeader, CalendarGridBody, CalendarHeaderCell, CalendarCell, CalendarContext, CalendarStateContext} from './Calendar'
 export type {CalendarProps, CalendarRenderProps, CalendarGridProps, CalendarCellProps} from './Calendar'
 export type {DateValue, CalendarState, CalendarSelectionMode} from 'vue-stately/useCalendarState'
+
+export {RangeCalendar, RangeCalendarContext, RangeCalendarStateContext} from './RangeCalendar'
+export type {RangeCalendarProps, RangeCalendarRenderProps} from './RangeCalendar'
+export type {RangeCalendarState} from 'vue-stately/useRangeCalendarState'
 
 export {DateField, DateInput, DateSegment, DateFieldContext, DateFieldStateContext} from './DateField'
 export type {DateFieldProps, DateFieldRenderProps, DateInputProps, DateInputRenderProps, DateSegmentProps, DateSegmentRenderProps} from './DateField'

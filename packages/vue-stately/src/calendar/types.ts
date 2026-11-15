@@ -24,6 +24,14 @@ export type MappedDateValue<T> = T extends ZonedDateTime
 
 export type PageBehavior = 'single' | 'visible'
 
+/** A range of dates. */
+export interface RangeValue<T> {
+  /** The start of the range. */
+  start: T
+  /** The end of the range. */
+  end: T
+}
+
 export interface CalendarPropsBase {
   /** The minimum allowed date that a user may select. */
   minValue?: MaybeRefOrGetter<DateValue | null | undefined>
@@ -191,4 +199,29 @@ export interface CalendarState<M extends CalendarSelectionMode = 'single'>
   readonly value: CalendarValueType<CalendarDate | null, M>
   /** Sets the currently selected date. */
   setValue(value: CalendarValueType<CalendarDate | null, M>): void
+}
+
+export interface RangeCalendarState<T extends DateValue = DateValue> extends CalendarStateBase {
+  /** The currently selected date range. */
+  readonly value: RangeValue<T> | null
+  /** Sets the currently selected date range. */
+  setValue(value: RangeValue<T> | null): void
+  /** Highlights the given date during selection, e.g. by hovering or dragging. */
+  highlightDate(date: CalendarDate): void
+  /** The current anchor date that the user clicked on to begin range selection. */
+  readonly anchorDate: CalendarDate | null
+  /** Sets the anchor date that the user clicked on to begin range selection. */
+  setAnchorDate(date: CalendarDate | null): void
+  /** The currently highlighted date range. */
+  readonly highlightedRange: RangeValue<CalendarDate> | null
+  /** Whether the user is currently dragging over the calendar. */
+  readonly isDragging: boolean
+  /** Sets whether the user is dragging over the calendar. */
+  setDragging(isDragging: boolean): void
+  /** Clears the current selection. */
+  clearSelection(): void
+  /** Commits the current selection. */
+  commitSelection(): void
+  /** Focuses the next available day before or after the anchor date. */
+  focusNearestAvailableDate(anchorDate: CalendarDate): void
 }
