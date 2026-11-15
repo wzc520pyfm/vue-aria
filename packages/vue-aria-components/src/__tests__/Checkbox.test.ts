@@ -6,7 +6,7 @@
 import {defineComponent, h, nextTick, ref} from 'vue'
 import {mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it, vi} from 'vitest'
-import {dispatchPointer} from '../../../../test/dom-events'
+import {dispatchKey, dispatchPointer} from '../../../../test/dom-events'
 import {
   Checkbox,
   CheckboxButton,
@@ -561,6 +561,47 @@ describe('Checkbox keyboard interaction', () => {
     expect(changes).toEqual([true])
     const label = document.querySelector('label.react-aria-Checkbox') as HTMLLabelElement
     expect(label.getAttribute('data-selected')).toBe('true')
+    wrapper.unmount()
+  })
+})
+
+describe('Checkbox readonly focus ring', () => {
+  it('a readonly checkbox lights data-focused / data-focus-visible when the hidden input is focused, and never hovers', async () => {
+    const changes: boolean[] = []
+    const wrapper = mountInDoc(
+      defineComponent({
+        setup() {
+          return () =>
+            h(
+              CheckboxField as any,
+              {isReadOnly: true, onChange: (v: boolean) => changes.push(v)},
+              () => h(CheckboxButton as any, null, () => 'Accept'),
+            )
+        },
+      }),
+    )
+    await tick()
+    const label = document.querySelector('label.react-aria-CheckboxButton') as HTMLLabelElement
+    expect(label.getAttribute('data-readonly')).toBe('true')
+    const input = label.querySelector('input') as HTMLInputElement
+    // Readonly inputs stay tabbable: focusProps are merged onto the hidden input.
+    expect(input.disabled).toBe(false)
+
+    // Set keyboard modality first: module-level modality may still be
+    // 'pointer' from earlier pointer-driven tests in this file.
+    dispatchKey(document, 'keydown', {key: 'Tab', code: 'Tab'})
+    input.focus()
+    await tick()
+    expect(document.activeElement).toBe(input)
+    expect(label.getAttribute('data-focused')).toBe('true')
+    expect(label.getAttribute('data-focus-visible')).toBe('true')
+
+    // Readonly buttons never hover (interaction is disabled for hover only).
+    dispatchPointer(label, 'pointerdown')
+    dispatchPointer(label, 'pointerup')
+    await tick()
+    expect(label.getAttribute('data-hovered')).toBeNull()
+    expect(changes).toEqual([])
     wrapper.unmount()
   })
 })

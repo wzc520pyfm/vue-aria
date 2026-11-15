@@ -6,7 +6,7 @@
 import {defineComponent, h, nextTick, provide, ref} from 'vue'
 import {mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it, vi} from 'vitest'
-import {dispatchPointer} from '../../../../test/dom-events'
+import {dispatchKey, dispatchPointer} from '../../../../test/dom-events'
 import {
   Label,
   Switch,
@@ -252,6 +252,47 @@ describe('Switch (deprecated)', () => {
     expect(changes).toEqual([true])
     expect(input.checked).toBe(true)
     expect(label.getAttribute('data-selected')).toBe('true')
+    wrapper.unmount()
+  })
+})
+
+describe('Switch readonly focus ring', () => {
+  it('a readonly switch lights data-focused / data-focus-visible when the hidden input is focused, and never hovers', async () => {
+    const changes: boolean[] = []
+    const wrapper = mountInDoc(
+      defineComponent({
+        setup() {
+          return () =>
+            h(
+              SwitchField as any,
+              {isReadOnly: true, onChange: (v: boolean) => changes.push(v)},
+              () => h(SwitchButton as any, null, () => 'Low power mode'),
+            )
+        },
+      }),
+    )
+    await tick()
+    const button = document.querySelector('label.react-aria-SwitchButton') as HTMLLabelElement
+    expect(button.getAttribute('data-readonly')).toBe('true')
+    const input = button.querySelector('input') as HTMLInputElement
+    // Readonly inputs stay tabbable: focusProps are merged onto the hidden input.
+    expect(input.disabled).toBe(false)
+
+    // Set keyboard modality first: module-level modality may still be
+    // 'pointer' from earlier pointer-driven tests in this file.
+    dispatchKey(document, 'keydown', {key: 'Tab', code: 'Tab'})
+    input.focus()
+    await tick()
+    expect(document.activeElement).toBe(input)
+    expect(button.getAttribute('data-focused')).toBe('true')
+    expect(button.getAttribute('data-focus-visible')).toBe('true')
+
+    // Readonly buttons never hover (interaction is disabled for hover only).
+    dispatchPointer(button, 'pointerdown')
+    dispatchPointer(button, 'pointerup')
+    await tick()
+    expect(button.getAttribute('data-hovered')).toBeNull()
+    expect(changes).toEqual([])
     wrapper.unmount()
   })
 })

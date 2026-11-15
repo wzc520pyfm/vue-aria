@@ -655,9 +655,10 @@ export const RadioButton = defineComponent({
       onHoverEnd: props.onHoverEnd,
       onHoverChange: props.onHoverChange,
     })
-    const {isFocused, isFocusVisible, focusProps} = useFocusVisible({
-      isDisabled: interactionDisabled,
-    })
+    // Official parity (RadioGroup.tsx 469-474): `useFocusRing()` is called with
+    // no disabled flag — `interactionDisabled` only guards `useHover`, so a
+    // readonly focused input still lights `data-focused` / `data-focus-visible`.
+    const {isFocused, isFocusVisible, focusProps} = useFocusVisible()
 
     return () => {
       const values: RadioButtonRenderProps = {

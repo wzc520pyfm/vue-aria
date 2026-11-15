@@ -378,3 +378,51 @@ describe('Radio (deprecated)', () => {
     wrapper.unmount()
   })
 })
+
+describe('RadioButton readonly focus ring', () => {
+  it('a readonly radio lights data-focused / data-focus-visible when the hidden input is focused, and never hovers', async () => {
+    const changes: any[] = []
+    const wrapper = mountInDoc(
+      defineComponent({
+        setup() {
+          return () =>
+            h(
+              RadioGroup as any,
+              {name: 'colors', isReadOnly: true, onChange: (v: any) => changes.push(v)},
+              () => [
+                h(Label as any, null, () => 'Colors'),
+                h(
+                  RadioField as any,
+                  {value: 'red'},
+                  {default: () => [h(RadioButton as any, null, () => 'Red')]},
+                ),
+              ],
+            )
+        },
+      }),
+    )
+    await tick()
+    const button = document.querySelector('label.react-aria-RadioButton') as HTMLLabelElement
+    expect(button.getAttribute('data-readonly')).toBe('true')
+    const input = button.querySelector('input[type="radio"]') as HTMLInputElement
+    // Readonly inputs stay tabbable: focusProps are merged onto the hidden input.
+    expect(input.disabled).toBe(false)
+
+    // Set keyboard modality first: module-level modality may still be
+    // 'pointer' from earlier pointer-driven tests in this file.
+    dispatchKey(document, 'keydown', {key: 'Tab', code: 'Tab'})
+    input.focus()
+    await tick()
+    expect(document.activeElement).toBe(input)
+    expect(button.getAttribute('data-focused')).toBe('true')
+    expect(button.getAttribute('data-focus-visible')).toBe('true')
+
+    // Readonly buttons never hover (interaction is disabled for hover only).
+    dispatchPointer(button, 'pointerdown')
+    dispatchPointer(button, 'pointerup')
+    await tick()
+    expect(button.getAttribute('data-hovered')).toBeNull()
+    expect(changes).toEqual([])
+    wrapper.unmount()
+  })
+})

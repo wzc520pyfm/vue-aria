@@ -888,9 +888,10 @@ export const CheckboxButton = defineComponent({
       onHoverEnd: props.onHoverEnd,
       onHoverChange: props.onHoverChange,
     })
-    const {isFocused, isFocusVisible, focusProps} = useFocusVisible({
-      isDisabled: isInteractionDisabled,
-    })
+    // Official parity (Checkbox.tsx 506-511): `useFocusRing()` is called with
+    // no disabled flag — `isInteractionDisabled` only guards `useHover`, so a
+    // readonly focused input still lights `data-focused` / `data-focus-visible`.
+    const {isFocused, isFocusVisible, focusProps} = useFocusVisible()
 
     return () => {
       const values: CheckboxButtonRenderProps = {

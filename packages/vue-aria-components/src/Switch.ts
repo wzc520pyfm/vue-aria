@@ -491,9 +491,10 @@ export const SwitchButton = defineComponent({
       onHoverEnd: props.onHoverEnd,
       onHoverChange: props.onHoverChange,
     })
-    const {isFocused, isFocusVisible, focusProps} = useFocusVisible({
-      isDisabled: isInteractionDisabled,
-    })
+    // Official parity (Switch.tsx 384-390): `useFocusRing()` is called with
+    // no disabled flag — `isInteractionDisabled` only guards `useHover`, so a
+    // readonly focused input still lights `data-focused` / `data-focus-visible`.
+    const {isFocused, isFocusVisible, focusProps} = useFocusVisible()
 
     return () => {
       const values: SwitchButtonRenderProps = {
