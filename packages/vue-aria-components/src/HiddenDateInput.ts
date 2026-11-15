@@ -3,7 +3,11 @@
  * (`packages/react-aria-components/src/HiddenDateInput.tsx` at
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc),
  * adapted for Vue. Internal — deliberately NOT part of the public surface
- * (no subpath export). Only rendered by `DateField`, not `TimeField`.
+ * (no subpath export). Rendered by `DateField` (with a `DateFieldState`) and
+ * by `DatePicker` (with a `DatePickerState`), never by `TimeField`. When the
+ * state has no `setSegment` (DatePickerState), the native `date`/`datetime-local`
+ * value is committed directly via `setValue`; a `DateFieldState` first sets
+ * each segment so partially-typed input can be validated before committing.
  */
 
 import {
@@ -16,6 +20,7 @@ import {
 import {defineComponent, h, type PropType} from 'vue'
 import {useVisuallyHidden} from 'vue-aria/VisuallyHidden'
 import type {DateFieldState, DateSegmentType} from 'vue-stately/useDateFieldState'
+import type {DatePickerState} from 'vue-stately/useDatePickerState'
 
 const dateSegments = ['day', 'month', 'year']
 const granularityMap: Record<string, number> = {hour: 1, minute: 2, second: 3}
@@ -28,7 +33,7 @@ interface HiddenDateInputProps {
   /** Sets the disabled state of the input. */
   isDisabled?: boolean
   /** State for the input. */
-  state: DateFieldState
+  state: DateFieldState | DatePickerState
 }
 
 export const HiddenDateInput = defineComponent({
@@ -37,7 +42,7 @@ export const HiddenDateInput = defineComponent({
     autoComplete: {type: String, default: undefined},
     name: {type: String, default: undefined},
     isDisabled: {type: Boolean, default: undefined},
-    state: {type: Object as PropType<DateFieldState>, required: true},
+    state: {type: Object as PropType<DateFieldState | DatePickerState>, required: true},
   },
   setup(props: HiddenDateInputProps) {
     const {visuallyHiddenProps} = useVisuallyHidden({
@@ -94,19 +99,23 @@ export const HiddenDateInput = defineComponent({
           if (props.state.granularity === 'day') {
             targetValue = parseDate(targetString) as any
           }
-          // The setValue method first checks to make sure each segment is filled before
-          // committing the new value, so we first set each segment to validate it before
-          // committing the new value.
-          const activeTimeSegments = getTimeSegments()
-          for (const type in targetValue as any) {
-            if (dateSegments.includes(type)) {
-              props.state.setSegment(type as DateSegmentType, (targetValue as any)[type])
-            }
-            if (activeTimeSegments.includes(type)) {
-              props.state.setSegment(type as DateSegmentType, (targetValue as any)[type])
+          // The setValue method of a DateFieldState first checks that each segment is filled
+          // before committing the new value, so each segment is set first to validate it before
+          // committing the new value. DatePickerState has no setSegment — the value is committed
+          // directly (a picker can commit values from the calendar popover, and from empty).
+          if ('setSegment' in props.state) {
+            const activeTimeSegments = getTimeSegments()
+            const fieldState = props.state as DateFieldState
+            for (const type in targetValue as any) {
+              if (dateSegments.includes(type)) {
+                fieldState.setSegment(type as DateSegmentType, (targetValue as any)[type])
+              }
+              if (activeTimeSegments.includes(type)) {
+                fieldState.setSegment(type as DateSegmentType, (targetValue as any)[type])
+              }
             }
           }
-          props.state.setValue(targetValue)
+          props.state.setValue(targetValue as any)
         } catch {
           // ignore
         }

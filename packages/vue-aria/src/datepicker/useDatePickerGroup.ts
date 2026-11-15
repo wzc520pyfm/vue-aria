@@ -20,7 +20,9 @@ export function useDatePickerGroup(
   ref: {value: Element | null} | Ref<Element | null>,
   disableArrowNavigation?: boolean,
 ): Record<string, any> {
-  const {direction} = useLocale()
+  const i18n = useLocale()
+  // Direction is read live at event time so a post-mount I18nProvider
+  // locale/direction switch is honored (RTL arrow-key navigation).
   const focusManager = createFocusManager(ref as Ref<Element | null>)
 
   const {keyboardProps} = useKeyboard({
@@ -43,7 +45,7 @@ export function useDatePickerGroup(
         if (disableArrowNavigation) {
           return false
         }
-        if (direction === 'rtl') {
+        if (i18n.direction === 'rtl') {
           if (ref.value) {
             const target = getEventTarget(e) as HTMLElement | null
             const prev = target
@@ -65,7 +67,7 @@ export function useDatePickerGroup(
         if (disableArrowNavigation) {
           return false
         }
-        if (direction === 'rtl') {
+        if (i18n.direction === 'rtl') {
           if (ref.value) {
             const target = getEventTarget(e) as HTMLElement | null
             const next = target

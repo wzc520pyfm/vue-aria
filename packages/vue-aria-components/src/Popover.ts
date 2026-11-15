@@ -87,6 +87,10 @@ export const Popover = defineComponent({
       (context?.triggerRef as any) ??
       triggerFromContext ??
       fallbackTriggerRef
+    // Focus restore target: the context may split positioning (triggerRef)
+    // from restoration (restoreRef). Defaults to the positioning ref.
+    const restoreRef: Ref<Element | null | undefined> =
+      (context?.restoreRef as any) ?? triggerRef
 
     const isSubmenu = computed(() => context?.trigger === 'SubmenuTrigger')
     const effectivePlacement = computed(() => {
@@ -147,7 +151,7 @@ export const Popover = defineComponent({
       contain: () => shouldContainFocus.value,
       autoFocus: () => shouldAutoFocusPopover.value,
       // Restore focus to the trigger when the popover closes.
-      restoreTo: () => (triggerRef.value as Element | null | undefined) ?? null,
+      restoreTo: () => (restoreRef.value as Element | null | undefined) ?? null,
       restoreFocus: () => true,
       isActive: () => shouldMount.value,
     })

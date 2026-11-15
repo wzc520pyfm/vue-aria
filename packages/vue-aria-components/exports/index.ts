@@ -4,9 +4,9 @@
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
  * This batch adds collections/ListBox, action/selection Menu components,
- * Select, ComboBox, I18n primitives, and the first Calendar slice on top
- * of Button, overlays, and text primitives. Sheet and the remaining dates
- * work remain deferred.
+ * Select, ComboBox, I18n primitives, the first Calendar slice, and the
+ * single-value DatePicker on top of Button, overlays, and text primitives.
+ * Sheet, DateRangePicker/RangeCalendar, Form, and FieldError remain deferred.
  */
 export {Button} from './Button'
 export type {ButtonType} from './Button'
@@ -58,6 +58,10 @@ export type {DateValue, CalendarState, CalendarSelectionMode} from 'vue-stately/
 export {DateField, DateInput, DateSegment, DateFieldContext, DateFieldStateContext} from './DateField'
 export type {DateFieldProps, DateFieldRenderProps, DateInputProps, DateInputRenderProps, DateSegmentProps, DateSegmentRenderProps} from './DateField'
 export type {DateFieldState} from 'vue-stately/useDateFieldState'
+
+export {DatePicker, DatePickerContext, DatePickerStateContext} from './DatePicker'
+export type {DatePickerProps, DatePickerRenderProps} from './DatePicker'
+export type {DatePickerState} from 'vue-stately/useDatePickerState'
 
 export {TimeField, TimeFieldContext, TimeFieldStateContext} from './TimeField'
 export type {TimeFieldProps, TimeFieldRenderProps} from './TimeField'

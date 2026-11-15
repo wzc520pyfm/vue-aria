@@ -79,6 +79,7 @@ export function useField(props: AriaFieldProps): FieldAria {
         return parts.length ? parts.join(' ') : undefined
       },
       enumerable: true,
+      configurable: true,
     },
   })
 

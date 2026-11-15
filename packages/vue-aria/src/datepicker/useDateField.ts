@@ -4,8 +4,10 @@
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc),
  * adapted for Vue. All returned `*Props` are plain objects backed by live
  * getters (never ComputedRefs), matching the established hook contract.
- * The `roleSymbol` / `focusManagerSymbol` private props belong to the deferred
- * DatePicker/DateRangePicker and are intentionally not ported.
+ * `roleSymbol` marks the internal presentation wiring: a field composed inside
+ * a DatePicker is `role="presentation"` (the picker's outer Group owns the
+ * group semantics) and the selected-date description is provided once by the
+ * picker, not by the field. Internal — not part of the public surface.
  */
 
 import type {
@@ -24,6 +26,13 @@ import datepickerStrings from '../i18n/datepickerStrings'
 import {useDatePickerGroup} from './useDatePickerGroup'
 import {mergeProps} from '../utils/mergeProps'
 import {toValue, watch, type MaybeRefOrGetter, type Ref} from 'vue'
+
+// Private prop (internal): when `'presentation'`, the field is composed inside
+// a DatePicker — it renders `role="presentation"`, reuses the picker's outer
+// `aria-describedby` instead of adding its own selected-date description, and
+// disables arrow-key navigation (the picker's outer group handles it, so
+// Alt+ArrowDown/Up opens the popover exactly once).
+export const roleSymbol: string = '__vueAriaDateFieldRole'
 
 export interface AriaDateFieldProps<T extends DateValue = DateValue> {
   /** The label for the field. */
@@ -108,9 +117,10 @@ export function useDateField<T extends DateValue = DateValue>(
   state: DateFieldState,
   ref: Ref<Element | null>,
 ): DateFieldAria {
-  const isInvalid = state.displayValidation.isInvalid
-  const validationErrors = state.displayValidation.validationErrors
-  const validationDetails = state.displayValidation.validationDetails
+  // Read validation live — never snapshot at setup time.
+  const isInvalid = () => state.displayValidation.isInvalid
+  const validationErrors = () => state.displayValidation.validationErrors
+  const isPresentation = () => toValue((props as any)[roleSymbol]) === 'presentation'
 
   const {labelProps, fieldProps, descriptionProps, errorMessageProps} = useField({
     id: () => toValue(props.id),
@@ -119,10 +129,23 @@ export function useDateField<T extends DateValue = DateValue>(
     'aria-label': () => toValue(props['aria-label']),
     labelElementType: 'span',
     description: () => toValue(props.description),
-    errorMessage: () => toValue(props.errorMessage) || validationErrors,
-    isInvalid: () => isInvalid,
+    errorMessage: () => toValue(props.errorMessage) || validationErrors(),
+    isInvalid,
     'aria-describedby': () => toValue(props['aria-describedby']),
   })
+
+  // A presentation field (composed inside a DatePicker) reuses the picker's own
+  // `aria-describedby` — which already carries the picker's selected-date
+  // description and error message ids — instead of computing its own description /
+  // error ids through the local `useField` slot resolution (which would produce
+  // stale/unresolved ids for a field that owns none of its own).
+  if (isPresentation()) {
+    Object.defineProperty(fieldProps, 'aria-describedby', {
+      get: () => toValue(props['aria-describedby']) || undefined,
+      enumerable: true,
+      configurable: true,
+    })
+  }
 
   const valueOnFocus = {current: null as DateValue | null}
   const {focusWithinProps} = useFocusWithin({
@@ -155,13 +178,20 @@ export function useDateField<T extends DateValue = DateValue>(
   }
   const descProps = useDescription(() => description.value)
 
-  // Add the field's value description.
+  // Add the field's value description. A presentation field (inside a DatePicker)
+  // reuses the picker's `aria-describedby` and does not add its own — the picker's
+  // outer group owns the description.
   const describedBy = () =>
-    [descProps['aria-describedby'], fieldProps['aria-describedby']].filter(Boolean).join(' ') ||
-    undefined
+    isPresentation()
+      ? toValue((fieldProps as any)['aria-describedby']) || undefined
+      : [descProps['aria-describedby'], fieldProps['aria-describedby']].filter(Boolean).join(' ') ||
+        undefined
 
   const focusManager = createFocusManager(ref)
-  const groupProps = useDatePickerGroup(state, ref as any)
+  // A presentation field (inside a DatePicker) disables arrow-key navigation —
+  // the picker's outer group handles ArrowLeft/Right and Alt+ArrowDown/Up, so
+  // the inner field must not repeat them (the DOM events bubble once).
+  const groupProps = useDatePickerGroup(state, ref as any, isPresentation())
 
   // Pass labels and other information to segments.
   hookData.set(state, {
@@ -247,26 +277,38 @@ export function useDateField<T extends DateValue = DateValue>(
     })
   }
 
-  const fieldAriaProps: Record<string, any> = {
-    role: 'group',
+  // When used within a date picker, the field gets role="presentation" rather
+  // than role="group". Since the picker already has a role="group" with a label
+  // and description, and the segments are labeled by it as well, this avoids
+  // duplicate announcements. The outer picker group owns aria-disabled and the
+  // description — the presentation field repeats neither.
+  const fieldDOMProps: Record<string, any> = {}
+  if (isPresentation()) {
+    Object.defineProperty(fieldDOMProps, 'role', {
+      get: () => 'presentation',
+      enumerable: true,
+      configurable: true,
+    })
+  } else {
+    fieldDOMProps.role = 'group'
+    Object.defineProperties(fieldDOMProps, {
+      'aria-disabled': {
+        get: () => (toValue(props.isDisabled) ? true : undefined),
+        enumerable: true,
+        configurable: true,
+      },
+      'aria-describedby': {
+        get: describedBy,
+        enumerable: true,
+        configurable: true,
+      },
+    })
   }
-  Object.defineProperties(fieldAriaProps, {
-    'aria-disabled': {
-      get: () => (toValue(props.isDisabled) ? true : undefined),
-      enumerable: true,
-      configurable: true,
-    },
-    'aria-describedby': {
-      get: describedBy,
-      enumerable: true,
-      configurable: true,
-    },
-  })
 
   const mergedFieldProps = mergeProps(
     domProps,
     fieldProps,
-    fieldAriaProps as any,
+    fieldDOMProps as any,
     groupProps,
     focusWithinProps as any,
     {

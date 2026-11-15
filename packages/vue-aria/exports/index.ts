@@ -141,6 +141,9 @@ export type {AriaDateFieldProps, AriaDateFieldOptions, DateFieldAria} from './us
 export type {DateSegmentAria} from './useDateField'
 export type {MappedDateValue} from 'vue-stately/useDateFieldState'
 
+export {useDatePicker} from './useDatePicker'
+export type {AriaDatePickerProps, DatePickerAria} from './useDatePicker'
+
 export {useTimeField} from './useTimeField'
 export type {AriaTimeFieldProps, AriaTimeFieldOptions} from './useTimeField'
 export type {TimeValue, MappedTimeValue} from 'vue-stately/useTimeFieldState'

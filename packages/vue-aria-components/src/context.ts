@@ -26,6 +26,13 @@ export const ButtonCloseKey: InjectionKey<() => void> = Symbol('ButtonClose')
 export const InModalKey: InjectionKey<boolean> = Symbol('InModal')
 export interface PopoverContextValue {
   triggerRef: Ref<Element | null>
+  /**
+   * Optional separate ref for focus restoration when the popover closes. The
+   * positioning ref (`triggerRef`) and the restore ref are split so a trigger
+   * that is not focusable (e.g. the DatePicker's `role=group` div) can still
+   * restore focus to a real trigger (e.g. the calendar button).
+   */
+  restoreRef?: Ref<Element | null>
   id?: string
   'aria-labelledby'?: string
   trigger?: string
@@ -34,6 +41,8 @@ export interface PopoverContextValue {
   scrollRef?: Ref<HTMLElement | null>
   isNonModal?: boolean
   shouldCloseOnInteractOutside?: (element: Element) => boolean
+  /** Contexts to clear for anything composed inside the popover (e.g. trigger contexts). */
+  clearContexts?: InjectionKey<any>[]
 }
 export const PopoverContextKey: InjectionKey<PopoverContextValue> = Symbol('PopoverContext')
 export const OverlayArrowContextKey: InjectionKey<{placement: Ref<PlacementAxis | undefined>}> = Symbol('OverlayArrow')
