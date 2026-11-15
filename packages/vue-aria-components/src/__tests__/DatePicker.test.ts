@@ -198,6 +198,35 @@ describe('DatePicker (single-value)', () => {
     wrapper.unmount()
   })
 
+  it('opens the popover with a live, real aria-labelledby on the Dialog (never [object Object])', async () => {
+    const {wrapper} = mountDatePicker({defaultValue: new CalendarDate(2024, 2, 3)})
+    await tick(3)
+
+    const openButton = Array.from(document.querySelectorAll('button')).find((b) =>
+      (b.textContent || '').includes('▾'),
+    ) as HTMLButtonElement
+    expect(openButton).toBeTruthy()
+    await click(openButton)
+    await tick(2)
+    expect(document.querySelector('[role="dialog"]')).toBeTruthy()
+
+    const dialog = document.querySelector('[role="dialog"]') as HTMLElement
+    const labelledBy = dialog.getAttribute('aria-labelledby') || ''
+    // The dialog must receive a live id string, not the raw property-descriptor
+    // object (which would render as `[object Object]`).
+    expect(labelledBy).not.toBe('[object Object]')
+    expect(labelledBy).toBeTypeOf('string')
+    const ids = labelledBy.split(' ').filter(Boolean)
+    // Space-separated: trigger button id first, generated Label id second.
+    expect(ids).toHaveLength(2)
+    expect(ids[0]).toBe(openButton.id)
+    const labelEl = document.getElementById(ids[1]) as HTMLElement | null
+    expect(labelEl).toBeTruthy()
+    expect(labelledBy).toBe(`${openButton.id} ${labelEl!.id}`)
+    expect(labelEl!.textContent).toContain('Birth date')
+    wrapper.unmount()
+  })
+
   it('opens the popover via Alt+ArrowDown and Alt+ArrowUp from a segment, only once each', async () => {
     const {wrapper} = mountDatePicker({'aria-label': 'Birth'})
     await tick(3)
@@ -818,6 +847,16 @@ describe('DatePicker (single-value)', () => {
       'function',
     )
     expect(Object.getOwnPropertyDescriptor(withAria!.fieldProps, 'value')?.get).toBeTypeOf('function')
+    // dialogProps must be a plain object with live getters, never a descriptor
+    // object assigned as a value (which would surface as `[object Object]`).
+    expect(Object.getOwnPropertyDescriptor(withAria!.dialogProps, 'aria-labelledby')?.get).toBeTypeOf(
+      'function',
+    )
+    const dialogAriaLabelledBy = (withAria!.dialogProps as any)['aria-labelledby']
+    expect(dialogAriaLabelledBy).toBeTypeOf('string')
+    expect(dialogAriaLabelledBy).not.toBe('[object Object]')
+    expect(Object.getOwnPropertyDescriptor(withAria!.dialogProps, 'id')?.get).toBeTypeOf('function')
+    expect((withAria!.dialogProps as any).id).toBeTypeOf('string')
     expect(state!.value).toBe(null)
     expect(state!.isOpen.value).toBe(false)
   })

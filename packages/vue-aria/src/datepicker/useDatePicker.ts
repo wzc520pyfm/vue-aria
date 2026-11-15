@@ -437,13 +437,15 @@ export function useDatePicker<T extends DateValue = DateValue>(
     descriptionProps,
     errorMessageProps,
     dialogProps: {
-      id: dialogId.value,
-      'aria-labelledby': {
-        get() {
-          return `${buttonId.value} ${labelledBy()}`
-        },
-        enumerable: true,
-        configurable: true,
+      // Live getter-backed props (never a property-descriptor object used as a
+      // value, which would render as `[object Object]` in the DOM), consistent
+      // with the group/button/field props above. `id` stays live too — it is
+      // read through the getter, never snapshotted at setup time.
+      get id() {
+        return dialogId.value
+      },
+      get 'aria-labelledby'() {
+        return `${buttonId.value} ${labelledBy()}`
       },
     } as any,
     calendarProps,
