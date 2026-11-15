@@ -14,3 +14,8 @@ export function containsEventTarget(
     ? currentTarget.contains(eventTarget)
     : currentTarget === eventTarget
 }
+
+/** Returns the event target element, if any (official `getEventTarget`). */
+export function getEventTarget(e: Event): Element | null {
+  return (e.target as Element | null) ?? null
+}

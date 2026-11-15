@@ -4,8 +4,9 @@
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc).
  *
  * This batch adds collections/ListBox, Menu, Select, ComboBox, Calendar,
- * RangeCalendar, Date/Time Field, DatePicker, and DateRangePicker state on top
- * of the interaction hooks and Hero UI Vue behavior contract.
+ * RangeCalendar, Date/Time Field, DatePicker, DateRangePicker, NumberField,
+ * SearchField state, and the Checkbox / Radio / Switch toggle state slice on
+ * top of the interaction hooks and Hero UI Vue behavior contract.
  */
 export {useOverlayTriggerState} from './useOverlayTriggerState'
 export type {
@@ -99,3 +100,12 @@ export type {NumberFieldStateOptions, NumberFieldProps, NumberFieldState} from '
 
 export {useSearchFieldState} from './useSearchFieldState'
 export type {SearchFieldProps, SearchFieldState} from './useSearchFieldState'
+
+export {useToggleState} from './useToggleState'
+export type {ToggleProps, ToggleState, ToggleStateOptions} from './useToggleState'
+
+export {useCheckboxGroupState} from './useCheckboxGroupState'
+export type {CheckboxGroupProps, CheckboxGroupState} from './useCheckboxGroupState'
+
+export {useRadioGroupState} from './useRadioGroupState'
+export type {RadioGroupProps, RadioGroupState} from './useRadioGroupState'

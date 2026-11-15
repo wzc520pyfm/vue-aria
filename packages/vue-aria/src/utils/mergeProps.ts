@@ -17,6 +17,12 @@ export function mergeProps<T extends PropsArg[]>(...args: T): Props {
       const existingDesc = Object.getOwnPropertyDescriptor(result, key)
       const a = (result as any)[key]
       const b = (arg as any)[key]
+      // Vue patches props by comparing live-read values per key; a key that
+      // exists but reads `undefined` would hide its own later appearance from
+      // the diff (prev reads 'true' at patch time === next). Skip
+      // undefined-valued entries entirely — the key disappears and Vue's
+      // old-key-absent handling sets/removes the attribute correctly.
+      if (b === undefined) continue
       if (typeof a === 'function' && typeof b === 'function' && (!desc || ('value' in desc)) && (!existingDesc || ('value' in existingDesc))) {
         if (a === b) {
           // Identical reference already in the chain — do not double-invoke.
@@ -26,11 +32,36 @@ export function mergeProps<T extends PropsArg[]>(...args: T): Props {
         Object.defineProperty(result, key, {value: chain(a, b), enumerable: true, configurable: true, writable: true})
         continue
       }
-      if (b === undefined) continue
       if (desc && ('get' in desc || 'set' in desc)) {
-        // Preserve accessor so reads stay reactive/live.
-        Object.defineProperty(result, key, {...desc, enumerable: true, configurable: true})
-      } else if (desc) {
+        // Vue proxies may report `set: undefined` on getter-only accessors —
+        // treat the setter as absent so writes can replace the property.
+        const hasGet = typeof desc.get === 'function'
+        const hasSet = typeof desc.set === 'function'
+        if (hasGet && hasSet) {
+          Object.defineProperty(result, key, {get: desc.get, set: desc.set, enumerable: true, configurable: true})
+        } else if (hasGet) {
+          // Getter-only accessor: keep the live getter but allow writes to
+          // replace the property with a plain value (no setter exists to
+          // delegate to), so later code can still mutate the merged result.
+          Object.defineProperty(result, key, {
+            get: desc.get,
+            set: (value: any) => {
+              Object.defineProperty(result, key, {
+                value,
+                enumerable: true,
+                configurable: true,
+                writable: true,
+              })
+            },
+            enumerable: true,
+            configurable: true,
+          })
+        } else {
+          Object.defineProperty(result, key, {set: desc.set, enumerable: true, configurable: true})
+        }
+        continue
+      }
+      if (desc) {
         Object.defineProperty(result, key, {...desc, enumerable: true, configurable: true})
       } else {
         ;(result as any)[key] = b

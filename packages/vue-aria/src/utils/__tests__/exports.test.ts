@@ -9,6 +9,9 @@ import {
   mergeProps,
   toHeroDataAttrs,
   useButton,
+  useCheckbox,
+  useCheckboxGroup,
+  useCheckboxGroupItem,
   useDialog,
   useFocusScope,
   useFocusVisible,
@@ -28,8 +31,11 @@ import {
   usePresenceState,
   usePress,
   usePreventScroll,
+  useRadio,
+  useRadioGroup,
   useSelect,
   useSelectable,
+  useSwitch,
   useTooltip,
   useTooltipTrigger,
 } from 'vue-aria'
@@ -42,7 +48,16 @@ import type {
   HiddenSelectProps,
   SelectAria,
 } from 'vue-aria'
-import {useOverlayTriggerState, useTooltipTriggerState} from 'vue-stately'
+import * as vueAriaRoot from 'vue-aria'
+import * as vueAriaComponentsRoot from 'vue-aria-components'
+import * as vueStatelyRoot from 'vue-stately'
+import {
+  useCheckboxGroupState,
+  useOverlayTriggerState,
+  useRadioGroupState,
+  useToggleState,
+  useTooltipTriggerState,
+} from 'vue-stately'
 
 describe('vue-aria main entry', () => {
   it('re-exports the first-batch public surface and overlay hooks', () => {
@@ -200,5 +215,107 @@ describe('vue-aria main entry', () => {
     expect(isRef(sectionGroupProps)).toBe(false)
     expect(listBoxProps.role).toBe('listbox')
     expect(optionProps.role).toBe('option')
+  })
+
+  it('exposes the Checkbox / Radio / Switch hook slice and its state hooks', () => {
+    expect(typeof useCheckbox).toBe('function')
+    expect(typeof useCheckboxGroup).toBe('function')
+    expect(typeof useCheckboxGroupItem).toBe('function')
+    expect(typeof useRadio).toBe('function')
+    expect(typeof useRadioGroup).toBe('function')
+    expect(typeof useSwitch).toBe('function')
+    expect(typeof useToggleState).toBe('function')
+    expect(typeof useCheckboxGroupState).toBe('function')
+    expect(typeof useRadioGroupState).toBe('function')
+    expect(typeof vueStatelyRoot.useToggleState).toBe('function')
+    expect(typeof vueStatelyRoot.useCheckboxGroupState).toBe('function')
+    expect(typeof vueStatelyRoot.useRadioGroupState).toBe('function')
+  })
+
+  it('exposes the Checkbox / Radio / Switch components and contexts', () => {
+    const names = [
+      'Checkbox',
+      'CheckboxGroup',
+      'CheckboxField',
+      'CheckboxButton',
+      'CheckboxContext',
+      'CheckboxFieldContext',
+      'CheckboxGroupContext',
+      'CheckboxGroupStateContext',
+      'RadioGroup',
+      'Radio',
+      'RadioField',
+      'RadioButton',
+      'RadioGroupContext',
+      'RadioContext',
+      'RadioFieldContext',
+      'RadioGroupStateContext',
+      'Switch',
+      'SwitchField',
+      'SwitchButton',
+      'SwitchContext',
+      'SwitchFieldContext',
+    ]
+    for (const name of names) {
+      expect((vueAriaComponentsRoot as Record<string, unknown>)[name], name).toBeDefined()
+    }
+  })
+
+  it('keeps internal and deferred names off the public surface', () => {
+    // Must-not-export list from the checkbox/radio/switch slice brief, plus
+    // the previously established deferred names.
+    const vueAriaAbsent = [
+      'useToggle',
+      'useToggleGroupState',
+      'useFocusable',
+      'Focusable',
+      'FocusableProvider',
+      'filterDOMProps',
+      'useFormValidation',
+      'useFormValidationState',
+      'FormValidationContext',
+      'Form',
+      'FormContext',
+      'FieldError',
+      'FieldErrorContext',
+      'useEvent',
+      'SelectionIndicator',
+      'SharedElementTransition',
+      'getFocusableTreeWalker',
+      'ToggleButton',
+      'ToggleButtonGroup',
+    ]
+    for (const name of vueAriaAbsent) {
+      expect(vueAriaRoot as Record<string, unknown>, name).not.toHaveProperty(name)
+    }
+
+    const vueStatelyAbsent = ['useToggle', 'useToggleGroupState', 'useFormValidationState', 'useEvent']
+    for (const name of vueStatelyAbsent) {
+      expect(vueStatelyRoot as Record<string, unknown>, name).not.toHaveProperty(name)
+    }
+
+    const componentsAbsent = [
+      'useToggle',
+      'useFocusable',
+      'Focusable',
+      'FocusableProvider',
+      'filterDOMProps',
+      'useFormValidation',
+      'useFormValidationState',
+      'FormValidationContext',
+      'Form',
+      'FormContext',
+      'FieldError',
+      'FieldErrorContext',
+      'useEvent',
+      'SelectionIndicator',
+      'SharedElementTransition',
+      'getFocusableTreeWalker',
+      'ToggleButton',
+      'ToggleButtonGroup',
+    ]
+    for (const name of componentsAbsent) {
+      expect(vueAriaComponentsRoot as Record<string, unknown>, name).not.toHaveProperty(name)
+    }
   })
 })

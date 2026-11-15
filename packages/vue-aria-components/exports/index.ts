@@ -7,7 +7,10 @@
  * Select, ComboBox, I18n primitives, the Calendar slice, the single-value
  * DatePicker slice, the RangeCalendar slice, the DateRangePicker slice, and the
  * NumberField slice on top of Button, overlays, and text primitives. The
- * TextField slice adds `TextField` / `TextArea` / `SearchField`. Sheet, Form,
+ * TextField slice adds `TextField` / `TextArea` / `SearchField`; the
+ * Checkbox / Radio / Switch slice adds `CheckboxGroup` / `CheckboxField` /
+ * `Checkbox` / `CheckboxButton`, `RadioGroup` / `RadioField` / `Radio` /
+ * `RadioButton`, and `SwitchField` / `Switch` / `SwitchButton`. Sheet, Form,
  * and FieldError remain deferred.
  */
 export {Button} from './Button'
@@ -91,3 +94,64 @@ export type {SearchFieldState} from 'vue-stately/useSearchFieldState'
 
 export {Group, GroupContext} from './Group'
 export type {GroupProps, GroupRenderProps} from './Group'
+
+export {
+  Checkbox,
+  CheckboxField,
+  CheckboxButton,
+  CheckboxContext,
+  CheckboxFieldContext,
+  CheckboxGroup,
+  CheckboxGroupContext,
+  CheckboxGroupStateContext,
+} from './Checkbox'
+export type {
+  CheckboxRenderProps,
+  CheckboxProps,
+  CheckboxFieldProps,
+  CheckboxButtonProps,
+  CheckboxFieldRenderProps,
+  CheckboxButtonRenderProps,
+  CheckboxGroupProps,
+  CheckboxGroupRenderProps,
+} from './Checkbox'
+export type {CheckboxGroupState} from 'vue-stately/useCheckboxGroupState'
+export type {ToggleState} from 'vue-stately/useToggleState'
+
+export {
+  Radio,
+  RadioField,
+  RadioButton,
+  RadioGroup,
+  RadioContext,
+  RadioFieldContext,
+  RadioGroupContext,
+  RadioGroupStateContext,
+} from './RadioGroup'
+export type {
+  RadioGroupProps,
+  RadioGroupRenderProps,
+  RadioProps,
+  RadioFieldProps,
+  RadioButtonProps,
+  RadioRenderProps,
+  RadioFieldRenderProps,
+  RadioButtonRenderProps,
+} from './RadioGroup'
+export type {RadioGroupState} from 'vue-stately/useRadioGroupState'
+
+export {
+  Switch,
+  SwitchField,
+  SwitchButton,
+  SwitchContext,
+  SwitchFieldContext,
+} from './Switch'
+export type {
+  SwitchProps,
+  SwitchFieldProps,
+  SwitchButtonProps,
+  SwitchRenderProps,
+  SwitchFieldRenderProps,
+  SwitchButtonRenderProps,
+} from './Switch'
