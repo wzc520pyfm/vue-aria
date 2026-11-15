@@ -77,6 +77,7 @@ export const Input = defineComponent({
         'required',
         'disabled',
         'readOnly',
+        'hidden',
         'role',
         'value',
         'aria-label',

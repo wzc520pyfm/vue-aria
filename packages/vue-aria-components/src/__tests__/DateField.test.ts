@@ -794,16 +794,18 @@ describe('DateField slice', () => {
     expect(typeof (components as any).DateInput).toBe('object')
     expect(typeof (components as any).DateSegment).toBe('object')
     expect(typeof (components as any).DatePicker).toBe('object')
+    expect(typeof (components as any).DateRangePicker).toBe('object')
     expect((components as any).DateFieldContext).toBeDefined()
     expect((components as any).TimeFieldContext).toBeDefined()
     expect((components as any).DateFieldStateContext).toBeDefined()
     expect((components as any).TimeFieldStateContext).toBeDefined()
     expect((components as any).DatePickerContext).toBeDefined()
     expect((components as any).DatePickerStateContext).toBeDefined()
+    expect((components as any).DateRangePickerContext).toBeDefined()
+    expect((components as any).DateRangePickerStateContext).toBeDefined()
     expect((components as any).Group).toBeDefined()
     expect((components as any).GroupContext).toBeDefined()
     for (const name of [
-      'DateRangePicker',
       'FieldError',
       'Form',
       'HiddenDateInput',
@@ -817,8 +819,8 @@ describe('DateField slice', () => {
     expect(typeof (vueAria as any).useDateSegment).toBe('function')
     expect(typeof (vueAria as any).useTimeField).toBe('function')
     expect(typeof (vueAria as any).useDatePicker).toBe('function')
+    expect(typeof (vueAria as any).useDateRangePicker).toBe('function')
     for (const name of [
-      'useDateRangePicker',
       'useSpinButton',
       'useDisplayNames',
       'useDatePickerGroup',
@@ -831,8 +833,8 @@ describe('DateField slice', () => {
     expect(typeof (vueStately as any).useDateFieldState).toBe('function')
     expect(typeof (vueStately as any).useTimeFieldState).toBe('function')
     expect(typeof (vueStately as any).useDatePickerState).toBe('function')
+    expect(typeof (vueStately as any).useDateRangePickerState).toBe('function')
     for (const name of [
-      'useDateRangePickerState',
       'IncompleteDate',
       'useFormValidationState',
     ]) {

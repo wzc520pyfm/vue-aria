@@ -528,11 +528,13 @@ export const DateInput = defineComponent({
   },
   setup(props, {slots, attrs}) {
     // If state is provided by DateField/TimeField, just render.
-    // Otherwise (e.g. in DatePicker), we need to call hooks and create state ourselves.
+    // Otherwise (e.g. in DatePicker/DateRangePicker), we need to call hooks and create state ourselves.
     const dateFieldState = inject(DateFieldStateContextKey, null)
     const timeFieldState = inject(TimeFieldStateContextKey, null)
     const inner = dateFieldState || timeFieldState ? DateInputInner : DateInputStandalone
-    return () => h(inner, attrs as any, slots)
+    // Forward the declared `slot` prop alongside the attrs (it is dropped
+    // otherwise, so a slotted standalone input loses its start/end binding).
+    return () => h(inner, {...attrs, slot: props.slot}, slots)
   },
 })
 
@@ -545,22 +547,34 @@ const DateInputStandalone = defineComponent({
   setup(props, {slots, attrs}) {
     const locale = useLocale()
     // useContextProps({slot}, DateFieldContext): merge slotted DateField props.
+    // When the context carries slots (a DateRangePicker provides
+    // `{slots: {start, end}}`), resolve the field by the declared `slot`;
+    // otherwise use the flat context so existing DatePicker usage keeps working.
     const dateFieldCtx = inject(DateFieldContextKey, null) as Record<string, any> | null
-    const ctx = dateFieldCtx ?? {}
+    const ctx =
+      dateFieldCtx && typeof dateFieldCtx === 'object' && (dateFieldCtx as any).slots
+        ? ((dateFieldCtx as any).slots[props.slot as string] ?? {})
+        : (dateFieldCtx ?? {})
 
     const fieldRef = ref<Element | null>(null)
     const inputRef = ref<HTMLInputElement | null>(null)
 
-    // Forward the picker-owned validation state and the presentation role:
-    // the inner field takes over the parent's validation instead of computing
-    // its own, and renders role="presentation" so the outer picker group owns
-    // the group semantics (no duplicated group role, description, or arrow keys).
+    // Forward the picker-owned validation state, the presentation role, and
+    // the shared focus manager: the inner field takes over the parent's
+    // validation instead of computing its own, renders role="presentation" so
+    // the outer picker group owns the group semantics (no duplicated group
+    // role, description, or arrow keys), and reuses the parent's focus manager
+    // (the DateRangePicker's excludes its trigger button) when one is provided.
     const forwardedPrivateValidation =
       ctx[privateValidationStateProp] !== undefined
         ? {[privateValidationStateProp]: ctx[privateValidationStateProp]}
         : {}
     const forwardedRole =
       ctx[roleSymbol] !== undefined ? {[roleSymbol]: ctx[roleSymbol]} : {}
+    const forwardedFocusManager =
+      ctx[focusManagerSymbol] !== undefined
+        ? {[focusManagerSymbol]: ctx[focusManagerSymbol]}
+        : {}
 
     const state = useDateFieldState({
       value: () => ctx.value,
@@ -610,6 +624,7 @@ const DateInputStandalone = defineComponent({
         autoFocus: () => ctx.autoFocus,
         inputRef,
         ...forwardedRole,
+        ...forwardedFocusManager,
       } as any,
       state as any,
       fieldRef as any,
@@ -624,7 +639,8 @@ const DateInputStandalone = defineComponent({
       DateFieldStateContextKey,
     )
 
-    return () => h(DateInputInner, attrs as any, slots)
+    // Forward the declared `slot` alongside attrs so the resolved input div keeps it.
+    return () => h(DateInputInner, {...attrs, slot: props.slot}, slots)
   },
 })
 
@@ -677,6 +693,7 @@ const DateInputInner = defineComponent({
 // the strings without public exports.
 const roleSymbol: string = '__vueAriaDateFieldRole'
 const privateValidationStateProp: string = '__vueAriaFormValidationState'
+const focusManagerSymbol: string = '__vueAriaDateFieldFocusManager'
 
 export interface DateSegmentRenderProps {
   isHovered: boolean

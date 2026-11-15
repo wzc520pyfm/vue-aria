@@ -71,7 +71,7 @@ This DatePicker slice adds the single-value `DatePicker` (date and date+time), c
 - `vue-aria`: `useDatePicker`
 - `vue-aria-components`: `DatePicker`, `DatePickerContext`, `DatePickerStateContext`; reuses `DateField` / `DateInput` / `DateSegment` / `Group` / `Button` / `Popover` / `Dialog` / `Calendar` / `Label` / `Text`
 
-Scope: single-value DatePicker only (date and date+time). Selecting a date from the calendar and typing in the segments stay in sync, the popover commits a pending date (plus a placeholder time) on close when a time has not been chosen, and `shouldCloseOnSelect` accepts a boolean, getter, ref, or callback and is re-read on every selection. DateRangePicker, `useDateRangePicker` / `useDateRangePickerState`, `Form`, `FieldError`, and their context stubs remain deferred and are not exported.
+Scope: single-value DatePicker only (date and date+time). Selecting a date from the calendar and typing in the segments stay in sync, the popover commits a pending date (plus a placeholder time) on close when a time has not been chosen, and `shouldCloseOnSelect` accepts a boolean, getter, ref, or callback and is re-read on every selection. Form, `FieldError`, and their context stubs remain deferred and are not exported.
 
 This RangeCalendar slice adds:
 
@@ -79,9 +79,17 @@ This RangeCalendar slice adds:
 - `vue-aria`: `useRangeCalendar`
 - `vue-aria-components`: `RangeCalendar`, `RangeCalendarContext`, `RangeCalendarStateContext`; reuses `CalendarGrid` / `CalendarGridBody` / `CalendarCell` from the Calendar slice; Grid/Cell also fall back to `RangeCalendarStateContext` when no single `CalendarStateContext` is present
 
-Scope: RangeCalendar only. Range selection works by two clicks or by mouse drag (touch drags are delayed 200 ms); keyboard selection (Enter/Space) uses `focusNearestAvailableDate`; dragging the start or end of the highlighted range adjusts the existing range; `commitBehavior` defaults to `'select'` when a pointer is released outside the calendar or focus leaves it, and is not triggered by the previous/next month buttons; `isDateUnavailable(date, anchorDate)` receives the live anchor date on every call; `allowsNonContiguousRanges` tightens the available range to the nearest unavailable date on each side when `false`; emitted dates keep the input calendar system (otherwise Gregorian) and preserve time. DateRangePicker, Form, FieldError, `useDateRangePicker` / `useDateRangePickerState`, and their context stubs remain deferred and are not exported.
+Scope: RangeCalendar only. Range selection works by two clicks or by mouse drag (touch drags are delayed 200 ms); keyboard selection (Enter/Space) uses `focusNearestAvailableDate`; dragging the start or end of the highlighted range adjusts the existing range; `commitBehavior` defaults to `'select'` when a pointer is released outside the calendar or focus leaves it, and is not triggered by the previous/next month buttons; `isDateUnavailable(date, anchorDate)` receives the live anchor date on every call; `allowsNonContiguousRanges` tightens the available range to the nearest unavailable date on each side when `false`; emitted dates keep the input calendar system (otherwise Gregorian) and preserve time. Form, `FieldError`, and their context stubs remain deferred and are not exported.
 
-DateRangePicker, `useDateRangePicker` / `useDateRangePickerState`, `FieldError`, `Form`, `NumberField` (and their context stubs), calendar month/year pickers and heading components, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
+This DateRangePicker slice adds the two-value `DateRangePicker` (date and date+time), composed from two `DateField`-style inner fields, a range calendar popover, and a trigger button:
+
+- `vue-stately`: `useDateRangePickerState`
+- `vue-aria`: `useDateRangePicker`
+- `vue-aria-components`: `DateRangePicker`, `DateRangePickerContext`, `DateRangePickerStateContext`; reuses `DateField` / `DateInput` / `DateSegment` / `Group` / `Button` / `Popover` / `Dialog` / `RangeCalendar` / `Label` / `Text`
+
+Scope: DateRangePicker only (date and date+time). Two standalone `DateInput slot="start"` / `slot="end"` resolve the start/end field contexts provided by the picker (the flat DateField context is kept for the single-value `DatePicker`); hidden inputs carry `startName` / `endName` and the popover is anchored to the group while focus restores to the trigger button on close; `shouldCloseOnSelect` accepts a boolean, getter, ref, or callback and is re-read on every selection; closing the popover with a complete range and `hasTime` commits a placeholder time; `isDateUnavailable(date, anchorDate)` receives the live anchor date on every call and `allowsNonContiguousRanges` flows to the calendar; reversed ranges surface `rangeReversed` and start/end validation errors are merged. Form, `FieldError`, calendar month/year pickers, heading components, and a public `useEvent` remain deferred and are not exported.
+
+Form, `FieldError`, `NumberField` (and their context stubs), calendar month/year pickers and heading components, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 

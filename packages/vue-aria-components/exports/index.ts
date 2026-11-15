@@ -5,9 +5,9 @@
  *
  * This batch adds collections/ListBox, action/selection Menu components,
  * Select, ComboBox, I18n primitives, the Calendar slice, the single-value
- * DatePicker, and the RangeCalendar slice on top of Button, overlays, and
- * text primitives. Sheet, DateRangePicker, Form, and FieldError remain
- * deferred.
+ * DatePicker slice, the RangeCalendar slice, and the DateRangePicker slice on
+ * top of Button, overlays, and text primitives. Sheet, Form, and FieldError
+ * remain deferred.
  */
 export {Button} from './Button'
 export type {ButtonType} from './Button'
@@ -67,6 +67,9 @@ export type {DateFieldState} from 'vue-stately/useDateFieldState'
 export {DatePicker, DatePickerContext, DatePickerStateContext} from './DatePicker'
 export type {DatePickerProps, DatePickerRenderProps} from './DatePicker'
 export type {DatePickerState} from 'vue-stately/useDatePickerState'
+export {DateRangePicker, DateRangePickerContext, DateRangePickerStateContext} from './DateRangePicker'
+export type {DateRangePickerProps, DateRangePickerRenderProps} from './DateRangePicker'
+export type {DateRangePickerState} from 'vue-stately/useDateRangePickerState'
 
 export {TimeField, TimeFieldContext, TimeFieldStateContext} from './TimeField'
 export type {TimeFieldProps, TimeFieldRenderProps} from './TimeField'
