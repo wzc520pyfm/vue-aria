@@ -89,6 +89,8 @@ export const Input = defineComponent({
         'aria-haspopup',
         'aria-controls',
         'aria-expanded',
+        'aria-required',
+        'aria-invalid',
         'onInput',
         'onChange',
         'onKeyDown',

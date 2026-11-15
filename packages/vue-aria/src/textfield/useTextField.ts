@@ -2,18 +2,29 @@
  * Port of `react-aria@3.53.1` `useTextField`
  * (`packages/react-aria/src/textfield/useTextField.ts` at
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc),
- * adapted for Vue and trimmed to the subset `useComboBox` needs:
- * value/onChange, label, description, errorMessage, disabled/readOnly/required/invalid,
- * autoComplete, focus/blur, and native `required`.
+ * adapted for Vue. Controlled/uncontrolled value state goes through
+ * `useControlledState`, validation through the internal
+ * `useFormValidationState` / `useFormValidation` / `useFormReset` machinery, and
+ * the rendered element type is a live `inputElementType` prop (`'input'` or
+ * `'textarea'`); a textarea receives no `type` / `pattern`.
  *
- * No I18nProvider / form-validation machinery here: validation state is read from props
- * (`isInvalid`), which is all the ComboBox slice needs. New hook *Props are plain objects
- * with live getters, not ComputedRefs.
+ * No I18nProvider / public form-validation machinery here beyond the internal
+ * hooks: validation state is derived from `isInvalid` / `validationState` /
+ * `validate` props and native validity. New hook *Props are plain objects with
+ * live getters, not ComputedRefs.
  */
 
-import {computed, toValue, type ComputedRef, type MaybeRefOrGetter, type Ref} from 'vue'
+import {computed, toValue, type MaybeRefOrGetter, type Ref} from 'vue'
 import {mergeProps} from '../utils/mergeProps'
+import {useControlledState} from '../../../vue-stately/src/utils/useControlledState'
 import {useField} from '../label/useField'
+import {useFormReset} from '../utils/useFormReset'
+import {useFormValidation} from '../form/useFormValidation'
+// vue-stately keeps `useFormValidationState` internal (no public subpath;
+// official reaches it via `react-stately/private/form/useFormValidationState`).
+// The workspace sources are part of the typecheck program and tests alias, so
+// import the internal module directly. tsup inlines it at build time.
+import {useFormValidationState} from '../../../vue-stately/src/form/useFormValidationState'
 
 export interface TextFieldProps<T = HTMLInputElement> {
   id?: MaybeRefOrGetter<string | undefined>
@@ -29,7 +40,24 @@ export interface TextFieldProps<T = HTMLInputElement> {
   isRequired?: MaybeRefOrGetter<boolean | undefined>
   isReadOnly?: MaybeRefOrGetter<boolean | undefined>
   isInvalid?: MaybeRefOrGetter<boolean | undefined>
+  /**
+   * Whether to use native HTML form validation to prevent form submission when the value is
+   * missing or invalid, or mark the field as invalid via ARIA instead.
+   *
+   * @default 'aria'
+   */
   validationBehavior?: MaybeRefOrGetter<'aria' | 'native' | undefined>
+  /**
+   * The current validation state of the field.
+   *
+   * @deprecated Use `isInvalid` instead.
+   */
+  validationState?: MaybeRefOrGetter<'valid' | 'invalid' | undefined>
+  /**
+   * A function that returns an error message if a given value is invalid, or `true` if the value is
+   * valid. Realtime validation is only performed when the value changes.
+   */
+  validate?: (value: string) => true | string | string[] | null | undefined
   autoComplete?: MaybeRefOrGetter<string | undefined>
   autoCapitalize?: MaybeRefOrGetter<string | undefined>
   maxLength?: MaybeRefOrGetter<number | undefined>
@@ -71,7 +99,17 @@ export interface AriaTextFieldProps<T = HTMLInputElement> extends TextFieldProps
 
 type TextFieldIntrinsicElements = 'input' | 'textarea'
 
-export interface AriaTextFieldOptions<T extends TextFieldIntrinsicElements = 'input'> extends AriaTextFieldProps {}
+export interface AriaTextFieldOptions<T extends TextFieldIntrinsicElements = 'input'>
+  extends AriaTextFieldProps {
+  /**
+   * The HTML element used to render the input, e.g. 'input', or 'textarea'. It determines whether
+   * certain HTML attributes will be included in `inputProps`. For example,
+   * [`type`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#attr-type).
+   *
+   * @default 'input'
+   */
+  inputElementType?: MaybeRefOrGetter<T | undefined>
+}
 
 export interface TextFieldAria<T extends TextFieldIntrinsicElements = 'input'> {
   /** Props for the input element. */
@@ -96,13 +134,39 @@ export interface TextFieldAria<T extends TextFieldIntrinsicElements = 'input'> {
  */
 export function useTextField<T extends TextFieldIntrinsicElements = 'input'>(
   props: AriaTextFieldOptions<T>,
-  _ref?: Ref<any | null>,
+  ref?: Ref<any | null>,
 ): TextFieldAria<T> {
+  const inputElementType = computed<T>(
+    () => (toValue(props.inputElementType as any) ?? 'input') as T,
+  )
   const isDisabled = computed(() => !!toValue(props.isDisabled as any))
   const isRequired = computed(() => !!toValue(props.isRequired as any))
   const isReadOnly = computed(() => !!toValue(props.isReadOnly as any))
-  const validationBehavior = computed<'aria' | 'native'>(() => (toValue(props.validationBehavior as any) ?? 'aria') as 'aria' | 'native')
-  const isInvalid = computed(() => !!toValue(props.isInvalid as any))
+  const validationBehavior = computed<'aria' | 'native'>(
+    () => (toValue(props.validationBehavior as any) ?? 'aria') as 'aria' | 'native',
+  )
+
+  const [value, setValue] = useControlledState<string>(
+    props.value as any,
+    () => toValue(props.defaultValue as any) || '',
+    props.onChange,
+  )
+
+  const validationState = useFormValidationState({
+    isInvalid: () => toValue(props.isInvalid as any),
+    validationState: () => toValue(props.validationState as any),
+    name: () => toValue(props.name as any),
+    value,
+    validate: props.validate as any,
+    validationBehavior,
+    builtinValidation: () => toValue((props as any).builtinValidation),
+  })
+  const displayValidation = computed(() => validationState.displayValidation)
+  const isInvalid = computed(() => !!displayValidation.value.isInvalid)
+  const validationErrors = computed<string[]>(() => displayValidation.value.validationErrors)
+  const validationDetails = computed<Record<string, any>>(
+    () => displayValidation.value.validationDetails as any,
+  )
 
   const {labelProps, fieldProps, descriptionProps, errorMessageProps} = useField({
     id: props.id,
@@ -110,24 +174,37 @@ export function useTextField<T extends TextFieldIntrinsicElements = 'input'>(
     'aria-labelledby': props['aria-labelledby'] as any,
     'aria-label': props['aria-label'] as any,
     labelElementType: 'label',
-    isInvalid: () => isInvalid.value,
+    isInvalid,
     description: props.description as any,
-    errorMessage: props.errorMessage as any,
+    errorMessage: (() => toValue(props.errorMessage as any) ?? validationErrors.value) as any,
     'aria-describedby': props['aria-describedby'] as any,
   })
 
+  const initialValue = value.value
+  useFormReset(ref, () => toValue(props.defaultValue as any) ?? initialValue, setValue)
+  useFormValidation(props as any, validationState, ref as any)
+
   const onInput = (e: InputEvent) => {
-    const value = (e.target as HTMLInputElement | HTMLTextAreaElement)?.value ?? ''
-    props.onChange?.(value)
+    const newValue = (e.target as HTMLInputElement | HTMLTextAreaElement)?.value ?? ''
+    setValue(newValue)
     props.onInput?.(e)
   }
 
   const inputOnlyProps: Record<string, any> = {}
-  // `type` only applies to <input>; pattern only to <input> as well.
-  Object.defineProperty(inputOnlyProps, 'type', {get: () => (toValue(props.type as any) ?? 'text'), enumerable: true, configurable: true})
-  if (props.pattern !== undefined) {
-    Object.defineProperty(inputOnlyProps, 'pattern', {get: () => toValue(props.pattern as any), enumerable: true, configurable: true})
-  }
+  // `type` only applies to <input>; pattern only to <input> as well. A textarea
+  // renders neither (the props are `undefined`, which `mergeProps` drops).
+  Object.defineProperty(inputOnlyProps, 'type', {
+    get: () =>
+      inputElementType.value === 'input' ? (toValue(props.type as any) ?? 'text') : undefined,
+    enumerable: true,
+    configurable: true,
+  })
+  Object.defineProperty(inputOnlyProps, 'pattern', {
+    get: () =>
+      inputElementType.value === 'input' ? toValue(props.pattern as any) : undefined,
+    enumerable: true,
+    configurable: true,
+  })
 
   const inputProps = mergeProps(inputOnlyProps, {
     onInput,
@@ -165,7 +242,7 @@ export function useTextField<T extends TextFieldIntrinsicElements = 'input'>(
     'aria-autocomplete': {get: () => toValue(props['aria-autocomplete'] as any), enumerable: true, configurable: true},
     'aria-haspopup': {get: () => toValue(props['aria-haspopup'] as any), enumerable: true, configurable: true},
     'aria-controls': {get: () => toValue(props['aria-controls'] as any), enumerable: true, configurable: true},
-    value: {get: () => toValue(props.value as any) ?? toValue(props.defaultValue as any) ?? '', enumerable: true, configurable: true},
+    value: {get: () => value.value, enumerable: true, configurable: true},
     autoComplete: {get: () => toValue(props.autoComplete as any), enumerable: true, configurable: true},
     autoCapitalize: {get: () => toValue(props.autoCapitalize as any), enumerable: true, configurable: true},
     maxLength: {get: () => toValue(props.maxLength as any), enumerable: true, configurable: true},
@@ -179,9 +256,6 @@ export function useTextField<T extends TextFieldIntrinsicElements = 'input'>(
     enterKeyHint: {get: () => toValue(props.enterKeyHint as any), enumerable: true, configurable: true},
   })
 
-  const validationErrors = computed<string[]>(() => [])
-  const validationDetails = computed<Record<string, any>>(() => ({}))
-
   const out: TextFieldAria<T> = {
     inputProps,
     labelProps,
@@ -193,5 +267,7 @@ export function useTextField<T extends TextFieldIntrinsicElements = 'input'>(
     validationDetails: validationDetails.value,
   }
   Object.defineProperty(out, 'isInvalid', {get: () => isInvalid.value, enumerable: true})
+  Object.defineProperty(out, 'validationErrors', {get: () => validationErrors.value, enumerable: true})
+  Object.defineProperty(out, 'validationDetails', {get: () => validationDetails.value, enumerable: true})
   return out
 }

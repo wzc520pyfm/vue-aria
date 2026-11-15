@@ -98,6 +98,9 @@ export type {Filter} from './useFilter'
 export {useTextField} from './useTextField'
 export type {AriaTextFieldOptions, AriaTextFieldProps, TextFieldAria, TextFieldProps} from './useTextField'
 
+export {useSearchField} from './useSearchField'
+export type {AriaSearchFieldProps, SearchFieldAria} from './useSearchField'
+
 export {useNumberField} from './useNumberField'
 export type {AriaNumberFieldProps, NumberFieldAria} from './useNumberField'
 export type {NumberFieldProps, NumberFieldState, NumberFieldStateOptions} from 'vue-stately/useNumberFieldState'
