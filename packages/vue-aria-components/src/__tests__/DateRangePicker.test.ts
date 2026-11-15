@@ -886,6 +886,49 @@ describe('DateRangePicker', () => {
     expect((captured!.value as any).start.toString()).toBe('2024-02-10T00:00:00')
   })
 
+  it('useDateRangePickerState: setOpen(false) commits the placeholder time (not midnight) with a range defaultValue and timed placeholderValue (hasTime)', async () => {
+    let captured: ReturnType<typeof useDateRangePickerState> | undefined
+    const changes: any[] = []
+    const Probe = defineComponent({
+      setup() {
+        captured = useDateRangePickerState({
+          // Controlled-but-empty value: lets the range `defaultValue` and the timed
+          // `placeholderValue` coexist without the granularity check tripping on a
+          // time-less defaultValue start. Both props are set; the placeholder time
+          // must win over midnight either way.
+          value: null,
+          granularity: 'minute' as any,
+          shouldCloseOnSelect: false,
+          // Range defaultValue must not shadow the timed placeholderValue when
+          // resolving the placeholder time (official uses placeholderValue only).
+          defaultValue: {
+            start: new CalendarDate(2024, 2, 1),
+            end: new CalendarDate(2024, 2, 2),
+          },
+          placeholderValue: new CalendarDateTime(2024, 2, 10, 9, 30),
+          onChange: (v: any) => changes.push(v),
+        } as any)
+        return () => null
+      },
+    })
+    mount(Probe)
+    await nextTick()
+    const state = captured!
+    expect(state.hasTime).toBe(true)
+
+    // Simulate a pending complete date range from the calendar (hasTime, no times chosen).
+    state.setDateRange({start: new CalendarDate(2024, 2, 10), end: new CalendarDate(2024, 2, 12)} as any)
+    expect(changes.length).toBe(0)
+
+    // Closing commits with the placeholder time, not midnight.
+    state.setOpen(false)
+    expect(changes.length).toBe(1)
+    expect((changes[0].start as CalendarDateTime).toString()).toBe('2024-02-10T09:30:00')
+    expect((changes[0].end as CalendarDateTime).toString()).toBe('2024-02-12T09:30:00')
+    expect((captured!.value as any).start.toString()).toBe('2024-02-10T09:30:00')
+    expect((captured!.value as any).end.toString()).toBe('2024-02-12T09:30:00')
+  })
+
   it('useDateRangePicker keeps hook *Props as plain objects with live getters, never ComputedRefs', async () => {
     let withAria: ReturnType<typeof useDateRangePicker> | undefined
     let state: ReturnType<typeof useDateRangePickerState> | undefined

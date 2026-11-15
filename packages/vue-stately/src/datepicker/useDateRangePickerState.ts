@@ -18,7 +18,6 @@ import {
   toCalendarDate,
   toCalendarDateTime,
   DateFormatter,
-  type DateValue as IntlDateValue,
 } from '@internationalized/date'
 import {computed, shallowRef, toValue, watch, type ComputedRef, type MaybeRefOrGetter} from 'vue'
 import {
@@ -205,15 +204,10 @@ export function useDateRangePickerState<T extends DateValue = DateValue>(
     return resolved ?? true
   }
 
-  // Resolve placeholder time lazily and live — a getter-backed defaultValue /
-  // placeholderValue may change between renders (official reads it per render).
+  // Official contract: only `placeholderValue` seeds the placeholder time.
+  // `defaultValue` is a RangeValue ({start, end}) and must not be used here.
   const getPlaceholder = () =>
-    getPlaceholderTime(
-      (toValue(props.defaultValue) ?? toValue(props.placeholderValue)) as
-        | IntlDateValue
-        | null
-        | undefined,
-    ) as unknown as TimeValue
+    getPlaceholderTime(toValue(props.placeholderValue)) as unknown as TimeValue
 
   // Date portion selected but not yet committed (used when `hasTime` and the
   // user picked a date range but not a time range yet).
