@@ -787,6 +787,18 @@ describe('DateField slice', () => {
     wrapper.unmount()
   })
 
+
+  it('spinbutton keyboard regression: ArrowUp/Down on a focused date segment increments/decrements (DateField)', async () => {
+    mountDateField({defaultValue: new CalendarDate(2024, 2, 3), 'aria-label': 'x'})
+    await tick()
+    const month = getSegment('month')!
+    month.focus()
+    await pressKey(month, 'ArrowUp')
+    expect(segmentTexts()[0]).toBe('3')
+    await pressKey(month, 'ArrowDown')
+    expect(segmentTexts()[0]).toBe('2')
+  })
+
   it('exports only what the slice intends and no deferred stubs', () => {
     // Components root: slice surface present, deferred APIs absent.
     expect(typeof (components as any).DateField).toBe('object')

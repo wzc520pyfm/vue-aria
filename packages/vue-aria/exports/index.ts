@@ -98,6 +98,15 @@ export type {Filter} from './useFilter'
 export {useTextField} from './useTextField'
 export type {AriaTextFieldOptions, AriaTextFieldProps, TextFieldAria, TextFieldProps} from './useTextField'
 
+export {useNumberField} from './useNumberField'
+export type {AriaNumberFieldProps, NumberFieldAria} from './useNumberField'
+export type {NumberFieldProps, NumberFieldState, NumberFieldStateOptions} from 'vue-stately/useNumberFieldState'
+export {useNumberFormatter} from './useNumberFormatter'
+export type {NumberFormatter} from '@internationalized/number'
+
+export {useFocus} from './useFocus'
+export type {FocusEvents, FocusProps, FocusResult} from './useFocus'
+
 export {useComboBox} from './useComboBox'
 export type {AriaComboBoxProps, AriaComboBoxOptions, ComboBoxAria} from './useComboBox'
 

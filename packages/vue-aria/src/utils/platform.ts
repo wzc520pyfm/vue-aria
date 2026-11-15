@@ -41,6 +41,10 @@ export const isIPhone: () => boolean = cached(function () {
   return testPlatform(/^iPhone/i)
 })
 
+export const isAndroid: () => boolean = cached(function () {
+  return testUserAgent(/Android/i)
+})
+
 export const isIPad: () => boolean = cached(function () {
   return (
     testPlatform(/^iPad/i) ||

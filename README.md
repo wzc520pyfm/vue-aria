@@ -89,7 +89,15 @@ This DateRangePicker slice adds the two-value `DateRangePicker` (date and date+t
 
 Scope: DateRangePicker only (date and date+time). Two standalone `DateInput slot="start"` / `slot="end"` resolve the start/end field contexts provided by the picker (the flat DateField context is kept for the single-value `DatePicker`); hidden inputs carry `startName` / `endName` and the popover is anchored to the group while focus restores to the trigger button on close; `shouldCloseOnSelect` accepts a boolean, getter, ref, or callback and is re-read on every selection; closing the popover with a complete range and `hasTime` commits a placeholder time; `isDateUnavailable(date, anchorDate)` receives the live anchor date on every call and `allowsNonContiguousRanges` flows to the calendar; reversed ranges surface `rangeReversed` and start/end validation errors are merged. Form, `FieldError`, calendar month/year pickers, heading components, and a public `useEvent` remain deferred and are not exported.
 
-Form, `FieldError`, `NumberField` (and their context stubs), calendar month/year pickers and heading components, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
+This NumberField slice adds:
+
+- `vue-stately`: `useNumberFieldState`
+- `vue-aria`: `useNumberField`, `useNumberFormatter`, `useFocus`
+- `vue-aria-components`: `NumberField`, `NumberFieldContext`, `NumberFieldStateContext`; reuses `Group` / `Input` / `Label` / `Button` / `Text`
+
+Scope: NumberField only. Controlled/uncontrolled values, typing, blur commit/format, `commitBehavior` (`snap` default vs `validate`), increment/decrement buttons with press-and-hold, keyboard and wheel stepping, min/max/step, format options and locale, validation, and an optional hidden input for form submission. Form, `FieldError`, and their context stubs remain deferred and are not exported.
+
+Form, `FieldError`, calendar month/year pickers and heading components, a public `useEvent`, `TextField` / `TextArea` / `SearchField`, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.
 

@@ -2,49 +2,22 @@
  * Port of `react-aria@3.53.1` `useSpinButton`
  * (`packages/react-aria/src/spinbutton/useSpinButton.ts` at
  * adobe/react-spectrum@740c6c5c4a717ca8c82fc4d15d199f6166cd42dc),
- * adapted for Vue. The press-and-hold long-press helpers of the official
- * implementation drive the increment/decrement buttons, which this slice does
- * not render (DateField segments only consume `spinButtonProps`), so only the
- * keyboard/live-region paths are ported. Internal — not publicly exported.
+ * adapted for Vue. Internal — not publicly exported (matches official).
+ *
+ * The press-and-hold behavior is a faithful port: mouse increments immediately
+ * on press start and then repeats after an initial 400 ms delay every 60 ms;
+ * touch holds wait 600 ms before repeating and only increment on `onPressEnd`
+ * when the control is not already spinning and an `onPressUp` happened first.
+ * Global `pointercancel` and `contextmenu` listeners are tracked and removed
+ * on press up / scope dispose. The official `useEffectEvent` is replaced with
+ * ordinary live callbacks.
  */
 
-import {computed, onScopeDispose, toValue, watch, type MaybeRefOrGetter} from 'vue'
+import {computed, onScopeDispose, ref, toValue, watch, type MaybeRefOrGetter} from 'vue'
 import {useKeyboard} from '../interactions/useKeyboard'
 import {useLocalizedStringFormatter} from '../i18n/useLocalizedStringFormatter'
 import spinbuttonStrings from '../i18n/spinbuttonStrings'
-
-// Minimal live announcer shared by the internal spinbutton port.
-let liveRegion: HTMLElement | null = null
-
-function announceSpin(message: string) {
-  if (typeof document === 'undefined' || !message) return
-  if (!liveRegion || !document.body.contains(liveRegion)) {
-    liveRegion = document.createElement('div')
-    liveRegion.setAttribute('aria-live', 'assertive')
-    Object.assign(liveRegion.style, {
-      border: '0',
-      clip: 'rect(0 0 0 0)',
-      clipPath: 'inset(50%)',
-      height: '1px',
-      margin: '-1px',
-      overflow: 'hidden',
-      padding: '0',
-      position: 'absolute',
-      width: '1px',
-      whiteSpace: 'nowrap',
-    })
-    document.body.appendChild(liveRegion)
-  }
-  liveRegion.setAttribute('aria-live', 'assertive')
-  liveRegion.textContent = ''
-  setTimeout(() => {
-    if (liveRegion) liveRegion.textContent = message
-  }, 0)
-}
-
-function clearAnnouncerSpin() {
-  if (liveRegion) liveRegion.textContent = ''
-}
+import {announce, clearAnnouncer} from '../live-announcer/LiveAnnouncer'
 
 export interface SpinButtonProps {
   value?: MaybeRefOrGetter<number | undefined>
@@ -85,8 +58,10 @@ export function useSpinButton(props: SpinButtonProps): SpinbuttonAria {
     isFocused = false
   }
 
+  const isDisabled = () => Boolean(toValue(props.isDisabled) || toValue(props.isReadOnly))
+
   const {keyboardProps} = useKeyboard({
-    isDisabled: Boolean(toValue(props.isDisabled) || toValue(props.isReadOnly)),
+    isDisabled: () => isDisabled(),
     shortcuts: {
       PageUp: () => {
         if (props.onIncrementPage) {
@@ -157,8 +132,8 @@ export function useSpinButton(props: SpinButtonProps): SpinbuttonAria {
   // Announce the value when it changes while focused (official effect).
   watch(ariaTextValue, (next) => {
     if (isFocused) {
-      clearAnnouncerSpin()
-      announceSpin(next)
+      clearAnnouncer('assertive')
+      announce(next, 'assertive')
     }
   })
 
@@ -205,9 +180,205 @@ export function useSpinButton(props: SpinButtonProps): SpinbuttonAria {
     },
   })
 
+  // ---------------------------------------------------------------------------
+  // Press-and-hold (long press) behavior for the increment/decrement buttons.
+  // ---------------------------------------------------------------------------
+
+  const timeoutId: {current: number | undefined} = {current: undefined}
+  let isSpinning = false
+
+  const clearAsync = () => {
+    window.clearTimeout(timeoutId.current)
+    timeoutId.current = undefined
+    isSpinning = false
+  }
+
+  const stepUp = () => {
+    const value = toValue(props.value)
+    const max = toValue(props.maxValue)
+    if (
+      max === undefined ||
+      isNaN(max) ||
+      value === undefined ||
+      isNaN(value) ||
+      value < max
+    ) {
+      props.onIncrement?.()
+      onIncrementPressStart(60)
+    }
+  }
+
+  const onIncrementPressStart = (initialStepDelay: number) => {
+    clearAsync()
+    isSpinning = true
+    // Start spinning after initial delay
+    timeoutId.current = window.setTimeout(stepUp, initialStepDelay)
+  }
+
+  const stepDown = () => {
+    const value = toValue(props.value)
+    const min = toValue(props.minValue)
+    if (
+      min === undefined ||
+      isNaN(min) ||
+      value === undefined ||
+      isNaN(value) ||
+      value > min
+    ) {
+      props.onDecrement?.()
+      onDecrementPressStart(60)
+    }
+  }
+
+  const onDecrementPressStart = (initialStepDelay: number) => {
+    clearAsync()
+    isSpinning = true
+    // Start spinning after initial delay
+    timeoutId.current = window.setTimeout(stepDown, initialStepDelay)
+  }
+
+  // Tracked global listeners (official `useGlobalListeners`).
+  const globalListeners: Array<{
+    target: EventTarget
+    type: string
+    listener: EventListener
+    options?: AddEventListenerOptions
+  }> = []
+  const addGlobalListener = (
+    target: EventTarget,
+    type: string,
+    listener: EventListener,
+    options?: AddEventListenerOptions,
+  ) => {
+    target.addEventListener(type, listener, options)
+    globalListeners.push({target, type, listener, options})
+  }
+  const removeAllGlobalListeners = () => {
+    for (const {target, type, listener, options} of globalListeners.splice(0)) {
+      target.removeEventListener(type, listener, options)
+    }
+  }
+
+  // For touch users, if they move their finger like they're scrolling, we don't want to trigger a spin.
+  const onPointerCancel = () => {
+    clearAsync()
+  }
+
+  const cancelContextMenu = (e: Event) => {
+    e.preventDefault()
+  }
+
+  // Tracks in touch if the press end event was preceded by a press up.
+  // If it wasn't, then we know the finger left the button while still in contact with the screen.
+  // This means that the user is trying to scroll or interact in some way that shouldn't trigger
+  // an increment or decrement.
+  let isUp = false
+
+  const incrementPressed = ref<'touch' | 'mouse' | null>(null)
+  watch(incrementPressed, (next) => {
+    if (next === 'touch') {
+      onIncrementPressStart(600)
+    } else if (next) {
+      onIncrementPressStart(400)
+    } else {
+      clearAsync()
+    }
+  })
+
+  const decrementPressed = ref<'touch' | 'mouse' | null>(null)
+  watch(decrementPressed, (next) => {
+    if (next === 'touch') {
+      onDecrementPressStart(600)
+    } else if (next) {
+      onDecrementPressStart(400)
+    } else {
+      clearAsync()
+    }
+  })
+
+  onScopeDispose(() => {
+    clearAsync()
+    removeAllGlobalListeners()
+  })
+
   return {
     spinButtonProps,
-    incrementButtonProps: {},
-    decrementButtonProps: {},
+    incrementButtonProps: {
+      onPressStart: (e: {pointerType: string}) => {
+        clearAsync()
+        if (e.pointerType !== 'touch') {
+          props.onIncrement?.()
+          incrementPressed.value = 'mouse'
+        } else {
+          addGlobalListener(window, 'pointercancel', onPointerCancel as unknown as EventListener, {
+            capture: true,
+          })
+          isUp = false
+          // For touch users, don't trigger an increment on press start, we'll wait for the press end to trigger it if
+          // the control isn't spinning.
+          incrementPressed.value = 'touch'
+        }
+        addGlobalListener(window, 'contextmenu', cancelContextMenu as unknown as EventListener)
+      },
+      onPressUp: (e: {pointerType: string}) => {
+        clearAsync()
+        if (e.pointerType === 'touch') {
+          isUp = true
+        }
+        removeAllGlobalListeners()
+        incrementPressed.value = null
+      },
+      onPressEnd: (e: {pointerType: string}) => {
+        const wasSpinning = isSpinning
+        clearAsync()
+        if (e.pointerType === 'touch') {
+          if (!wasSpinning && isUp) {
+            props.onIncrement?.()
+          }
+        }
+        isUp = false
+        incrementPressed.value = null
+      },
+      onFocus,
+      onBlur,
+    },
+    decrementButtonProps: {
+      onPressStart: (e: {pointerType: string}) => {
+        clearAsync()
+        if (e.pointerType !== 'touch') {
+          props.onDecrement?.()
+          decrementPressed.value = 'mouse'
+        } else {
+          addGlobalListener(window, 'pointercancel', onPointerCancel as unknown as EventListener, {
+            capture: true,
+          })
+          isUp = false
+          // For touch users, don't trigger a decrement on press start, we'll wait for the press end to trigger it if
+          // the control isn't spinning.
+          decrementPressed.value = 'touch'
+        }
+      },
+      onPressUp: (e: {pointerType: string}) => {
+        clearAsync()
+        if (e.pointerType === 'touch') {
+          isUp = true
+        }
+        removeAllGlobalListeners()
+        decrementPressed.value = null
+      },
+      onPressEnd: (e: {pointerType: string}) => {
+        const wasSpinning = isSpinning
+        clearAsync()
+        if (e.pointerType === 'touch') {
+          if (!wasSpinning && isUp) {
+            props.onDecrement?.()
+          }
+        }
+        isUp = false
+        decrementPressed.value = null
+      },
+      onFocus,
+      onBlur,
+    },
   }
 }

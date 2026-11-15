@@ -93,3 +93,6 @@ export type {DateRangePickerProps} from './useDateRangePickerState'
 export {useTimeFieldState} from './useTimeFieldState'
 export type {TimeFieldStateOptions, TimeFieldState} from './useTimeFieldState'
 export type {TimeValue, TimeFieldProps, MappedTimeValue} from './useTimeFieldState'
+
+export {useNumberFieldState} from './useNumberFieldState'
+export type {NumberFieldStateOptions, NumberFieldProps, NumberFieldState} from './useNumberFieldState'
