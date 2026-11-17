@@ -8,7 +8,8 @@
  * slice, the DatePicker slice, the DateRangePicker hook, and the
  * Checkbox / Radio / Switch hooks, the Disclosure hook
  * (`useDisclosure`), the Slider hooks (`useSlider`, `useSliderThumb`),
- * and the ProgressBar / Meter hooks (`useProgressBar`, `useMeter`)
+ * and the ProgressBar / Meter hooks (`useProgressBar`, `useMeter`),
+ * and the Toolbar hook (`useToolbar`)
  * on top of the interaction hooks and Hero UI Vue behavior contract.
  */
 export {usePress} from './usePress'
@@ -207,3 +208,6 @@ export type {
 
 export {useMeter} from './useMeter'
 export type {MeterProps, AriaMeterProps, MeterAria} from './useMeter'
+
+export {useToolbar} from './useToolbar'
+export type {AriaToolbarProps, ToolbarAria} from './useToolbar'
