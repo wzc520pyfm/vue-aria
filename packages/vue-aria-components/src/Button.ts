@@ -4,6 +4,42 @@ import {ButtonCloseKey, ButtonContextKey, OverlayTriggerButtonKey} from './conte
 
 export type ButtonType = 'button' | 'submit' | 'reset'
 
+/**
+ * Render-prop state for `Button`, aligned with official `ButtonRenderProps`
+ * at the pinned react-aria-components revision. Fields match the interaction
+ * state this component already exposes; the component implementation is unchanged.
+ */
+export interface ButtonRenderProps {
+  /** Whether the button is currently hovered with a mouse. @selector [data-hovered] */
+  isHovered: boolean
+  /** Whether the button is currently in a pressed state. @selector [data-pressed] */
+  isPressed: boolean
+  /** Whether the button is focused, either via a mouse or keyboard. @selector [data-focused] */
+  isFocused: boolean
+  /** Whether the button is keyboard focused. @selector [data-focus-visible] */
+  isFocusVisible: boolean
+  /** Whether the button is disabled. @selector [data-disabled] */
+  isDisabled: boolean
+  /** Whether the button is currently in a pending state. @selector [data-pending] */
+  isPending: boolean
+}
+
+/**
+ * Props accepted by the Vue `Button`. Companion type for the Disclosure entry.
+ * Does not add link (`href`) behavior this component does not implement.
+ */
+export interface ButtonProps {
+  isDisabled?: boolean
+  isPending?: boolean
+  type?: ButtonType
+  elementType?: string
+  autoFocus?: boolean
+  slot?: string | null
+  'data-slot'?: string
+  class?: any
+  style?: any
+}
+
 export const Button = defineComponent({
   name: 'Button',
   inheritAttrs: false,
