@@ -80,6 +80,11 @@ export interface DisclosureGroupProps {
   /** Handler that is called when items are expanded or collapsed. */
   onExpandedChange?: (keys: Set<Key>) => void
   class?: any
+  /**
+   * Official RAC class. A string or a function of {@link DisclosureGroupRenderProps}.
+   * Vue normalizes a function passed as `class` to `''`, so state functions use `className`.
+   */
+  className?: any
   style?: any
 }
 
@@ -127,6 +132,11 @@ export interface DisclosurePanelProps {
   /** The accessibility role for the disclosure's panel. @default 'group' */
   role?: 'group' | 'region'
   class?: any
+  /**
+   * Official RAC class. A string or a function of {@link DisclosurePanelRenderProps}.
+   * Vue normalizes a function passed as `class` to `''`, so state functions use `className`.
+   */
+  className?: any
   style?: any
 }
 
@@ -220,10 +230,82 @@ function withPanelVars(style: unknown, panel: HTMLElement | null) {
   const vars: Record<string, string> = {}
   if (width) vars['--disclosure-panel-width'] = width
   if (height) vars['--disclosure-panel-height'] = height
-  if (style == null || typeof style === 'string') return {...vars}
+  if (style == null || style === '') return vars
+  if (typeof style === 'string') {
+    const varText = Object.entries(vars).map(([name, value]) => `${name}: ${value}`).join('; ')
+    const base = style.trim().replace(/;+\s*$/, '')
+    return base ? `${base}; ${varText}` : varText
+  }
   if (Array.isArray(style)) return [...style, vars]
   if (typeof style === 'object') return {...(style as object), ...vars}
   return style
+}
+
+function isStyleObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+/**
+ * Official `useContextProps` style merge: context first, local second.
+ * Functions receive the render props; the local function also receives
+ * `defaultStyle` from the resolved context style.
+ */
+function mergeRenderStyle(contextStyle: unknown, localStyle: unknown, values: Record<string, unknown>) {
+  if (contextStyle == null && localStyle == null) return undefined
+  if (contextStyle != null && localStyle != null) {
+    if (typeof contextStyle === 'function' || typeof localStyle === 'function') {
+      const contextResolved = typeof contextStyle === 'function' ? contextStyle(values) : contextStyle
+      const defaultStyle = isStyleObject(contextResolved) ? {...contextResolved} : {}
+      const localResolved = typeof localStyle === 'function'
+        ? localStyle({...values, defaultStyle})
+        : localStyle
+      if (typeof localResolved === 'string') return [defaultStyle, localResolved]
+      if (isStyleObject(localResolved)) return {...defaultStyle, ...localResolved}
+      return defaultStyle
+    }
+    if (typeof contextStyle === 'string' || typeof localStyle === 'string') {
+      return [contextStyle, localStyle].filter((item) => item != null && item !== '')
+    }
+    if (isStyleObject(contextStyle) && isStyleObject(localStyle)) {
+      return {...contextStyle, ...localStyle}
+    }
+  }
+  const only = localStyle != null ? localStyle : contextStyle
+  return typeof only === 'function' ? only(values) : only
+}
+
+/**
+ * Official `mergeProps` className rule: concatenate two strings (context then
+ * local). A local function or other defined value replaces the context value.
+ */
+function mergeClassNames(contextClass: unknown, localClass: unknown, values: unknown) {
+  if (typeof contextClass === 'string' && typeof localClass === 'string') {
+    return [contextClass, localClass].filter(Boolean).join(' ')
+  }
+  const chosen = localClass !== undefined ? localClass : contextClass
+  const resolved = resolveClass(chosen, values)
+  return resolved === '' || resolved == null ? undefined : resolved
+}
+
+function localClassValue(props: {className?: unknown; class?: unknown}, attrs: Record<string, any>) {
+  if (props.className !== undefined) return props.className
+  if (attrs.className !== undefined) return attrs.className
+  if (typeof attrs.class === 'string' && attrs.class !== '') return attrs.class
+  if (typeof attrs.class === 'function') return attrs.class
+  if (props.class !== undefined && props.class !== '') return props.class
+  return undefined
+}
+
+function contextDomProps(ctx: Record<string, any> | null) {
+  if (!ctx) return {}
+  const copy: Record<string, any> = {}
+  for (const key of Object.keys(ctx)) {
+    if (key === 'class' || key === 'style' || key === 'className' || key === 'id' || key === 'ref' || key === 'slots') {
+      continue
+    }
+    copy[key] = ctx[key]
+  }
+  return filterDOMProps(copy, {global: true, labelable: true, events: true})
 }
 
 /**
@@ -240,6 +322,7 @@ export const DisclosureGroup = defineComponent({
     defaultExpandedKeys: {type: null as unknown as PropType<Iterable<Key> | undefined>, default: undefined},
     onExpandedChange: {type: Function as PropType<(keys: Set<Key>) => void>, default: undefined},
     class: {type: null as unknown as PropType<any>, default: undefined},
+    className: {type: null as unknown as PropType<any>, default: undefined},
     style: {type: null as unknown as PropType<any>, default: undefined},
   },
   emits: ['expandedchange'],
@@ -261,7 +344,7 @@ export const DisclosureGroup = defineComponent({
         isDisabled: Boolean(props.isDisabled),
         state,
       }
-      const className = resolveClass(props.class ?? (attrs as any).class, values)
+      const className = mergeClassNames(undefined, localClassValue(props, attrs as Record<string, any>), values)
       const style = resolveStyle(props.style ?? (attrs as any).style, values)
       return h(
         'div',
@@ -303,7 +386,12 @@ export const Disclosure = defineComponent({
       return generatedId.value
     }
 
-    const isDisabled = () => Boolean(props.isDisabled || ctx?.isDisabled || groupState?.isDisabled)
+    // Local `false` overrides context `true`. A disabled group still forces disabled,
+    // matching `props.isDisabled || groupState?.isDisabled` after useContextProps.
+    const isDisabled = () => {
+      const merged = props.isDisabled !== undefined ? props.isDisabled : ctx?.isDisabled
+      return Boolean(merged) || Boolean(groupState?.isDisabled)
+    }
 
     const state = useDisclosureState({
       isExpanded: () => {
@@ -319,8 +407,8 @@ export const Disclosure = defineComponent({
       },
       onExpandedChange(isExpanded) {
         if (groupState) groupState.toggleKey(keyOf())
-        props.onExpandedChange?.(isExpanded)
         ctx?.onExpandedChange?.(isExpanded)
+        props.onExpandedChange?.(isExpanded)
         emit('expandedchange', isExpanded)
       },
     })
@@ -355,9 +443,15 @@ export const Disclosure = defineComponent({
       }
       // Vue normalizes a function `class` to '' before attrs/vnode props exist.
       // `className` is the official RAC name and stays a live function.
-      const classSource = (props as any).className ?? (attrs as any).className ?? (attrs as any).class
-      const className = resolveClass(classSource, values)
-      const style = resolveStyle((props as any).style ?? (attrs as any).style, values)
+      // Context is the default; a defined local className/class replaces or, for
+      // two strings, follows it (official mergeProps className order).
+      const className = mergeClassNames(
+        ctx?.className,
+        localClassValue(props, attrs as Record<string, any>),
+        values,
+      )
+      const localStyle = (props as any).style ?? (attrs as any).style
+      const style = mergeRenderStyle(ctx?.style, localStyle, values as unknown as Record<string, unknown>)
       const userEvents = {
         onFocus: (attrs as any).onFocus,
         onBlur: (attrs as any).onBlur,
@@ -366,7 +460,7 @@ export const Disclosure = defineComponent({
       }
       return h(
         'div',
-        mergeProps(domAttrs(attrs as Record<string, any>, false), userEvents, focusWithinProps, {
+        mergeProps(contextDomProps(ctx), domAttrs(attrs as Record<string, any>, false), userEvents, focusWithinProps, {
           class: className ?? 'react-aria-Disclosure',
           style,
           ref: (el: HTMLElement | null) => {
@@ -392,6 +486,7 @@ export const DisclosurePanel = defineComponent({
   props: {
     role: {type: String as PropType<'group' | 'region'>, default: undefined},
     class: {type: null as unknown as PropType<any>, default: undefined},
+    className: {type: null as unknown as PropType<any>, default: undefined},
     style: {type: null as unknown as PropType<any>, default: undefined},
   },
   setup(props, {slots, attrs}) {
@@ -409,7 +504,7 @@ export const DisclosurePanel = defineComponent({
       const values: DisclosurePanelRenderProps = {
         isFocusVisibleWithin: isFocusVisibleWithin.value,
       }
-      const className = resolveClass(props.class ?? (attrs as any).class, values)
+      const className = mergeClassNames(undefined, localClassValue(props, attrs as Record<string, any>), values)
       const style = resolveStyle(props.style ?? (attrs as any).style, values)
       const userEvents = {
         onFocus: (attrs as any).onFocus,

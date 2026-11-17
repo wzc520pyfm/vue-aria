@@ -381,6 +381,159 @@ describe('Disclosure', () => {
     expect(button.hasAttribute('disabled')).toBe(true)
     wrapper.unmount()
   })
+
+  it('merges DisclosureContext className, style, and DOM props, and lets local false override context true', async () => {
+    const disabled = ref(true)
+    const tone = ref('green')
+    const elRef = ref<HTMLElement | null>(null)
+    const ctx: Record<string, any> = {'data-foo': 'bar', ref: elRef}
+    Object.defineProperty(ctx, 'isDisabled', {enumerable: true, configurable: true, get: () => disabled.value})
+    Object.defineProperty(ctx, 'className', {enumerable: true, configurable: true, get: () => 'from-context'})
+    Object.defineProperty(ctx, 'style', {
+      enumerable: true,
+      configurable: true,
+      get: () => ({color: tone.value, padding: '4px'}),
+    })
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        provide(DisclosureContext, ctx)
+        return () => h(Disclosure, {'data-testid': 'disclosure'}, {
+          default: () => h(Button, {slot: 'trigger'}, {default: () => 'Trigger'}),
+        })
+      },
+    }))
+    await tick()
+    const root = document.querySelector('[data-testid="disclosure"]') as HTMLElement
+    expect(elRef.value).toBe(root)
+    expect(root.getAttribute('data-foo')).toBe('bar')
+    expect(root.className).toContain('from-context')
+    expect(root.style.color).toBe('green')
+    expect(root.style.padding).toBe('4px')
+    expect(root.getAttribute('data-disabled')).toBe('true')
+    tone.value = 'blue'
+    disabled.value = false
+    await tick()
+    expect(root.style.color).toBe('blue')
+    expect(root.style.padding).toBe('4px')
+    expect(root.hasAttribute('data-disabled')).toBe(false)
+    wrapper.unmount()
+
+    const overridden = mountInDoc(defineComponent({
+      setup() {
+        provide(DisclosureContext, ctx)
+        return () => h(Disclosure, {
+          'data-testid': 'local',
+          isDisabled: false,
+          className: 'local-class',
+          style: {color: 'red'},
+          'data-foo': 'local',
+        }, {
+          default: () => h(Button, {slot: 'trigger'}, {default: () => 'Trigger'}),
+        })
+      },
+    }))
+    await tick()
+    const local = document.querySelector('[data-testid="local"]') as HTMLElement
+    expect(local.hasAttribute('data-disabled')).toBe(false)
+    expect(local.className).toContain('from-context')
+    expect(local.className).toContain('local-class')
+    expect(local.style.color).toBe('red')
+    expect(local.style.padding).toBe('4px')
+    expect(local.getAttribute('data-foo')).toBe('local')
+    overridden.unmount()
+  })
+
+  it('keeps a disabled group forced when the disclosure sets isDisabled false', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(DisclosureGroup, {isDisabled: true}, {
+          default: () => h(Disclosure, {isDisabled: false, 'data-testid': 'disclosure'}, {
+            default: () => h(Button, {slot: 'trigger'}, {default: () => 'Trigger'}),
+          }),
+        })
+      },
+    }))
+    await tick()
+    const root = document.querySelector('[data-testid="disclosure"]') as HTMLElement
+    const button = root.querySelector('button') as HTMLButtonElement
+    expect(root.getAttribute('data-disabled')).toBe('true')
+    expect(button.hasAttribute('disabled')).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('keeps a panel string style after mount, expand, and focus, and applies panel className', async () => {
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Disclosure, {'data-testid': 'disclosure'}, {
+          default: () => [
+            h(Heading, {level: 3}, {default: () => h(Button, {slot: 'trigger'}, {default: () => 'Trigger'})}),
+            h(DisclosurePanel, {
+              'data-testid': 'panel',
+              style: 'color: red; padding: 8px',
+              className: ({isFocusVisibleWithin}: DisclosurePanelRenderProps) => (isFocusVisibleWithin ? 'panel-focus' : 'panel-blur'),
+            }, {default: () => h('input', {id: 'panel-input'})}),
+          ],
+        })
+      },
+    }))
+    await tick()
+    const panel = document.querySelector('[data-testid="panel"]') as HTMLElement
+    expect(panel.style.color).toBe('red')
+    expect(panel.style.padding).toBe('8px')
+    expect(panel.className).toContain('panel-blur')
+    const button = document.querySelector('button') as HTMLButtonElement
+    dispatchPointer(button, 'pointerdown')
+    dispatchPointer(button, 'pointerup')
+    await tick()
+    expect(panel.style.color).toBe('red')
+    expect(panel.style.padding).toBe('8px')
+    expect(panel.style.getPropertyValue('--disclosure-panel-width')).toBe('auto')
+    window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Tab', bubbles: true}))
+    ;(document.getElementById('panel-input') as HTMLInputElement).focus()
+    await tick()
+    expect(panel.className).toContain('panel-focus')
+    expect(panel.style.color).toBe('red')
+    expect(panel.style.padding).toBe('8px')
+    wrapper.unmount()
+  })
+
+  it('reinitializes hidden=until-found when a collapsed panel remounts under getAnimations', async () => {
+    const original = (HTMLElement.prototype as any).getAnimations
+    ;(HTMLElement.prototype as any).getAnimations = () => []
+    const panelKey = ref('a')
+    try {
+      const wrapper = mountInDoc(defineComponent({
+        setup() {
+          return () => h(Disclosure, {'data-testid': 'disclosure'}, {
+            default: () => [
+              h(Button, {slot: 'trigger'}, {default: () => 'Trigger'}),
+              panelKey.value
+                ? h(DisclosurePanel, {key: panelKey.value, 'data-testid': 'panel'}, {default: () => h('input')})
+                : null,
+            ],
+          })
+        },
+      }))
+      await tick()
+      const first = document.querySelector('[data-testid="panel"]') as HTMLElement
+      expect(first.getAttribute('hidden')).toBe('until-found')
+      expect(first.style.getPropertyValue('--disclosure-panel-width')).toBe('0px')
+      expect(first.style.getPropertyValue('--disclosure-panel-height')).toBe('0px')
+      panelKey.value = ''
+      await tick()
+      panelKey.value = 'b'
+      await tick()
+      const next = document.querySelector('[data-testid="panel"]') as HTMLElement
+      expect(next).not.toBe(first)
+      expect(next.getAttribute('hidden')).toBe('until-found')
+      expect(next.style.getPropertyValue('--disclosure-panel-width')).toBe('0px')
+      expect(next.style.getPropertyValue('--disclosure-panel-height')).toBe('0px')
+      wrapper.unmount()
+    } finally {
+      if (original) (HTMLElement.prototype as any).getAnimations = original
+      else delete (HTMLElement.prototype as any).getAnimations
+    }
+  })
 })
 
 describe('DisclosureGroup', () => {
@@ -420,6 +573,39 @@ describe('DisclosureGroup', () => {
     dispatchPointer(button, 'pointerup')
     await tick()
   }
+
+  it('applies a DisclosureGroup className string and updates a state function', async () => {
+    const disabled = ref(false)
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(DisclosureGroup, {
+          'data-testid': 'group',
+          isDisabled: disabled.value,
+          className: ({isDisabled}: DisclosureGroupRenderProps) => (isDisabled ? 'group-off' : 'group-on'),
+        }, {
+          default: () => item('item1', 'Trigger 1', 'Content 1'),
+        })
+      },
+    }))
+    await tick()
+    const group = document.querySelector('[data-testid="group"]') as HTMLElement
+    expect(group.className).toContain('group-on')
+    expect(group.className).not.toContain('group-off')
+    disabled.value = true
+    await tick()
+    expect(group.className).toContain('group-off')
+    expect(group.getAttribute('data-disabled')).toBe('true')
+    wrapper.unmount()
+
+    const named = mountInDoc(defineComponent({
+      setup() {
+        return () => h(DisclosureGroup, {'data-testid': 'named', className: 'group-extra'})
+      },
+    }))
+    await tick()
+    expect((document.querySelector('[data-testid="named"]') as HTMLElement).className).toContain('group-extra')
+    named.unmount()
+  })
 
   it('allows every item to collapse, expands many when asked, and keeps numeric keys', async () => {
     const wrapper = mountInDoc(defineComponent({setup: () => () => groupView()}))

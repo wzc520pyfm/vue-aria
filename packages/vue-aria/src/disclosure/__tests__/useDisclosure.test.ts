@@ -229,4 +229,22 @@ describe('useDisclosure', () => {
     globalThis.requestAnimationFrame = previousRaf
     globalThis.cancelAnimationFrame = previousCancel
   })
+
+  it('initializes hidden and measurement vars again when the panel node is replaced', async () => {
+    ;(HTMLElement.prototype as any).getAnimations = () => []
+    const {wrapper, panelRef} = mountDisclosure()
+    await tick()
+    const first = panelRef.value!
+    expect(first.getAttribute('hidden')).toBe('until-found')
+    expect(first.style.getPropertyValue('--disclosure-panel-width')).toBe('0px')
+    const next = document.createElement('div')
+    document.body.append(next)
+    panelRef.value = next
+    await tick()
+    expect(next.getAttribute('hidden')).toBe('until-found')
+    expect(next.style.getPropertyValue('--disclosure-panel-width')).toBe('0px')
+    expect(next.style.getPropertyValue('--disclosure-panel-height')).toBe('0px')
+    expect(first.getAttribute('hidden')).toBe('until-found')
+    wrapper.unmount()
+  })
 })

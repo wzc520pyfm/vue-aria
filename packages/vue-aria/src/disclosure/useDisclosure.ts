@@ -77,6 +77,7 @@ export function useDisclosure(
   let rafId: number | null = null
   let isExpandedRef: boolean | null = null
   let bound: HTMLElement | null = null
+  let appliedNode: HTMLElement | null = null
 
   const disabled = () => Boolean(toValue(props.isDisabled))
 
@@ -104,6 +105,13 @@ export function useDisclosure(
   function applyPanel(panel: HTMLElement) {
     cancelRaf()
     if (typeof window === 'undefined') return
+    // A replaced panel node (key / v-if) must be initialized even when
+    // `isExpanded` did not change. Otherwise a collapsed remount stays visible
+    // once `getAnimations` exists.
+    if (appliedNode !== panel) {
+      isExpandedRef = null
+      appliedNode = panel
+    }
     const expanded = state.isExpanded
     const canAnimate = typeof panel.getAnimations === 'function'
     if (isExpandedRef == null || !canAnimate) {
@@ -158,6 +166,10 @@ export function useDisclosure(
       const panel = ref.value
       bind(panel)
       if (panel) applyPanel(panel)
+      else {
+        isExpandedRef = null
+        appliedNode = null
+      }
     },
     {flush: 'post', immediate: true},
   )

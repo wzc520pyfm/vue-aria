@@ -36,8 +36,15 @@ export interface ButtonProps {
   autoFocus?: boolean
   slot?: string | null
   'data-slot'?: string
+  dataSlot?: string
   class?: any
   style?: any
+  onPress?: (event: PressEvent) => void
+  onPressStart?: (event: PressEvent) => void
+  onPressEnd?: (event: PressEvent) => void
+  onPressUp?: (event: PressEvent) => void
+  onPressChange?: (isPressed: boolean) => void
+  onClick?: (event: MouseEvent) => void
 }
 
 export const Button = defineComponent({

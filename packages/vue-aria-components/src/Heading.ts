@@ -12,6 +12,8 @@ export interface HeadingProps {
   /** Official RAC slot name. `"title"` wires the heading into a parent Dialog. */
   slot?: string
   id?: string
+  'data-slot'?: string
+  dataSlot?: string
   class?: any
   style?: any
   'aria-label'?: string
