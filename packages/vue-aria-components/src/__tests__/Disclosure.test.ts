@@ -319,11 +319,17 @@ describe('Disclosure', () => {
     await tick()
     expect(root.hasAttribute('data-expanded')).toBe(false)
 
-    // The open menu captures pointerdown. Close it before pressing the disclosure trigger.
-    const menu = document.querySelector('[data-testid="menu"]') as HTMLElement
-    dispatchKey(menu, 'keydown', {key: 'Escape'})
+    // Same outside-dismiss sequence as the Menu suite: pointerdown starts it,
+    // click completes it. pointerdown alone does not close (useInteractOutside).
+    const outside = document.createElement('button')
+    outside.textContent = 'outside'
+    document.body.append(outside)
+    dispatchPointer(outside, 'pointerdown', {pointerType: 'mouse'})
+    outside.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}))
     await tick()
+    outside.remove()
     expect(document.querySelector('[data-testid="menu"]')).toBeFalsy()
+    expect(root.hasAttribute('data-expanded')).toBe(false)
 
     const triggerAgain = document.querySelector('[data-testid="disclosure-trigger"]') as HTMLButtonElement
     dispatchPointer(triggerAgain, 'pointerdown')

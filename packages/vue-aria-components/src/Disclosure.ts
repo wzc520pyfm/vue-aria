@@ -353,6 +353,8 @@ export const Disclosure = defineComponent({
         isFocusVisibleWithin: isFocusVisibleWithin.value,
         state,
       }
+      // Vue normalizes a function `class` to '' before attrs/vnode props exist.
+      // `className` is the official RAC name and stays a live function.
       const classSource = (props as any).className ?? (attrs as any).className ?? (attrs as any).class
       const className = resolveClass(classSource, values)
       const style = resolveStyle((props as any).style ?? (attrs as any).style, values)

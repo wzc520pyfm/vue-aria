@@ -1,6 +1,6 @@
 // jsdom may not implement PointerEvent. Polyfill it so usePress / useHover
 // take the same pointer path that browsers rely on.
-if (typeof globalThis.PointerEvent === 'undefined') {
+if (typeof globalThis.PointerEvent === 'undefined' && typeof globalThis.MouseEvent !== 'undefined') {
   class PointerEventPolyfill extends MouseEvent {
     pointerId: number
     pointerType: string
