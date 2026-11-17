@@ -16,6 +16,7 @@ import {
   onUpdated,
   provide,
   ref,
+  watch,
   type InjectionKey,
   type PropType,
 } from 'vue'
@@ -33,6 +34,7 @@ import {
   mergeClassNames,
   mergeRenderStyle,
   pick,
+  readAriaProp,
   readNumber,
   readSlotContext,
 } from './progressDom'
@@ -49,6 +51,11 @@ export interface ProgressBarRenderProps {
   isIndeterminate: boolean
 }
 
+export type ProgressBarStyle =
+  | string
+  | Record<string, any>
+  | ((values: ProgressBarRenderProps & {defaultStyle: Record<string, any>}) => string | Record<string, any> | null | undefined)
+
 export interface ProgressBarProps {
   value?: number
   minValue?: number
@@ -59,7 +66,7 @@ export interface ProgressBarProps {
   id?: string
   slot?: string | null
   className?: string | ((values: ProgressBarRenderProps & {defaultClassName?: string}) => string)
-  style?: unknown
+  style?: ProgressBarStyle
   'aria-label'?: string
   'aria-labelledby'?: string
   'aria-describedby'?: string
@@ -90,11 +97,20 @@ export const ProgressBar = defineComponent({
   setup(props, {slots, attrs}) {
     const instance = getCurrentInstance()
     const ctxSource = inject(ProgressBarContextKey, null)
-    const resolved = () => readSlotContext(ctxSource, props.slot ?? (attrs.slot as string | undefined))
+    const slotValue = () => (props.slot !== undefined ? props.slot : (attrs.slot as string | null | undefined))
+    const resolved = () => readSlotContext(ctxSource, slotValue())
     const hasLabel = ref(false)
     const rootEl = ref<Element | null>(null)
     const labelRef = ref<Element | null>(null)
     let mountedEl: Element | null = null
+    let boundContextRef: unknown
+    let boundContextEl: Element | null = null
+
+    // Register the real label element, like official `useSlot`, instead of
+    // trusting the child vnode's component name alone.
+    watch(labelRef, (el) => {
+      hasLabel.value = !!el
+    })
 
     const aria = useProgressBar({
       value: () => pick(props.value, resolved(), 'value'),
@@ -105,10 +121,10 @@ export const ProgressBar = defineComponent({
       valueLabel: () => pick(props.valueLabel, resolved(), 'valueLabel'),
       id: () => pick(props.id, resolved(), 'id') ?? (attrs.id as string | undefined),
       label: () => hasLabel.value || undefined,
-      'aria-label': () => pick(props['aria-label'], resolved(), 'aria-label'),
-      'aria-labelledby': () => pick(props['aria-labelledby'], resolved(), 'aria-labelledby'),
-      'aria-describedby': () => pick(props['aria-describedby'], resolved(), 'aria-describedby'),
-      'aria-details': () => pick(props['aria-details'], resolved(), 'aria-details'),
+      'aria-label': () => readAriaProp(props, attrs as Record<string, any>, resolved(), 'aria-label'),
+      'aria-labelledby': () => readAriaProp(props, attrs as Record<string, any>, resolved(), 'aria-labelledby'),
+      'aria-describedby': () => readAriaProp(props, attrs as Record<string, any>, resolved(), 'aria-describedby'),
+      'aria-details': () => readAriaProp(props, attrs as Record<string, any>, resolved(), 'aria-details'),
     })
 
     const labelCtx: Record<string, any> = {ref: labelRef, elementType: 'span'}
@@ -122,10 +138,33 @@ export const ProgressBar = defineComponent({
     function syncExternal() {
       assignRef(externalRef(), rootEl.value)
     }
-    onMounted(syncExternal)
-    onUpdated(syncExternal)
+    function releaseContextRef() {
+      if (boundContextRef == null) return
+      assignRefIfCurrent(boundContextRef, null, boundContextEl)
+      boundContextRef = undefined
+      boundContextEl = null
+    }
+    function syncContextRef(el: Element | null) {
+      const next = resolved()?.ref
+      if (next !== boundContextRef) {
+        releaseContextRef()
+        boundContextRef = next
+      }
+      if (next != null) {
+        assignRef(next, el)
+        boundContextEl = el
+      }
+    }
+    onMounted(() => {
+      syncExternal()
+      syncContextRef(rootEl.value)
+    })
+    onUpdated(() => {
+      syncExternal()
+      syncContextRef(rootEl.value)
+    })
     onUnmounted(() => {
-      assignRefIfCurrent(resolved()?.ref, null, mountedEl)
+      releaseContextRef()
       assignRefIfCurrent(externalRef(), null, mountedEl)
       rootEl.value = null
       mountedEl = null
@@ -145,7 +184,7 @@ export const ProgressBar = defineComponent({
         isIndeterminate,
       }
       const children = slots.default?.(values)
-      const labelled = hasLabelNode(children)
+      const labelled = hasLabelNode(children) || labelRef.value != null
       if (hasLabel.value !== labelled) hasLabel.value = labelled
       const className = mergeClassNames(
         ctx?.className,
@@ -160,8 +199,7 @@ export const ProgressBar = defineComponent({
           ref: (el: Element | null) => {
             rootEl.value = el
             if (el) mountedEl = el
-            assignRefIfCurrent(ctx?.ref, el, mountedEl)
-            if (!el) mountedEl = null
+            syncContextRef(el)
           },
           slot: props.slot || undefined,
           class: className ?? 'react-aria-ProgressBar',

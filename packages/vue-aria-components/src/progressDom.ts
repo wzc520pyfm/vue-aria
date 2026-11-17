@@ -95,8 +95,40 @@ export function mergeClassNames(contextClass: unknown, localClass: unknown, valu
     return [contextClass, localClass].filter(Boolean).join(' ')
   }
   const chosen = localClass !== undefined ? localClass : contextClass
-  const resolved = resolveClass(chosen, renderValues)
-  return resolved === '' || resolved == null ? undefined : resolved
+  // Match `computedClassName ?? defaultClassName`: an explicit empty string
+  // must survive instead of falling back to the default class.
+  return resolveClass(chosen, renderValues)
+}
+
+const ARIA_CAMEL: Record<string, string> = {
+  'aria-label': 'ariaLabel',
+  'aria-labelledby': 'ariaLabelledby',
+  'aria-describedby': 'ariaDescribedby',
+  'aria-details': 'ariaDetails',
+}
+
+/**
+ * Vue camelizes declared prop keys, so `aria-label` arrives as `ariaLabel`
+ * and the hyphenated form is removed from `attrs`. Keep accepting both forms
+ * (plus context keys in either form) while preserving the public hyphenated
+ * component API.
+ */
+export function readAriaProp(
+  props: Record<string, any>,
+  attrs: Record<string, any>,
+  ctx: Record<string, any> | null | undefined,
+  key: string,
+) {
+  const camel = ARIA_CAMEL[key]
+  if (props[camel] !== undefined) return props[camel]
+  if (props[key] !== undefined) return props[key]
+  if (attrs[camel] !== undefined) return attrs[camel]
+  if (attrs[key] !== undefined) return attrs[key]
+  if (ctx) {
+    if (ctx[camel] !== undefined) return ctx[camel]
+    if (ctx[key] !== undefined) return ctx[key]
+  }
+  return undefined
 }
 
 export function localClassValue(props: {className?: unknown}, attrs: Record<string, any>) {
@@ -108,6 +140,9 @@ export function localClassValue(props: {className?: unknown}, attrs: Record<stri
 }
 
 export function readSlotContext(ctx: Record<string, any> | null | undefined, slot?: string | null) {
+  // Mirrors official `useSlottedContext`: an explicit null slot is a complete
+  // opt-out, not a request for the default context.
+  if (slot === null) return null
   if (!ctx) return null
   if (slot && ctx.slots && ctx.slots[slot]) return ctx.slots[slot] as Record<string, any>
   return ctx
