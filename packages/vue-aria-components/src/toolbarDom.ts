@@ -1,13 +1,6 @@
 import {toRaw} from 'vue'
 import {filterDOMProps} from '../../vue-aria/src/utils/filterDOMProps'
-
-/**
- * Private stand-in for official `DEFAULT_SLOT`. Vue has no public context-slot
- * symbol, and this one is not part of the package surface. A `slots` object
- * resolves `slots[slot || TOOLBAR_DEFAULT_SLOT]`; a missing entry throws.
- * A context with no `slots` object stays a flat context. `slot === null` opts out.
- */
-export const TOOLBAR_DEFAULT_SLOT: unique symbol = Symbol('vue-aria.Toolbar.default')
+import {DEFAULT_SLOT} from './defaultSlot'
 
 export function assignRef(target: unknown, el: unknown) {
   if (typeof target === 'function') {
@@ -60,7 +53,10 @@ export function mergeRenderStyle(contextStyle: unknown, localStyle: unknown, val
     if (isStyleObject(contextStyle) && isStyleObject(localStyle)) return {...contextStyle, ...localStyle}
   }
   const only = localStyle != null ? localStyle : contextStyle
-  return typeof only === 'function' ? only(renderValues) : only
+  if (typeof only === 'function') return only(renderValues)
+  // Copy object styles during render so a nested color edit is a dependency.
+  if (isStyleObject(only)) return {...only}
+  return only
 }
 
 export function mergeClassNames(contextClass: unknown, localClass: unknown, values: unknown, defaultClassName: string) {
@@ -108,10 +104,10 @@ export function localClassValue(props: {className?: unknown}, attrs: Record<stri
 export function readSlotContext(ctx: Record<string, any> | null | undefined, slot?: string | null) {
   if (slot === null) return null
   if (!ctx) return null
-  const raw = toRaw(ctx) as Record<string, any>
-  if (raw && typeof raw === 'object' && raw.slots) {
-    const slots = toRaw(raw.slots) as Record<PropertyKey, Record<string, any> | undefined>
-    const slotKey: PropertyKey = slot ? slot : TOOLBAR_DEFAULT_SLOT
+  // Read through the proxy so in-place edits and slot-entry replacement stay tracked.
+  const slots = ctx.slots as Record<PropertyKey, Record<string, any> | undefined> | undefined
+  if (slots) {
+    const slotKey: PropertyKey = slot ? slot : DEFAULT_SLOT
     const selected = slots[slotKey]
     if (!selected) {
       const available = new Intl.ListFormat().format(Object.keys(slots).map((name) => `"${name}"`))
@@ -120,12 +116,17 @@ export function readSlotContext(ctx: Record<string, any> | null | undefined, slo
     }
     return selected
   }
-  return raw
+  return ctx
 }
 
-/** Read `ref` without Vue's reactive proxy unwrapping a nested ref. */
+/**
+ * Keep the Ref object itself. A reactive proxy unwraps `ctx.ref` to its
+ * current element, so the read that establishes the dependency is discarded
+ * and the identity is taken from the raw target.
+ */
 export function readContextRef(ctx: Record<string, any> | null | undefined) {
   if (!ctx) return undefined
+  void ctx.ref
   return (toRaw(ctx) as Record<string, any>).ref
 }
 

@@ -54,6 +54,8 @@ import type {
 import type {ToolbarProps, ToolbarRenderProps} from 'vue-aria-components'
 import {useToolbar as useToolbarSubpath} from 'vue-aria/useToolbar'
 import {Toolbar as ToolbarSubpath, ToolbarContext as ToolbarContextSubpath} from 'vue-aria-components/Toolbar'
+import {DEFAULT_SLOT} from 'vue-aria-components'
+import * as ToolbarEntry from 'vue-aria-components/Toolbar'
 import * as vueAriaRoot from 'vue-aria'
 import * as vueAriaComponentsRoot from 'vue-aria-components'
 import * as vueStatelyRoot from 'vue-stately'
@@ -126,6 +128,12 @@ describe('vue-aria main entry', () => {
     expect(toolbarOptions.orientation).toBe('vertical')
     expect(toolbarOptions['aria-label']).toBe('Tools')
     expect(toolbarProbe(null, toolbarStyle)).toBe('vertical')
+    expect(typeof DEFAULT_SLOT).toBe('symbol')
+    expect(vueAriaComponentsRoot.DEFAULT_SLOT).toBe(DEFAULT_SLOT)
+    expect(ToolbarEntry).not.toHaveProperty('DEFAULT_SLOT')
+    expect(ToolbarEntry).not.toHaveProperty('Provider')
+    expect(ToolbarEntry).not.toHaveProperty('useContextProps')
+    expect(ToolbarEntry).not.toHaveProperty('useSlottedContext')
   })
 
   it('keeps all three interaction *Props objects unwrapped', () => {
@@ -323,6 +331,10 @@ describe('vue-aria main entry', () => {
       'Link',
       'Breadcrumbs',
       'useMove',
+      'DEFAULT_SLOT',
+      'Provider',
+      'useContextProps',
+      'useSlottedContext',
     ]
     for (const name of vueAriaAbsent) {
       expect(vueAriaRoot as Record<string, unknown>, name).not.toHaveProperty(name)
@@ -365,6 +377,11 @@ describe('vue-aria main entry', () => {
       'Breadcrumbs',
       'useMove',
       'useToolbar',
+      'Provider',
+      'useContextProps',
+      'useSlottedContext',
+      'composeRenderProps',
+      'useRenderProps',
     ]
     for (const name of componentsAbsent) {
       expect(vueAriaComponentsRoot as Record<string, unknown>, name).not.toHaveProperty(name)

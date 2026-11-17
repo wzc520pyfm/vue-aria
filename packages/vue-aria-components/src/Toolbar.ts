@@ -145,6 +145,7 @@ export const Toolbar = defineComponent({
 
     return () => {
       const ctx = resolved()
+      readContextRef(ctx)
       const orientation = pick(props.orientation, ctx, 'orientation') === 'vertical' ? 'vertical' : 'horizontal'
       const values: ToolbarRenderProps = {orientation}
       const children = slots.default?.(values)

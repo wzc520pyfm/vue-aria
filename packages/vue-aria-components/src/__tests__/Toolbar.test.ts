@@ -3,8 +3,8 @@ import {mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {createSSRApp} from 'vue'
 import {I18nProvider} from 'vue-aria'
-import {Button, Checkbox, Toolbar, ToolbarContext} from 'vue-aria-components'
-import {TOOLBAR_DEFAULT_SLOT} from '../toolbarDom'
+import {Button, Checkbox, DEFAULT_SLOT, Toolbar, ToolbarContext} from 'vue-aria-components'
+import * as ToolbarSubpath from 'vue-aria-components/Toolbar'
 import type {ToolbarProps, ToolbarRenderProps} from 'vue-aria-components'
 
 afterEach(() => {
@@ -142,7 +142,7 @@ describe('Toolbar', () => {
       hidden: false,
       'data-foo': 'flat-data',
       slots: {
-        [TOOLBAR_DEFAULT_SLOT]: {'aria-label': 'Default', className: 'deflt', 'data-foo': 'context', hidden: false},
+        [DEFAULT_SLOT]: {'aria-label': 'Default', className: 'deflt', 'data-foo': 'context', hidden: false},
         test: {'aria-label': 'Named', className: 'named', 'data-slot-name': 'test'},
       },
     }
@@ -239,6 +239,116 @@ describe('Toolbar', () => {
     namedWrapper.unmount()
     await nextTick()
     expect(named.value).toBeNull()
+  })
+
+  it('tracks in-place flat context edits and a nested ref swap without replacing the context object', async () => {
+    const A = ref<Element | null>(null)
+    const B = ref<Element | null>(null)
+    const ctx = ref({
+      ref: A,
+      orientation: 'horizontal' as 'horizontal' | 'vertical',
+      'aria-label': 'Before',
+      style: {color: 'red'},
+    })
+    const wrapper = mountInDoc(() => {
+      provide(ToolbarContext, ctx)
+      return () => h(Toolbar, {})
+    })
+    await nextTick()
+    const el = document.querySelector('[role="toolbar"]') as HTMLElement
+    expect(A.value).toBe(el)
+    expect(el.getAttribute('aria-orientation')).toBe('horizontal')
+    expect(el.getAttribute('data-orientation')).toBe('horizontal')
+    expect(el.getAttribute('aria-label')).toBe('Before')
+    expect(el.style.color).toBe('red')
+
+    ctx.value.orientation = 'vertical'
+    ctx.value['aria-label'] = 'After'
+    ctx.value.style.color = 'blue'
+    await nextTick()
+    expect(el.getAttribute('aria-orientation')).toBe('vertical')
+    expect(el.getAttribute('data-orientation')).toBe('vertical')
+    expect(el.getAttribute('aria-label')).toBe('After')
+    expect(el.style.color).toBe('blue')
+    expect(A.value).toBe(el)
+    expect(B.value).toBeNull()
+
+    ;(ctx.value as unknown as {ref: typeof B}).ref = B
+    await nextTick()
+    await nextTick()
+    expect(A.value).toBeNull()
+    expect(B.value).toBe(el)
+    wrapper.unmount()
+    await nextTick()
+    expect(B.value).toBeNull()
+  })
+
+  it('tracks in-place named and default slot edits, ref swaps, and slot-entry replacement', async () => {
+    const cases = [
+      {name: 'default', slot: undefined as string | undefined, key: DEFAULT_SLOT as PropertyKey},
+      {name: 'named', slot: 'test', key: 'test' as PropertyKey},
+    ]
+    for (const item of cases) {
+      const A = ref<Element | null>(null)
+      const B = ref<Element | null>(null)
+      const C = ref<Element | null>(null)
+      const entry = () => ({
+        ref: A,
+        orientation: 'horizontal' as 'horizontal' | 'vertical',
+        'aria-label': 'Before',
+        style: {color: 'red'},
+      })
+      const slots: Record<PropertyKey, ReturnType<typeof entry>> = {[item.key]: entry()}
+      if (item.name === 'named') slots[DEFAULT_SLOT] = {ref: ref(null), orientation: 'horizontal', 'aria-label': 'Other', style: {color: 'black'}}
+      const ctx = ref({slots, 'aria-label': 'Flat', orientation: 'vertical' as const, style: {color: 'black'}})
+      const wrapper = mountInDoc(() => {
+        provide(ToolbarContext, ctx)
+        return () => h(Toolbar, {slot: item.slot})
+      })
+      await nextTick()
+      const el = document.querySelector('[aria-label="Before"]') as HTMLElement
+      expect(A.value, item.name).toBe(el)
+      expect(el.getAttribute('aria-orientation'), item.name).toBe('horizontal')
+      expect(el.style.color, item.name).toBe('red')
+
+      const selected = ctx.value.slots[item.key]
+      selected.orientation = 'vertical'
+      selected['aria-label'] = 'After'
+      selected.style.color = 'blue'
+      await nextTick()
+      expect(el.getAttribute('aria-orientation'), item.name).toBe('vertical')
+      expect(el.getAttribute('data-orientation'), item.name).toBe('vertical')
+      expect(el.getAttribute('aria-label'), item.name).toBe('After')
+      expect(el.style.color, item.name).toBe('blue')
+      expect(A.value, item.name).toBe(el)
+
+      ;(selected as unknown as {ref: typeof B}).ref = B
+      await nextTick()
+      await nextTick()
+      expect(A.value, item.name).toBeNull()
+      expect(B.value, item.name).toBe(el)
+
+      ctx.value.slots[item.key] = {
+        ref: C,
+        orientation: 'horizontal',
+        'aria-label': 'Replaced',
+        style: {color: 'green'},
+      }
+      await nextTick()
+      await nextTick()
+      expect(B.value, item.name).toBeNull()
+      expect(C.value, item.name).toBe(el)
+      expect(el.getAttribute('aria-label'), item.name).toBe('Replaced')
+      expect(el.getAttribute('aria-orientation'), item.name).toBe('horizontal')
+      expect(el.style.color, item.name).toBe('green')
+      expect(el.getAttribute('aria-label'), item.name).not.toBe('Flat')
+      wrapper.unmount()
+      await nextTick()
+      expect(C.value, item.name).toBeNull()
+      document.body.innerHTML = ''
+    }
+    expect(ToolbarSubpath).not.toHaveProperty('DEFAULT_SLOT')
+    expect(DEFAULT_SLOT).toBe((await import('vue-aria-components')).DEFAULT_SLOT)
   })
 
   it('throws when a slots bag lacks the requested or default entry instead of inheriting flat props', async () => {

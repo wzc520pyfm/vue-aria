@@ -218,3 +218,4 @@ export type {MeterProps, MeterRenderProps} from './Meter'
 
 export {Toolbar, ToolbarContext} from './Toolbar'
 export type {ToolbarProps, ToolbarRenderProps} from './Toolbar'
+export {DEFAULT_SLOT} from '../src/defaultSlot'
