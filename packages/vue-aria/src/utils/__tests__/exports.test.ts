@@ -113,6 +113,18 @@ describe('vue-aria main entry', () => {
     expect(typeof typeProbe).toBe('function')
     expect(typeof useToolbar).toBe('function')
     expect(useToolbarSubpath).toBe(useToolbar)
+    expect(typeof vueAriaRoot.useToggleButton).toBe('function')
+    expect(typeof vueAriaRoot.useToggleButtonGroup).toBe('function')
+    expect(typeof vueAriaRoot.useToggleButtonGroupItem).toBe('function')
+    expect(typeof vueStatelyRoot.useToggleGroupState).toBe('function')
+    expect(vueAriaComponentsRoot).toHaveProperty('ToggleButton')
+    expect(vueAriaComponentsRoot).toHaveProperty('ToggleButtonContext')
+    expect(vueAriaComponentsRoot).toHaveProperty('ToggleButtonGroup')
+    expect(vueAriaComponentsRoot).toHaveProperty('ToggleButtonGroupContext')
+    expect(vueAriaComponentsRoot).toHaveProperty('ToggleGroupStateContext')
+    expect(vueAriaComponentsRoot).not.toHaveProperty('SelectionIndicator')
+    expect(vueAriaComponentsRoot).not.toHaveProperty('SelectionIndicatorContext')
+    expect(vueAriaComponentsRoot).not.toHaveProperty('SharedElementTransition')
     expect(ToolbarSubpath).toBe((vueAriaComponentsRoot as Record<string, unknown>).Toolbar)
     expect(ToolbarContextSubpath).toBe((vueAriaComponentsRoot as Record<string, unknown>).ToolbarContext)
     const toolbarOptions: AriaToolbarProps = {orientation: 'vertical', 'aria-label': 'Tools'}
@@ -340,7 +352,7 @@ describe('vue-aria main entry', () => {
       expect(vueAriaRoot as Record<string, unknown>, name).not.toHaveProperty(name)
     }
 
-    const vueStatelyAbsent = ['useToggle', 'useToggleGroupState', 'useFormValidationState', 'useEvent']
+    const vueStatelyAbsent = ['useToggle', 'useFormValidationState', 'useEvent']
     for (const name of vueStatelyAbsent) {
       expect(vueStatelyRoot as Record<string, unknown>, name).not.toHaveProperty(name)
     }
@@ -368,8 +380,10 @@ describe('vue-aria main entry', () => {
       'ShadowTreeWalker',
       'createShadowTreeWalker',
       'focusableNext',
-      'ToggleButton',
-      'ToggleButtonGroup',
+      'useToggleButton',
+      'useToggleButtonGroup',
+      'useToggleButtonGroupItem',
+      'useToggleGroupState',
       'Tabs',
       'TabList',
       'TabPanel',
