@@ -1,4 +1,4 @@
-import {defineComponent, h, nextTick, provide, ref} from 'vue'
+import {defineComponent, Fragment, h, nextTick, provide, ref} from 'vue'
 import {mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {I18nProvider, Label} from 'vue-aria-components'
@@ -6,9 +6,12 @@ import {
   Slider,
   SliderContext,
   SliderFill,
+  SliderFillContext,
   SliderOutput,
+  SliderOutputContext,
   SliderThumb,
   SliderTrack,
+  SliderTrackContext,
 } from '../Slider'
 import * as stately from 'vue-stately'
 import * as aria from 'vue-aria'
@@ -593,6 +596,239 @@ describe('Slider', () => {
     wrapper.unmount()
   })
 })
+
+  it('names the slider from a Fragment label and updates when that label is added or removed', async () => {
+    const show = ref(true)
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Slider, {'data-testid': 'named'}, {
+          default: () => h(Fragment, [
+            show.value ? h(Label, {}, {default: () => 'Volume'}) : null,
+            h(SliderTrack, {}, {default: () => h(SliderThumb, {}, {default: () => h(Label, {}, {default: () => 'Minimum'})})}),
+          ]),
+        })
+      },
+    }))
+    await nextTick()
+    const group = document.querySelector('[data-testid="named"]') as HTMLElement
+    const label = group.querySelector('label') as HTMLLabelElement
+    expect(label.textContent).toBe('Volume')
+    expect(group.getAttribute('aria-labelledby')).toBe(label.id)
+    const input = group.querySelector('input') as HTMLInputElement
+    const thumbLabel = [...group.querySelectorAll('label')].find((node) => node.textContent === 'Minimum') as HTMLLabelElement
+    expect(thumbLabel).toBeTruthy()
+    expect(thumbLabel.getAttribute('for')).toBe(input.id)
+    expect(input.getAttribute('aria-labelledby')).toContain(thumbLabel.id)
+    expect(input.getAttribute('aria-labelledby')).toContain(label.id)
+    show.value = false
+    await nextTick()
+    expect(group.querySelector('label')?.textContent).toBe('Minimum')
+    expect(group.hasAttribute('aria-labelledby')).toBe(false)
+    show.value = true
+    await nextTick()
+    const restored = [...group.querySelectorAll('label')].find((node) => node.textContent === 'Volume') as HTMLLabelElement
+    expect(group.getAttribute('aria-labelledby')).toBe(restored.id)
+    wrapper.unmount()
+  })
+
+  it('follows each public context for value, class, style, offset, ref, and false', async () => {
+    const value = ref(10)
+    const onChange = vi.fn((next: number | number[]) => {
+      value.value = next as number
+    })
+    const onChangeEnd = vi.fn()
+    const rootRef = ref<HTMLElement | null>(null)
+    const outputRef = ref<HTMLElement | null>(null)
+    const trackRef = ref<HTMLElement | null>(null)
+    const fillRef = ref<HTMLElement | null>(null)
+    const disabled = ref(true)
+    const offset = ref(20)
+    const rootCtx: Record<string, any> = {ref: rootRef, onChange, onChangeEnd}
+    Object.defineProperty(rootCtx, 'value', {enumerable: true, get: () => value.value})
+    Object.defineProperty(rootCtx, 'isDisabled', {enumerable: true, get: () => disabled.value})
+    Object.defineProperty(rootCtx, 'className', {enumerable: true, get: () => 'root-ctx'})
+    Object.defineProperty(rootCtx, 'style', {enumerable: true, get: () => 'color: red'})
+    const outputCtx: Record<string, any> = {ref: outputRef}
+    Object.defineProperty(outputCtx, 'className', {enumerable: true, get: () => 'out-ctx'})
+    Object.defineProperty(outputCtx, 'style', {enumerable: true, get: () => 'color: red'})
+    const trackCtx: Record<string, any> = {ref: trackRef}
+    Object.defineProperty(trackCtx, 'style', {enumerable: true, get: () => 'color: red'})
+    Object.defineProperty(trackCtx, 'className', {enumerable: true, get: () => 'track-ctx'})
+    const fillCtx: Record<string, any> = {ref: fillRef}
+    Object.defineProperty(fillCtx, 'offset', {enumerable: true, get: () => offset.value})
+    Object.defineProperty(fillCtx, 'className', {enumerable: true, get: () => 'fill-ctx'})
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        provide(SliderContext, rootCtx)
+        return () => h(Slider, {isDisabled: false, className: 'root-local', style: ({defaultStyle}: {defaultStyle?: Record<string, string>}) => defaultStyle ?? {}}, {
+          default: () => [
+            h(SliderOutput, {style: () => 'font-weight: 700'}),
+            h(SliderTrack, {style: () => ({padding: '4px'})}, {
+              default: () => [h(SliderFill), h(SliderThumb, {autoFocus: true})],
+            }),
+          ],
+        })
+      },
+    }))
+    // Child contexts are provided by Slider itself. Re-provide them around the children
+    // by wrapping after the root context case is asserted, then mount a second tree.
+    await nextTick()
+    const group = document.querySelector('[role="group"]') as HTMLElement
+    expect(rootRef.value).toBe(group)
+    expect(group.className).toContain('root-ctx')
+    expect(group.className).toContain('root-local')
+    expect(group.hasAttribute('data-disabled')).toBe(false)
+    expect(group.style.color).toBe('red')
+    const input = group.querySelector('input') as HTMLInputElement
+    expect(document.activeElement).toBe(input)
+    input.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true, cancelable: true}))
+    await nextTick()
+    expect(onChange).toHaveBeenCalledWith(11)
+    expect(onChangeEnd).toHaveBeenCalledTimes(1)
+    expect(onChangeEnd).toHaveBeenLastCalledWith(11)
+    expect(value.value).toBe(11)
+    input.dispatchEvent(new KeyboardEvent('keyup', {key: 'ArrowRight', bubbles: true}))
+    wrapper.unmount()
+
+    const ProvideOutput = defineComponent({
+      setup(_, {slots}) {
+        provide(SliderOutputContext, outputCtx)
+        return () => slots.default?.()
+      },
+    })
+    const ProvideTrack = defineComponent({
+      setup(_, {slots}) {
+        provide(SliderTrackContext, trackCtx)
+        return () => slots.default?.()
+      },
+    })
+    const ProvideFill = defineComponent({
+      setup(_, {slots}) {
+        provide(SliderFillContext, fillCtx)
+        return () => slots.default?.()
+      },
+    })
+    const child = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Slider, {value: 50, 'aria-label': 'Ctx'}, {
+          default: () => [
+            h(ProvideOutput, {}, {default: () => h(SliderOutput, {className: 'out-local', style: () => 'font-weight: 700'})}),
+            h(ProvideTrack, {}, {default: () => h(SliderTrack, {className: 'track-local', style: () => ({padding: '4px'})}, {
+              default: () => [h(ProvideFill, {}, {default: () => h(SliderFill, {style: () => ({outline: '1px solid blue'})})}), h(SliderThumb)],
+            })}),
+          ],
+        })
+      },
+    }))
+    await nextTick()
+    const output = document.querySelector('output') as HTMLElement
+    const track = document.querySelector('.track-ctx') as HTMLElement
+    const fill = document.querySelector('.fill-ctx') as HTMLElement
+    expect(outputRef.value).toBe(output)
+    expect(output.className).toContain('out-ctx')
+    expect(output.className).toContain('out-local')
+    expect(output.style.color).toBe('red')
+    expect(output.style.fontWeight).toBe('700')
+    expect(trackRef.value).toBe(track)
+    expect(track.className).toContain('track-local')
+    expect(track.style.color).toBe('red')
+    expect(track.style.padding).toBe('4px')
+    expect(track.style.position).toBe('relative')
+    expect(fillRef.value).toBe(fill)
+    expect(fill.style.insetInlineStart).toBe('20%')
+    expect(fill.style.width).toBe('30%')
+    offset.value = 10
+    await nextTick()
+    expect(fill.style.insetInlineStart).toBe('10%')
+    expect(fill.style.width).toBe('40%')
+    expect(fill.style.outline).toContain('blue')
+    child.unmount()
+  })
+
+  it('focuses autoFocus and forwards a thumb keydown callback', async () => {
+    const onKeyDown = vi.fn()
+    const onHoverend = vi.fn()
+    const assignment: SliderThumbProps = {
+      autoFocus: true,
+      onKeyDown,
+      onKeyUp: () => {},
+      onHoverstart: () => {},
+      onHoverend,
+      onHoverchange: () => {},
+      onHoverStart: () => {},
+      onHoverEnd: () => {},
+      onHoverChange: () => {},
+    }
+    const fillAssignment: SliderFillProps = {
+      offset: 0,
+      onHoverstart: () => {},
+      onHoverend: () => {},
+      onHoverchange: () => {},
+      onHoverEnd: () => {},
+      onHoverChange: () => {},
+    }
+    expect(assignment.autoFocus).toBe(true)
+    expect(fillAssignment.offset).toBe(0)
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Slider, {'aria-label': 'Keys'}, {
+          default: () => h(SliderTrack, {}, {
+            default: () => h(SliderThumb, assignment),
+          }),
+        })
+      },
+    }))
+    await nextTick()
+    const input = document.querySelector('input') as HTMLInputElement
+    expect(document.activeElement).toBe(input)
+    input.dispatchEvent(new KeyboardEvent('keydown', {key: 'a', bubbles: true}))
+    expect(onKeyDown).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('submits and resets every thumb in one form', async () => {
+    const value = ref<number[]>([20, 80])
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h('form', [
+          h(Slider, {
+            value: value.value,
+            defaultValue: [20, 80],
+            onChange: (next: number | number[]) => {
+              value.value = next as number[]
+            },
+          }, {
+            default: () => h(SliderTrack, {}, {
+              default: () => [
+                h(SliderThumb, {index: 0, name: 'start'}),
+                h(SliderThumb, {index: 1, name: 'end'}),
+              ],
+            }),
+          }),
+          h('button', {type: 'reset'}, 'Reset'),
+        ])
+      },
+    }))
+    await nextTick()
+    const form = document.querySelector('form') as HTMLFormElement
+    const data = new FormData(form)
+    expect(data.get('start')).toBe('20')
+    expect(data.get('end')).toBe('80')
+    const inputs = [...form.querySelectorAll('input')] as HTMLInputElement[]
+    inputs[0].focus()
+    inputs[0].dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true, cancelable: true}))
+    await nextTick()
+    inputs[1].focus()
+    inputs[1].dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowLeft', bubbles: true, cancelable: true}))
+    await nextTick()
+    expect(new FormData(form).get('start')).toBe('21')
+    expect(new FormData(form).get('end')).toBe('79')
+    form.reset()
+    await nextTick()
+    expect(inputs.map((input) => input.value)).toEqual(['20', '80'])
+    expect(value.value).toEqual([20, 80])
+    wrapper.unmount()
+  })
 
 describe('Slider public exports', () => {
   it('exports the official surfaces and refuses the denylist', async () => {

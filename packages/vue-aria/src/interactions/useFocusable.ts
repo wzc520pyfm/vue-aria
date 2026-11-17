@@ -50,9 +50,8 @@ export function useFocusable(
     watch(
       domRef,
       (el) => {
-        if (autoFocusApplied && el) {
-          focusSafely(el)
-        }
+        if (!el || !autoFocusApplied) return
+        focusSafely(el)
         autoFocusApplied = false
       },
       {immediate: true, flush: 'post'},

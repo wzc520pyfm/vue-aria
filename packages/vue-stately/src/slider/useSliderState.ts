@@ -181,10 +181,26 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
   const valuesRef: {current: number[]} = {current: valuesState.value.slice()}
   let listFormat: Intl.ListFormat | null = null
 
-  const readValues = () => {
+  /** Public values always follow controlled state. `valuesRef` is only the last proposal. */
+  let seenPublicKey = valuesState.value.join(',')
+  function observeParent() {
     const current = valuesState.value
-    if (!isDraggings.value.some(Boolean)) valuesRef.current = current.slice()
-    return isDraggings.value.some(Boolean) ? valuesRef.current : current
+    const key = current.join(',')
+    if (key === seenPublicKey) return
+    const previousKey = seenPublicKey
+    seenPublicKey = key
+    // Adopt a parent update when it is not covering a newer local proposal.
+    if (!isDraggings.value.some(Boolean) || valuesRef.current.join(',') === previousKey) {
+      valuesRef.current = current.slice()
+    }
+  }
+  const publicValues = () => {
+    observeParent()
+    return valuesState.value
+  }
+  const proposalBase = () => {
+    observeParent()
+    return valuesRef.current
   }
 
   function ensureSlots(length: number) {
@@ -199,23 +215,24 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
   }
 
   function getThumbMinValue(index: number) {
-    const values = readValues()
+    const values = publicValues()
     return index === 0 ? minValue() : values[index - 1]
   }
   function getThumbMaxValue(index: number) {
-    const values = readValues()
+    const values = publicValues()
     return index === values.length - 1 ? maxValue() : values[index + 1]
   }
 
   function updateValue(index: number, value: number) {
-    if (isDisabled() || !isEditables[index]) return
-    const values = readValues()
+    if (isDisabled() || isEditables[index] === false) return
+    const values = proposalBase()
     ensureSlots(values.length)
-    const thisMin = index === 0 ? minValue() : values[index - 1]
-    const thisMax = index === values.length - 1 ? maxValue() : values[index + 1]
+    const shown = publicValues()
+    const thisMin = index === 0 ? minValue() : shown[index - 1]
+    const thisMax = index === shown.length - 1 ? maxValue() : shown[index + 1]
     value = snapValueToStep(value, thisMin, thisMax, step())
     if (values[index] === value) {
-      valuesRef.current = values
+      valuesRef.current = values.slice()
       return
     }
     const next = values.slice()
@@ -224,10 +241,13 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
   }
 
   function updateDragging(index: number, dragging: boolean) {
-    if (isDisabled() || isEditables[index] === false) return
+    // A disabled or non-editable thumb cannot start a drag, but an active drag
+    // must still be allowed to stop. Otherwise release after disable leaves the
+    // track locked.
+    if (dragging && (isDisabled() || isEditables[index] === false)) return
     const values = valuesState.value
     ensureSlots(Math.max(values.length, index + 1))
-    if (dragging) valuesRef.current = values.slice()
+    if (dragging) observeParent()
     const wasDragging = isDraggings.value[index]
     if (isDraggings.value[index] === dragging) {
       if (!dragging && wasDragging && !isDraggings.value.some(Boolean)) emitChangeEnd(valuesRef.current.slice())
@@ -252,7 +272,7 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
     return clamp(getRoundedValue(val), minValue(), maxValue())
   }
 
-  function getFormattedValue(valueParam: number | number[] = readValues()) {
+  function getFormattedValue(valueParam: number | number[] = publicValues()) {
     const formatter = props.numberFormatter
     let values = valueParam
     if (typeof values === 'number') values = [values]
@@ -276,13 +296,13 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
 
   const state: SliderState = {
     get values() {
-      return readValues().slice()
+      return publicValues().slice()
     },
     get defaultValues() {
       return toValue(props.defaultValue) !== undefined ? defaultValues() : initialValues.slice()
     },
     getThumbValue(index) {
-      return readValues()[index]
+      return publicValues()[index]
     },
     setThumbValue: updateValue,
     setThumbPercent(index, percent) {
@@ -299,11 +319,11 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
       focusedIndex.value = index
     },
     getThumbPercent(index) {
-      return getValuePercent(readValues()[index])
+      return getValuePercent(publicValues()[index])
     },
     getValuePercent,
     getThumbValueLabel(index) {
-      return getFormattedValue(readValues()[index])
+      return getFormattedValue(publicValues()[index])
     },
     getFormattedValue,
     getThumbMinValue,
@@ -318,11 +338,11 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
     },
     incrementThumb(index, stepSize = 1) {
       const amount = Math.max(stepSize, step())
-      updateValue(index, snapValueToStep(readValues()[index] + amount, minValue(), maxValue(), step()))
+      updateValue(index, snapValueToStep(proposalBase()[index] + amount, minValue(), maxValue(), step()))
     },
     decrementThumb(index, stepSize = 1) {
       const amount = Math.max(stepSize, step())
-      updateValue(index, snapValueToStep(readValues()[index] - amount, minValue(), maxValue(), step()))
+      updateValue(index, snapValueToStep(proposalBase()[index] - amount, minValue(), maxValue(), step()))
     },
     get step() {
       return step()

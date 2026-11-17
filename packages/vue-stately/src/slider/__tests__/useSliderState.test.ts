@@ -162,6 +162,56 @@ describe('useSliderState', () => {
     expect(state!.getThumbValue(1)).toBe(50)
   })
 
+  it('keeps controlled public values on the parent while changeend reports the last proposal', () => {
+    const value = ref<number | number[]>(20)
+    const onChange = vi.fn()
+    const onChangeEnd = vi.fn()
+    let state: SliderState | undefined
+    const wrapper = mount(defineComponent({
+      setup() {
+        state = useSliderState({
+          numberFormatter: formatter,
+          value: () => value.value,
+          onChange,
+          onChangeEnd,
+        })
+        return () => null
+      },
+    }))
+    state!.setThumbDragging(0, true)
+    state!.setThumbValue(0, 30)
+    expect(onChange).toHaveBeenLastCalledWith(30)
+    expect(state!.values).toEqual([20])
+    value.value = 50
+    expect(state!.values).toEqual([50])
+    state!.setThumbDragging(0, false)
+    expect(onChangeEnd).toHaveBeenCalledTimes(1)
+    expect(onChangeEnd).toHaveBeenLastCalledWith(30)
+    wrapper.unmount()
+
+    const transformed = ref(20)
+    const onChangeTransformed = vi.fn((next: number | number[]) => {
+      transformed.value = Math.min(next as number, 25)
+    })
+    let transformedState: SliderState | undefined
+    mount(defineComponent({
+      setup() {
+        transformedState = useSliderState({
+          numberFormatter: formatter,
+          value: () => transformed.value,
+          onChange: onChangeTransformed,
+          onChangeEnd,
+        })
+        return () => null
+      },
+    }))
+    transformedState!.setThumbDragging(0, true)
+    transformedState!.setThumbValue(0, 30)
+    expect(transformedState!.values).toEqual([25])
+    transformedState!.setThumbDragging(0, false)
+    expect(onChangeEnd).toHaveBeenLastCalledWith(30)
+  })
+
   it('formats two thumbs with formatRange and three with a unit list', () => {
     const range = mountState({defaultValue: [30, 60]})
     expect(range.state.getFormattedValue()).toBe(formatter.formatRange(30, 60))

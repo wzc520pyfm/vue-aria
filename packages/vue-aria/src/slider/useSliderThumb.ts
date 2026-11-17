@@ -6,7 +6,7 @@
  * objects with live getters. There is no `isReadOnly`.
  */
 
-import {toValue, watch, type MaybeRefOrGetter, type Ref} from 'vue'
+import {onScopeDispose, onUpdated, toValue, watch, type MaybeRefOrGetter, type Ref} from 'vue'
 import type {SliderState} from 'vue-stately/useSliderState'
 import {useFocusable} from '../interactions/useFocusable'
 import {useKeyboard} from '../interactions/useKeyboard'
@@ -17,6 +17,7 @@ import {useFormReset} from '../utils/useFormReset'
 import {useGlobalListeners} from '../utils/useGlobalListeners'
 import {mergeProps} from '../utils/mergeProps'
 import {getSliderThumbId, sliderData} from './utils'
+import {restoreTextSelection} from '../interactions/textSelection'
 import type {Orientation} from './useSlider'
 
 export interface SliderThumbProps {
@@ -33,6 +34,7 @@ export interface SliderThumbProps {
   validationState?: MaybeRefOrGetter<'valid' | 'invalid' | undefined>
   name?: MaybeRefOrGetter<string | undefined>
   form?: MaybeRefOrGetter<string | undefined>
+  autoFocus?: MaybeRefOrGetter<boolean | undefined>
   label?: MaybeRefOrGetter<unknown>
   'aria-label'?: MaybeRefOrGetter<string | undefined>
   'aria-labelledby'?: MaybeRefOrGetter<string | undefined>
@@ -42,6 +44,8 @@ export interface SliderThumbProps {
   onFocus?: (e: FocusEvent) => void
   onBlur?: (e: FocusEvent) => void
   onFocusChange?: (isFocused: boolean) => void
+  onKeyDown?: (e: KeyboardEvent) => void
+  onKeyUp?: (e: KeyboardEvent) => void
 }
 
 export interface AriaSliderThumbProps extends SliderThumbProps {}
@@ -163,6 +167,9 @@ export function useSliderThumb(opts: AriaSliderThumbOptions, state: SliderState)
 
   const {focusableProps} = useFocusable(
     {
+      autoFocus: () => Boolean(toValue(opts.autoFocus)),
+      onKeyDown: opts.onKeyDown,
+      onKeyUp: opts.onKeyUp,
       onFocus: (event: FocusEvent) => {
         opts.onFocus?.(event)
         state.setFocusedThumb(index())
@@ -178,37 +185,59 @@ export function useSliderThumb(opts: AriaSliderThumbOptions, state: SliderState)
   )
 
   let currentPointer: number | undefined
+  let pressedEl: Element | null = null
+  function releaseId(e: Event): number | undefined {
+    if (e.type.startsWith('pointer') && 'pointerId' in e) return (e as PointerEvent).pointerId
+    const touches = (e as TouchEvent).changedTouches
+    if (!touches || touches.length === 0) return undefined
+    for (let i = 0; i < touches.length; i++) {
+      if (touches[i].identifier === currentPointer) return touches[i].identifier
+    }
+    return currentPointer == null ? touches[0].identifier : undefined
+  }
+  function finishThumb() {
+    const thumbIndex = index()
+    if (pressedEl) restoreTextSelection(pressedEl)
+    pressedEl = null
+    removeGlobalListener(window, 'mouseup', onUp, false)
+    removeGlobalListener(window, 'touchend', onUp, false)
+    removeGlobalListener(window, 'touchcancel', onUp, false)
+    removeGlobalListener(window, 'pointerup', onUp, false)
+    removeGlobalListener(window, 'pointercancel', onUp, false)
+    if (state.isThumbDragging(thumbIndex)) state.setThumbDragging(thumbIndex, false)
+  }
   const onUp = (e: Event) => {
-    const pointerEvent = e as PointerEvent
-    const touchEvent = e as TouchEvent
-    const id = pointerEvent.pointerId ?? touchEvent.changedTouches?.[0]?.identifier
-    if (id === currentPointer) {
+    if (releaseId(e) === currentPointer) {
       focusInput()
-      state.setThumbDragging(index(), false)
-      removeGlobalListener(window, 'mouseup', onUp, false)
-      removeGlobalListener(window, 'touchend', onUp, false)
-      removeGlobalListener(window, 'pointerup', onUp, false)
+      finishThumb()
     }
   }
-  const onDown = (id?: number) => {
+  const onDown = (id: number | undefined, host?: Element | null) => {
     focusInput()
     currentPointer = id
+    pressedEl = host ?? null
     state.setThumbDragging(index(), true)
     addGlobalListener(window, 'mouseup', onUp, false)
     addGlobalListener(window, 'touchend', onUp, false)
+    addGlobalListener(window, 'touchcancel', onUp, false)
     addGlobalListener(window, 'pointerup', onUp, false)
+    addGlobalListener(window, 'pointercancel', onUp, false)
   }
+  onUpdated(() => {
+    if (pressedEl && !pressedEl.isConnected) finishThumb()
+  })
+  onScopeDispose(finishThumb)
 
   const onMouseDown = (e: MouseEvent) => {
     if (e.button !== 0 || e.altKey || e.ctrlKey || e.metaKey) return
-    onDown()
+    onDown(undefined, e.currentTarget as Element)
   }
   const onPointerDown = (e: PointerEvent) => {
     if (e.button !== 0 || e.altKey || e.ctrlKey || e.metaKey) return
-    onDown(e.pointerId)
+    onDown(e.pointerId, e.currentTarget as Element)
   }
   const onTouchStart = (e: TouchEvent) => {
-    onDown(e.changedTouches[0]?.identifier)
+    onDown(e.changedTouches[0]?.identifier, e.currentTarget as Element)
   }
 
   const interactions = mergeProps(keyboardProps, moveProps, {

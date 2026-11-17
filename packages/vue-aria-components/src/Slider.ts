@@ -9,6 +9,7 @@
 
 import {
   defineComponent,
+  Fragment,
   h,
   inject,
   isVNode,
@@ -80,8 +81,16 @@ function assignRef(target: unknown, el: unknown) {
 function flatten(v: VNodeChild): VNode[] {
   if (v == null || typeof v === 'boolean') return []
   if (Array.isArray(v)) return v.flatMap(flatten)
-  if (isVNode(v)) return [v]
+  if (isVNode(v)) {
+    // A Fragment is not a component boundary. A Label wrapped by one still names the slider.
+    if (v.type === Fragment) return flatten(v.children as VNodeChild)
+    return [v]
+  }
   return []
+}
+
+function hasLabelNode(v: VNodeChild): boolean {
+  return flatten(v).some((node) => componentName(node) === 'Label')
 }
 
 function componentName(v: VNode) {
@@ -103,6 +112,13 @@ function mergeRenderStyle(contextStyle: unknown, localStyle: unknown, values: Re
   if (contextStyle != null && localStyle != null) {
     if (typeof contextStyle === 'function' || typeof localStyle === 'function') {
       const contextResolved = typeof contextStyle === 'function' ? contextStyle(values) : contextStyle
+      // A string context style has no object fields to copy into defaultStyle.
+      // Keep the string itself so `color: red` survives a local style function.
+      if (typeof contextResolved === 'string') {
+        const localResolved = typeof localStyle === 'function' ? localStyle({...values, defaultStyle: {}}) : localStyle
+        if (localResolved == null || localResolved === '') return contextResolved
+        return [contextResolved, localResolved]
+      }
       const defaultStyle = isStyleObject(contextResolved) ? {...contextResolved} : {}
       const localResolved = typeof localStyle === 'function' ? localStyle({...values, defaultStyle}) : localStyle
       if (typeof localResolved === 'string') return [defaultStyle, localResolved]
@@ -215,7 +231,7 @@ export const Slider = defineComponent({
   setup(props, {slots, attrs, emit}) {
     const ctxSource = inject(SliderContextKey, null)
     const resolved = () => readSlotContext(ctxSource, props.slot ?? (attrs.slot as string | undefined))
-    let hasLabel = false
+    const hasLabel = ref(false)
 
     const numberFormatter = useNumberFormatter(() => pick(props.formatOptions, resolved(), 'formatOptions') as Intl.NumberFormatOptions | undefined)
     const state = useSliderState({
@@ -230,8 +246,12 @@ export const Slider = defineComponent({
       label: () => pick(props.label, resolved(), 'label'),
       'aria-label': () => pick(props['aria-label'], resolved(), 'aria-label'),
       'aria-labelledby': () => pick(props['aria-labelledby'], resolved(), 'aria-labelledby'),
-      onChange: (value) => emit('change', value),
+      onChange: (value) => {
+        resolved()?.onChange?.(value)
+        emit('change', value)
+      },
       onChangeEnd: (value) => {
+        resolved()?.onChangeEnd?.(value)
         props.onChangeEnd?.(value)
         emit('changeend', value)
       },
@@ -243,7 +263,7 @@ export const Slider = defineComponent({
         id: () => pick(props.id, resolved(), 'id'),
         label: () => {
           if (pick(props['aria-label'], resolved(), 'aria-label') || pick(props['aria-labelledby'], resolved(), 'aria-labelledby')) return undefined
-          return hasLabel || pick(props.label, resolved(), 'label') || undefined
+          return hasLabel.value || pick(props.label, resolved(), 'label') || undefined
         },
         'aria-label': () => pick(props['aria-label'], resolved(), 'aria-label'),
         'aria-labelledby': () => pick(props['aria-labelledby'], resolved(), 'aria-labelledby'),
@@ -279,7 +299,8 @@ export const Slider = defineComponent({
         state,
       }
       const children = slots.default?.(values)
-      hasLabel = flatten(children).some((node) => componentName(node) === 'Label')
+      const labelled = hasLabelNode(children)
+      if (hasLabel.value !== labelled) hasLabel.value = labelled
       const ctx = resolved()
       const className = mergeClassNames(ctx?.className, localClassValue(props, attrs as Record<string, any>), values)
       const style = mergeRenderStyle(ctx?.style, props.style ?? (attrs as any).style, values as unknown as Record<string, unknown>)
@@ -343,12 +364,13 @@ export const SliderOutput = defineComponent({
         isDisabled: state.isDisabled,
         state,
       }
-      const className = mergeClassNames(undefined, localClassValue(props, attrs as Record<string, any>), values)
-      const style = mergeRenderStyle(undefined, props.style ?? (attrs as any).style, values as unknown as Record<string, unknown>)
+      const className = mergeClassNames(ctx?.className, localClassValue(props, attrs as Record<string, any>), values)
+      const style = mergeRenderStyle(ctx?.style, props.style ?? (attrs as any).style, values as unknown as Record<string, unknown>)
       const content = slots.default?.(values)
       return h(
         'output',
         bindDom(mergeProps(ctx ?? {}, domFrom(attrs as Record<string, any>), {
+          ref: (el: Element | null) => assignRef(ctx?.ref, el),
           class: className ?? 'react-aria-SliderOutput',
           style,
           for: ctx?.htmlFor,
@@ -403,8 +425,8 @@ export const SliderTrack = defineComponent({
         state,
       }
       const className = mergeClassNames(ctx?.className, localClassValue(props, attrs as Record<string, any>), values)
-      const behavior = isStyleObject(ctx?.style) ? {...ctx.style} : {position: 'relative', touchAction: 'none'}
-      const userStyle = mergeRenderStyle(undefined, props.style ?? (attrs as any).style, values as unknown as Record<string, unknown>)
+      const behavior = {position: 'relative' as const, touchAction: 'none' as const}
+      const userStyle = mergeRenderStyle(ctx?.style, props.style ?? (attrs as any).style, values as unknown as Record<string, unknown>)
       return h(
         'div',
         bindDom(mergeProps(domFrom(ctx), hoverProps, domFrom(attrs as Record<string, any>), {
@@ -454,6 +476,9 @@ export const SliderThumb = defineComponent({
     isRequired: {type: Boolean, default: undefined},
     isInvalid: {type: Boolean, default: undefined},
     validationState: {type: String as PropType<'valid' | 'invalid' | undefined>, default: undefined},
+    autoFocus: {type: Boolean, default: undefined},
+    onKeyDown: {type: Function as PropType<(event: KeyboardEvent) => void>, default: undefined},
+    onKeyUp: {type: Function as PropType<(event: KeyboardEvent) => void>, default: undefined},
     className: {type: null as unknown as PropType<any>, default: undefined},
     style: {type: null as unknown as PropType<any>, default: undefined},
     onHoverStart: {type: Function, default: undefined},
@@ -467,6 +492,7 @@ export const SliderThumb = defineComponent({
     const trackRef = (track?.ref as Ref<Element | null>) ?? ref(null)
     const internalInput = ref<HTMLInputElement | null>(null)
     const inputRef = (props.inputRef as Ref<HTMLInputElement | null> | null) || internalInput
+    const hasThumbLabel = ref(false)
     const thumb = useSliderThumb(
       {
         index: () => props.index,
@@ -474,7 +500,12 @@ export const SliderThumb = defineComponent({
         form: () => props.form ?? (attrs.form as string | undefined),
         isDisabled: () => props.isDisabled,
         orientation: () => props.orientation,
-        label: () => props.label,
+        label: () => {
+          if (props['aria-label'] || attrs['aria-label'] || props['aria-labelledby'] || attrs['aria-labelledby']) {
+            return props.label
+          }
+          return props.label || (hasThumbLabel.value ? true : undefined)
+        },
         'aria-label': () => props['aria-label'] ?? (attrs['aria-label'] as string | undefined),
         'aria-labelledby': () => props['aria-labelledby'] ?? (attrs['aria-labelledby'] as string | undefined),
         'aria-describedby': () => props['aria-describedby'] ?? (attrs['aria-describedby'] as string | undefined),
@@ -483,6 +514,17 @@ export const SliderThumb = defineComponent({
         isRequired: () => props.isRequired,
         isInvalid: () => props.isInvalid,
         validationState: () => props.validationState,
+        autoFocus: () => props.autoFocus ?? (attrs.autoFocus as boolean | undefined),
+        onKeyDown: (event) => {
+          props.onKeyDown?.(event)
+          ;(attrs.onKeydown as ((event: KeyboardEvent) => void) | undefined)?.(event)
+          ;(attrs.onKeyDown as ((event: KeyboardEvent) => void) | undefined)?.(event)
+        },
+        onKeyUp: (event) => {
+          props.onKeyUp?.(event)
+          ;(attrs.onKeyup as ((event: KeyboardEvent) => void) | undefined)?.(event)
+          ;(attrs.onKeyUp as ((event: KeyboardEvent) => void) | undefined)?.(event)
+        },
         trackRef,
         inputRef,
         onFocus: (event) => emit('focus', event),
@@ -521,6 +563,8 @@ export const SliderThumb = defineComponent({
         isFocusVisible: isFocusVisible.value,
         isDisabled: thumb.isDisabled,
       }
+      const children = slots.default?.(values)
+      if (hasThumbLabel.value !== hasLabelNode(children)) hasThumbLabel.value = hasLabelNode(children)
       const className = mergeClassNames(undefined, localClassValue(props, attrs as Record<string, any>), values)
       const userStyle = mergeRenderStyle(undefined, props.style ?? (attrs as any).style, values as unknown as Record<string, unknown>)
       return h(
@@ -536,7 +580,7 @@ export const SliderThumb = defineComponent({
         })),
         [
           h(VisuallyHidden, () => h('input', bindDom(mergeProps(thumb.inputProps, focusProps, {ref: inputRef})))),
-          slots.default?.(values),
+          children,
         ],
       )
     }
@@ -550,14 +594,24 @@ export interface SliderThumbProps {
   isDisabled?: boolean
   inputRef?: Ref<HTMLInputElement | null> | null
   orientation?: Orientation
+  autoFocus?: boolean
   className?: string | ((values: SliderThumbRenderProps) => string)
   style?: any
   'aria-label'?: string
   'aria-labelledby'?: string
   'aria-describedby'?: string
   'aria-details'?: string
+  onKeyDown?: (event: KeyboardEvent) => void
+  onKeyUp?: (event: KeyboardEvent) => void
   onHoverStart?: (event: any) => void
+  onHoverEnd?: (event: any) => void
+  onHoverChange?: (isHovered: boolean) => void
+  /** Vue listener for the lowercase `hoverstart` emit. */
   onHoverstart?: (event: any) => void
+  /** Vue listener for the lowercase `hoverend` emit. */
+  onHoverend?: (event: any) => void
+  /** Vue listener for the lowercase `hoverchange` emit. */
+  onHoverchange?: (isHovered: boolean) => void
   onFocus?: (event: FocusEvent) => void
   onBlur?: (event: FocusEvent) => void
 }
@@ -599,8 +653,9 @@ export const SliderFill = defineComponent({
         isHovered: isHovered.value,
         state,
       }
-      const offset = props.offset != null
-        ? Math.min(Math.max(props.offset, state.getThumbMinValue(0)), state.getThumbMaxValue(0))
+      const rawOffset = props.offset != null ? props.offset : (ctx?.offset as number | undefined)
+      const offset = rawOffset != null
+        ? Math.min(Math.max(rawOffset, state.getThumbMinValue(0)), state.getThumbMaxValue(0))
         : state.getThumbMinValue(0)
       const start = state.values.length > 1 ? state.getThumbPercent(0) * 100 : state.getValuePercent(offset) * 100
       const end = state.values.length > 0 ? state.getThumbPercent(state.values.length - 1) * 100 : 0
@@ -633,5 +688,12 @@ export interface SliderFillProps {
   className?: string | ((values: SliderFillRenderProps) => string)
   style?: any
   onHoverStart?: (event: any) => void
+  onHoverEnd?: (event: any) => void
+  onHoverChange?: (isHovered: boolean) => void
+  /** Vue listener for the lowercase `hoverstart` emit. */
   onHoverstart?: (event: any) => void
+  /** Vue listener for the lowercase `hoverend` emit. */
+  onHoverend?: (event: any) => void
+  /** Vue listener for the lowercase `hoverchange` emit. */
+  onHoverchange?: (isHovered: boolean) => void
 }

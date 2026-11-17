@@ -199,6 +199,115 @@ describe('useSlider', () => {
     rtl.unmount()
     stub.mockRestore()
   })
+
+  it('clears a no-move cancel, a disabled release, and a replaced host, then accepts another drag', async () => {
+    const onChangeEnd = vi.fn()
+    const stub = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => rect() as DOMRect)
+    const cancelled = mountSlider({defaultValue: [10, 80], onChangeEnd, 'aria-label': 'Slider'})
+    const track = document.querySelector('[data-testid="track"]') as HTMLElement
+    pointer('pointerdown', track, {clientX: 20, pageX: 20})
+    expect(cancelled.state.isThumbDragging(0)).toBe(true)
+    pointer('pointercancel', window, {clientX: 20, pageX: 20})
+    expect(cancelled.state.isThumbDragging(0)).toBe(false)
+    expect(onChangeEnd).toHaveBeenCalledTimes(1)
+    pointer('pointerdown', track, {clientX: 90, pageX: 90})
+    expect(cancelled.state.values).toEqual([20, 90])
+    pointer('pointerup', window, {clientX: 90, pageX: 90})
+    expect(onChangeEnd).toHaveBeenCalledTimes(2)
+    cancelled.wrapper.unmount()
+
+    const disabled = ref(false)
+    let disabledState!: ReturnType<typeof useSliderState>
+    const disabledWrapper = mount(defineComponent({
+      setup() {
+        disabledState = useSliderState({
+          numberFormatter: formatter,
+          defaultValue: [10],
+          isDisabled: () => disabled.value,
+          onChangeEnd,
+          'aria-label': 'Slider',
+        })
+        const trackRef = ref<HTMLElement | null>(null)
+        const aria = useSlider({'aria-label': 'Slider', isDisabled: () => disabled.value}, disabledState, trackRef)
+        return () => h('div', {ref: trackRef, 'data-testid': 'disabled-track', ...aria.trackProps})
+      },
+    }), {attachTo: document.body})
+    onChangeEnd.mockClear()
+    pointer('pointerdown', document.querySelector('[data-testid="disabled-track"]') as HTMLElement, {clientX: 40, pageX: 40})
+    expect(disabledState.isThumbDragging(0)).toBe(true)
+    disabled.value = true
+    await nextTick()
+    pointer('pointerup', window, {clientX: 40, pageX: 40})
+    expect(disabledState.isThumbDragging(0)).toBe(false)
+    expect(onChangeEnd).toHaveBeenCalledTimes(1)
+    disabled.value = false
+    await nextTick()
+    pointer('pointerdown', document.querySelector('[data-testid="disabled-track"]') as HTMLElement, {clientX: 70, pageX: 70})
+    expect(disabledState.values).toEqual([70])
+    pointer('pointerup', window, {clientX: 70, pageX: 70})
+    disabledWrapper.unmount()
+
+    const which = ref(0)
+    let swapState!: ReturnType<typeof useSliderState>
+    const swap = mount(defineComponent({
+      setup() {
+        swapState = useSliderState({numberFormatter: formatter, defaultValue: [10], onChangeEnd, 'aria-label': 'Slider'})
+        const trackRef = ref<HTMLElement | null>(null)
+        const inputRef = ref<HTMLInputElement | null>(null)
+        const slider = useSlider({'aria-label': 'Slider'}, swapState, trackRef)
+        const thumb = useSliderThumb({index: 0, trackRef, inputRef, 'aria-label': 'Thumb'}, swapState)
+        return () => h('div', {ref: trackRef, ...slider.trackProps}, [
+          h('div', {key: which.value, 'data-testid': 'swap-host', ...thumb.thumbProps}),
+        ])
+      },
+    }), {attachTo: document.body})
+    onChangeEnd.mockClear()
+    const host = document.querySelector('[data-testid="swap-host"]') as HTMLElement
+    host.style.userSelect = 'text'
+    pointer('pointerdown', host, {clientX: 10, pageX: 10})
+    expect(swapState.isThumbDragging(0)).toBe(true)
+    which.value = 1
+    await nextTick()
+    expect(host.style.userSelect).toBe('text')
+    expect(swapState.isThumbDragging(0)).toBe(false)
+    expect(onChangeEnd).toHaveBeenCalledTimes(1)
+    const nextHost = document.querySelector('[data-testid="swap-host"]') as HTMLElement
+    expect(nextHost).not.toBe(host)
+    pointer('pointerdown', nextHost, {clientX: 40, pageX: 40})
+    pointer('pointermove', window, {clientX: 55, pageX: 55})
+    expect(swapState.isThumbDragging(0)).toBe(true)
+    pointer('pointerup', window, {clientX: 55, pageX: 55})
+    expect(onChangeEnd).toHaveBeenCalledTimes(2)
+    swap.unmount()
+    stub.mockRestore()
+  })
+
+  it('ends a touch drag when the active touch is not the first changed touch', () => {
+    const onChangeEnd = vi.fn()
+    const stub = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => rect() as DOMRect)
+    const {state, wrapper} = mountSlider({defaultValue: [10], onChangeEnd, 'aria-label': 'Slider'})
+    const track = document.querySelector('[data-testid="track"]') as HTMLElement
+    const start = new Event('touchstart', {bubbles: true, cancelable: true})
+    Object.defineProperty(start, 'changedTouches', {value: [{identifier: 7, clientX: 10, clientY: 0}]})
+    track.dispatchEvent(start)
+    expect(state.isThumbDragging(0)).toBe(true)
+    const end = new Event('touchend', {bubbles: true, cancelable: true})
+    Object.defineProperty(end, 'changedTouches', {
+      value: [
+        {identifier: 3, clientX: 0, clientY: 0},
+        {identifier: 7, clientX: 10, clientY: 0},
+      ],
+    })
+    window.dispatchEvent(end)
+    expect(state.isThumbDragging(0)).toBe(false)
+    expect(onChangeEnd).toHaveBeenCalledTimes(1)
+    const again = new Event('touchstart', {bubbles: true, cancelable: true})
+    Object.defineProperty(again, 'changedTouches', {value: [{identifier: 8, clientX: 60, clientY: 0}]})
+    track.dispatchEvent(again)
+    expect(state.values).toEqual([60])
+    wrapper.unmount()
+    stub.mockRestore()
+  })
 })
 
 describe('useSliderThumb', () => {

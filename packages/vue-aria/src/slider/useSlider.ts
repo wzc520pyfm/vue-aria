@@ -6,7 +6,7 @@
  * are plain objects with live getters.
  */
 
-import {toValue, type MaybeRefOrGetter, type Ref} from 'vue'
+import {onScopeDispose, toValue, watch, type MaybeRefOrGetter, type Ref} from 'vue'
 import type {SliderProps, SliderState} from 'vue-stately/useSliderState'
 import {useLabel} from '../label/useLabel'
 
@@ -105,19 +105,31 @@ export function useSlider<T extends number | number[]>(
     },
   })
 
-  function onUpTrack(e: Event) {
-    const pointerEvent = e as PointerEvent
-    const touchEvent = e as TouchEvent
-    const id = pointerEvent.pointerId ?? touchEvent.changedTouches?.[0]?.identifier
-    if (id === currentPointer) {
-      if (realTimeTrackDraggingIndex != null) {
-        state.setThumbDragging(realTimeTrackDraggingIndex, false)
-        realTimeTrackDraggingIndex = null
-      }
-      removeGlobalListener(window, 'mouseup', onUpTrack, false)
-      removeGlobalListener(window, 'touchend', onUpTrack, false)
-      removeGlobalListener(window, 'pointerup', onUpTrack, false)
+  function releaseId(e: Event): number | undefined {
+    if (e.type.startsWith('pointer') && 'pointerId' in e) return (e as PointerEvent).pointerId
+    const touches = (e as TouchEvent).changedTouches
+    if (!touches || touches.length === 0) return undefined
+    for (let i = 0; i < touches.length; i++) {
+      if (touches[i].identifier === currentPointer) return touches[i].identifier
     }
+    return currentPointer == null ? touches[0].identifier : undefined
+  }
+
+  function finishTrack() {
+    if (realTimeTrackDraggingIndex != null) {
+      const index = realTimeTrackDraggingIndex
+      realTimeTrackDraggingIndex = null
+      state.setThumbDragging(index, false)
+    }
+    removeGlobalListener(window, 'mouseup', onUpTrack, false)
+    removeGlobalListener(window, 'touchend', onUpTrack, false)
+    removeGlobalListener(window, 'touchcancel', onUpTrack, false)
+    removeGlobalListener(window, 'pointerup', onUpTrack, false)
+    removeGlobalListener(window, 'pointercancel', onUpTrack, false)
+  }
+
+  function onUpTrack(e: Event) {
+    if (releaseId(e) === currentPointer) finishTrack()
   }
 
   function onDownTrack(e: Event, id: number | undefined, clientX: number, clientY: number) {
@@ -149,7 +161,9 @@ export function useSlider<T extends number | number[]>(
       state.setThumbValue(closestThumb, value)
       addGlobalListener(window, 'mouseup', onUpTrack, false)
       addGlobalListener(window, 'touchend', onUpTrack, false)
+      addGlobalListener(window, 'touchcancel', onUpTrack, false)
       addGlobalListener(window, 'pointerup', onUpTrack, false)
+      addGlobalListener(window, 'pointercancel', onUpTrack, false)
     } else {
       realTimeTrackDraggingIndex = null
     }
@@ -168,6 +182,11 @@ export function useSlider<T extends number | number[]>(
     if (!touch) return
     onDownTrack(e, touch.identifier, touch.clientX, touch.clientY)
   }
+
+  watch(trackRef, (el, prev) => {
+    if (prev && el !== prev) finishTrack()
+  })
+  onScopeDispose(finishTrack)
 
   const labelOut: Record<string, any> = {}
   defineLive(labelOut, 'id', () => labelProps.value.id)
