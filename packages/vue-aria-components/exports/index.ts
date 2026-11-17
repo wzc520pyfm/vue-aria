@@ -13,7 +13,9 @@
  * `RadioButton`, and `SwitchField` / `Switch` / `SwitchButton`. The
  * Disclosure slice adds `Disclosure` / `DisclosurePanel` / `DisclosureGroup`.
  * The Slider slice adds `Slider` / `SliderOutput` / `SliderTrack` /
- * `SliderThumb` / `SliderFill`. Sheet, Form, and FieldError remain deferred.
+ * `SliderThumb` / `SliderFill`. The ProgressBar / Meter slice adds
+ * `ProgressBar` / `ProgressBarContext` and `Meter` / `MeterContext`.
+ * Sheet, Form, and FieldError remain deferred.
  */
 export {Button} from './Button'
 export type {ButtonType, ButtonProps, ButtonRenderProps} from './Button'
@@ -206,3 +208,9 @@ export type {
   SliderFillRenderProps,
 } from './Slider'
 export type {SliderState} from 'vue-stately/useSliderState'
+
+export {ProgressBar, ProgressBarContext} from './ProgressBar'
+export type {ProgressBarProps, ProgressBarRenderProps} from './ProgressBar'
+export {Meter} from './Meter'
+export {MeterContext} from '../src/Meter'
+export type {MeterProps, MeterRenderProps} from './Meter'

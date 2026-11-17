@@ -7,7 +7,8 @@
  * ListBox, Menu, Select, ComboBox, I18n primitives, the Calendar hooks
  * slice, the DatePicker slice, the DateRangePicker hook, and the
  * Checkbox / Radio / Switch hooks, the Disclosure hook
- * (`useDisclosure`), and the Slider hooks (`useSlider`, `useSliderThumb`)
+ * (`useDisclosure`), the Slider hooks (`useSlider`, `useSliderThumb`),
+ * and the ProgressBar / Meter hooks (`useProgressBar`, `useMeter`)
  * on top of the interaction hooks and Hero UI Vue behavior contract.
  */
 export {usePress} from './usePress'
@@ -194,3 +195,15 @@ export type {
   SliderThumbAria,
   Orientation,
 } from './useSlider'
+
+export {useProgressBar} from './useProgressBar'
+export type {
+  ProgressBarBaseProps,
+  AriaProgressBarBaseProps,
+  ProgressBarProps,
+  AriaProgressBarProps,
+  ProgressBarAria,
+} from './useProgressBar'
+
+export {useMeter} from './useMeter'
+export type {MeterProps, AriaMeterProps, MeterAria} from './useMeter'
