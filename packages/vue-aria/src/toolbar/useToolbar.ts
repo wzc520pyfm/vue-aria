@@ -46,8 +46,17 @@ function defineLive(target: object, key: string, get: () => unknown) {
   Object.defineProperty(target, key, {get, enumerable: true, configurable: true})
 }
 
+function isDomNode(value: EventTarget | null): value is Node {
+  return !!value && typeof value === 'object' && 'nodeType' in value && typeof (value as Node).nodeType === 'number'
+}
+
 function contained(root: Element | null, node: EventTarget | null): boolean {
-  return !!root && node instanceof Node && root.contains(node)
+  return !!root && isDomNode(node) && root.contains(node)
+}
+
+function isOwnedElement(root: Node, node: EventTarget | null): node is HTMLElement {
+  if (!isDomNode(node) || node.nodeType !== 1 || !root.contains(node)) return false
+  return true
 }
 
 /**
@@ -59,6 +68,7 @@ export function useToolbar(props: AriaToolbarProps, toolbarRef: Ref<HTMLElement 
   const isInToolbar = ref(false)
   let currentRoot: HTMLElement | null = null
   let observer: MutationObserver | null = null
+  let observedChain: Element[] = []
   let lastFocused: HTMLElement | null = null
   let internalMove = false
   let alive = true
@@ -107,7 +117,7 @@ export function useToolbar(props: AriaToolbarProps, toolbarRef: Ref<HTMLElement 
     }
     if (key === 'Tab') {
       const active = root.ownerDocument.activeElement
-      if (active instanceof HTMLElement && root.contains(active)) lastFocused = active
+      if (isOwnedElement(root, active) && root.contains(active)) lastFocused = active
       moveFocus(event.shiftKey ? focusableFirst(root) : focusableLast(root))
     }
   }
@@ -118,7 +128,7 @@ export function useToolbar(props: AriaToolbarProps, toolbarRef: Ref<HTMLElement 
     if ((event as FocusEvent & {__vueAriaToolbarBlur?: EventTarget}).__vueAriaToolbarBlur === root) return
     ;(event as FocusEvent & {__vueAriaToolbarBlur?: EventTarget}).__vueAriaToolbarBlur = root
     if (lastFocused || contained(root, event.relatedTarget)) return
-    if (event.target instanceof HTMLElement && root.contains(event.target)) lastFocused = event.target
+    if (isOwnedElement(root, event.target) && root.contains(event.target)) lastFocused = event.target
   }
 
   function onFocus(event: FocusEvent) {
@@ -148,27 +158,44 @@ export function useToolbar(props: AriaToolbarProps, toolbarRef: Ref<HTMLElement 
     listening.delete(el)
   }
 
+  function ancestorChain(el: HTMLElement): Element[] {
+    const chain: Element[] = []
+    let node: Element | null = el.parentElement
+    while (node) {
+      chain.push(node)
+      node = node.parentElement
+    }
+    return chain
+  }
+
+  function sameChain(left: Element[], right: Element[]) {
+    return left.length === right.length && left.every((node, index) => node === right[index])
+  }
+
   function disconnectObserver() {
     observer?.disconnect()
     observer = null
+    observedChain = []
   }
 
   function bindObserver(el: HTMLElement) {
     disconnectObserver()
     if (typeof MutationObserver === 'undefined') return
+    const chain = ancestorChain(el)
+    observedChain = chain
+    if (!chain.length) return
     const next = new MutationObserver(() => {
       if (alive && currentRoot === el) refresh(el)
     })
     observer = next
-    let node: Element | null = el.parentElement
-    while (node) {
+    for (const node of chain) {
       next.observe(node, {attributes: true, attributeFilter: ['role'], childList: true})
-      node = node.parentElement
     }
   }
 
   function refresh(el: HTMLElement) {
     if (!alive || currentRoot !== el) return
+    if (!sameChain(ancestorChain(el), observedChain)) bindObserver(el)
     const inside = nested(el)
     if (isInToolbar.value !== inside) isInToolbar.value = inside
     if (inside) removeListeners(el)

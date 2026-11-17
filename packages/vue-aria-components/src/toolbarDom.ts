@@ -1,4 +1,13 @@
+import {toRaw} from 'vue'
 import {filterDOMProps} from '../../vue-aria/src/utils/filterDOMProps'
+
+/**
+ * Private stand-in for official `DEFAULT_SLOT`. Vue has no public context-slot
+ * symbol, and this one is not part of the package surface. A `slots` object
+ * resolves `slots[slot || TOOLBAR_DEFAULT_SLOT]`; a missing entry throws.
+ * A context with no `slots` object stays a flat context. `slot === null` opts out.
+ */
+export const TOOLBAR_DEFAULT_SLOT: unique symbol = Symbol('vue-aria.Toolbar.default')
 
 export function assignRef(target: unknown, el: unknown) {
   if (typeof target === 'function') {
@@ -99,8 +108,25 @@ export function localClassValue(props: {className?: unknown}, attrs: Record<stri
 export function readSlotContext(ctx: Record<string, any> | null | undefined, slot?: string | null) {
   if (slot === null) return null
   if (!ctx) return null
-  if (slot && ctx.slots && ctx.slots[slot]) return ctx.slots[slot] as Record<string, any>
-  return ctx
+  const raw = toRaw(ctx) as Record<string, any>
+  if (raw && typeof raw === 'object' && raw.slots) {
+    const slots = toRaw(raw.slots) as Record<PropertyKey, Record<string, any> | undefined>
+    const slotKey: PropertyKey = slot ? slot : TOOLBAR_DEFAULT_SLOT
+    const selected = slots[slotKey]
+    if (!selected) {
+      const available = new Intl.ListFormat().format(Object.keys(slots).map((name) => `"${name}"`))
+      const errorMessage = slot ? `Invalid slot "${slot}".` : 'A slot prop is required.'
+      throw new Error(`${errorMessage} Valid slot names are ${available}.`)
+    }
+    return selected
+  }
+  return raw
+}
+
+/** Read `ref` without Vue's reactive proxy unwrapping a nested ref. */
+export function readContextRef(ctx: Record<string, any> | null | undefined) {
+  if (!ctx) return undefined
+  return (toRaw(ctx) as Record<string, any>).ref
 }
 
 export function pick<T>(local: T | undefined, ctx: Record<string, any> | null, key: string): T | undefined {

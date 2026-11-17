@@ -30,6 +30,7 @@ import {
   mergeRenderStyle,
   pick,
   readAriaProp,
+  readContextRef,
   readSlotContext,
 } from './toolbarDom'
 
@@ -117,7 +118,7 @@ export const Toolbar = defineComponent({
       boundContextEl = null
     }
     function syncContextRef(el: Element | null) {
-      const next = resolved()?.ref
+      const next = readContextRef(resolved())
       if (next !== boundContextRef) {
         releaseContextRef()
         boundContextRef = next

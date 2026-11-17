@@ -1,4 +1,4 @@
-import {defineComponent, h, isRef, nextTick, ref} from 'vue'
+import {defineComponent, h, isRef, nextTick, ref, Teleport} from 'vue'
 import {mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {I18nProvider} from '../../i18n/I18nProvider'
@@ -356,6 +356,114 @@ describe('useToolbar', () => {
     wrapper.unmount()
     const after = press(b2, 'ArrowLeft')
     expect(after.defaultPrevented).toBe(false)
+  })
+
+  it('rebinds ancestor observers when the same root moves, then follows the new ancestor role', async () => {
+    const plain = document.createElement('div')
+    plain.id = 'plain-host'
+    const bar = document.createElement('div')
+    bar.id = 'toolbar-host'
+    bar.setAttribute('role', 'toolbar')
+    document.body.append(plain, bar)
+    const place = ref<'plain' | 'bar'>('plain')
+    const root = ref<HTMLElement | null>(null)
+    const wrapper = mount(defineComponent({
+      setup() {
+        const aria = useToolbar({'aria-label': 'Moved'}, root)
+        return () => h(Teleport, {to: place.value === 'plain' ? '#plain-host' : '#toolbar-host'}, [
+          h('div', {
+            ref: root,
+            role: aria.toolbarProps.role,
+          }, [
+            h('button', {type: 'button'}, 'One'),
+            h('button', {type: 'button'}, 'Two'),
+          ]),
+        ])
+      },
+    }), {attachTo: document.body})
+    await nextTick()
+    const toolbar = () => root.value!
+    const buttons = () => [...toolbar().querySelectorAll('button')]
+    expect(toolbar().getAttribute('role')).toBe('toolbar')
+    buttons()[0].focus()
+    expect(press(buttons()[0], 'ArrowRight').defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(buttons()[1])
+
+    place.value = 'bar'
+    await nextTick()
+    await nextTick()
+    expect(toolbar().parentElement).toBe(bar)
+    expect(toolbar().getAttribute('role')).toBe('group')
+    buttons()[0].focus()
+    expect(press(buttons()[0], 'ArrowRight').defaultPrevented).toBe(false)
+    expect(document.activeElement).toBe(buttons()[0])
+
+    bar.setAttribute('role', 'presentation')
+    await nextTick()
+    await nextTick()
+    expect(toolbar().getAttribute('role')).toBe('toolbar')
+    buttons()[0].focus()
+    expect(press(buttons()[0], 'ArrowRight').defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(buttons()[1])
+
+    place.value = 'plain'
+    await nextTick()
+    await nextTick()
+    expect(toolbar().parentElement).toBe(plain)
+    expect(toolbar().getAttribute('role')).toBe('toolbar')
+    plain.setAttribute('role', 'toolbar')
+    await nextTick()
+    await nextTick()
+    expect(toolbar().getAttribute('role')).toBe('group')
+    buttons()[1].focus()
+    expect(press(buttons()[1], 'ArrowLeft').defaultPrevented).toBe(false)
+
+    plain.setAttribute('role', 'region')
+    await nextTick()
+    await nextTick()
+    expect(toolbar().getAttribute('role')).toBe('toolbar')
+    wrapper.unmount()
+    expect(() => {
+      plain.setAttribute('role', 'toolbar')
+      bar.setAttribute('role', 'toolbar')
+    }).not.toThrow()
+  })
+
+  it('moves focus inside an iframe document whose elements are a different realm', async () => {
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument!
+    const view = iframe.contentWindow as Window & typeof globalThis
+    expect(view.HTMLElement).not.toBe(window.HTMLElement)
+    const host = doc.createElement('div')
+    const one = doc.createElement('button')
+    one.type = 'button'
+    one.textContent = 'One'
+    const two = doc.createElement('button')
+    two.type = 'button'
+    two.textContent = 'Two'
+    host.append(one, two)
+    doc.body.appendChild(host)
+    expect(one instanceof window.HTMLElement).toBe(false)
+    const root = ref<HTMLElement | null>(host)
+    const wrapper = mount(defineComponent({
+      setup() {
+        useToolbar({'aria-label': 'Frame'}, root)
+        return () => null
+      },
+    }), {attachTo: document.body})
+    await nextTick()
+    one.focus()
+    expect(doc.activeElement).toBe(one)
+    const right = new view.KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true, cancelable: true})
+    one.dispatchEvent(right)
+    expect(right.defaultPrevented).toBe(true)
+    expect(doc.activeElement).toBe(two)
+    const tab = new view.KeyboardEvent('keydown', {key: 'Tab', bubbles: true, cancelable: true})
+    two.dispatchEvent(tab)
+    expect(tab.defaultPrevented).toBe(false)
+    expect(doc.activeElement).toBe(two)
+    wrapper.unmount()
   })
 
   it('records the first render as toolbar before the nested role update', async () => {

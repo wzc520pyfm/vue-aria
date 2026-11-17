@@ -1,9 +1,10 @@
-import {defineComponent, Fragment, h, nextTick, provide, ref} from 'vue'
+import {createApp, defineComponent, Fragment, h, nextTick, provide, ref} from 'vue'
 import {mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {createSSRApp} from 'vue'
 import {I18nProvider} from 'vue-aria'
 import {Button, Checkbox, Toolbar, ToolbarContext} from 'vue-aria-components'
+import {TOOLBAR_DEFAULT_SLOT} from '../toolbarDom'
 import type {ToolbarProps, ToolbarRenderProps} from 'vue-aria-components'
 
 afterEach(() => {
@@ -136,12 +137,15 @@ describe('Toolbar', () => {
   it('opts out of flat and named context with slot null, then restores it', async () => {
     const slot = ref<string | null | undefined>(null)
     const ctx: Record<string, any> = {
-      slots: {test: {'aria-label': 'Named', className: 'named', 'data-slot-name': 'test'}},
+      'aria-label': 'Flat',
+      className: 'flat',
+      hidden: false,
+      'data-foo': 'flat-data',
+      slots: {
+        [TOOLBAR_DEFAULT_SLOT]: {'aria-label': 'Default', className: 'deflt', 'data-foo': 'context', hidden: false},
+        test: {'aria-label': 'Named', className: 'named', 'data-slot-name': 'test'},
+      },
     }
-    Object.defineProperty(ctx, 'aria-label', {enumerable: true, get: () => 'Flat'})
-    Object.defineProperty(ctx, 'className', {enumerable: true, get: () => 'flat'})
-    Object.defineProperty(ctx, 'hidden', {enumerable: true, get: () => false})
-    Object.defineProperty(ctx, 'data-foo', {enumerable: true, get: () => 'context'})
     const wrapper = mountInDoc(() => {
       provide(ToolbarContext, ctx)
       return () => h(Toolbar, {slot: slot.value})
@@ -157,9 +161,11 @@ describe('Toolbar', () => {
     slot.value = undefined
     await nextTick()
     el = document.querySelector('[role="toolbar"]') as HTMLElement
-    expect(el.getAttribute('aria-label')).toBe('Flat')
-    expect(el.className).toContain('flat')
+    expect(el.getAttribute('aria-label')).toBe('Default')
+    expect(el.className).toContain('deflt')
+    expect(el.className).not.toContain('flat')
     expect(el.getAttribute('data-foo')).toBe('context')
+    expect(el.hidden).toBe(false)
 
     slot.value = 'test'
     await nextTick()
@@ -177,6 +183,127 @@ describe('Toolbar', () => {
     expect(el.className).toBe('react-aria-Toolbar')
     expect(el.getAttribute('slot')).toBeNull()
     wrapper.unmount()
+  })
+
+  it('keeps an object ref through a reactive context, including replacement, opt-out, and a named slot', async () => {
+    const A = ref<Element | null>(null)
+    const B = ref<Element | null>(null)
+    const named = ref<Element | null>(null)
+    const slot = ref<string | null | undefined>(undefined)
+    const ctx = ref<Record<string, any>>({ref: A, 'aria-label': 'First'})
+    const wrapper = mountInDoc(() => {
+      provide(ToolbarContext, ctx)
+      return () => h(Toolbar, {slot: slot.value})
+    })
+    await nextTick()
+    const el = document.querySelector('[role="toolbar"]') as HTMLElement
+    expect(A.value).toBe(el)
+    expect(el.getAttribute('aria-label')).toBe('First')
+
+    ctx.value = {ref: B, 'aria-label': 'Second'}
+    await nextTick()
+    await nextTick()
+    expect(A.value).toBeNull()
+    expect(B.value).toBe(el)
+    expect(el.getAttribute('aria-label')).toBe('Second')
+
+    slot.value = null
+    await nextTick()
+    expect(B.value).toBeNull()
+    expect(el.hasAttribute('aria-label')).toBe(false)
+
+    slot.value = undefined
+    await nextTick()
+    expect(B.value).toBe(el)
+    expect(el.getAttribute('aria-label')).toBe('Second')
+
+    wrapper.unmount()
+    await nextTick()
+    expect(B.value).toBeNull()
+
+    const namedCtx = ref({slots: {test: {ref: named, 'aria-label': 'Named'}}})
+    const namedSlot = ref<string | null>('test')
+    const namedWrapper = mountInDoc(() => {
+      provide(ToolbarContext, namedCtx)
+      return () => h(Toolbar, {slot: namedSlot.value})
+    })
+    await nextTick()
+    const namedEl = document.querySelector('[aria-label="Named"]') as HTMLElement
+    expect(named.value).toBe(namedEl)
+    namedSlot.value = null
+    await nextTick()
+    expect(named.value).toBeNull()
+    namedSlot.value = 'test'
+    await nextTick()
+    expect(named.value).toBe(namedEl)
+    namedWrapper.unmount()
+    await nextTick()
+    expect(named.value).toBeNull()
+  })
+
+  it('throws when a slots bag lacks the requested or default entry instead of inheriting flat props', async () => {
+    expect(() => mountInDoc(() => {
+      provide(ToolbarContext, {slots: {test: {'aria-label': 'Named'}}, 'aria-label': 'Flat'})
+      return () => h(Toolbar, {slot: 'absent'})
+    })).toThrow(/Invalid slot "absent"/)
+
+    expect(() => mountInDoc(() => {
+      provide(ToolbarContext, {slots: {test: {'aria-label': 'Named'}}, 'aria-label': 'Flat', className: 'flat'})
+      return () => h(Toolbar, {})
+    })).toThrow(/A slot prop is required/)
+
+    const slot = ref<string | null>('test')
+    const errors: string[] = []
+    const Host = defineComponent({
+      setup() {
+        provide(ToolbarContext, {slots: {test: {'aria-label': 'Named'}}, 'aria-label': 'Flat'})
+        return () => h(Toolbar, {slot: slot.value})
+      },
+    })
+    const Parent = defineComponent({
+      setup() {
+        return () => h(Host)
+      },
+      errorCaptured(error) {
+        errors.push(String(error))
+        return false
+      },
+    })
+    const wrapper = mount(Parent, {attachTo: document.body})
+    await nextTick()
+    expect(document.querySelector('[aria-label="Named"]')).not.toBeNull()
+    slot.value = 'gone'
+    await nextTick()
+    expect(errors.join('\n')).toMatch(/Invalid slot "gone"/)
+    slot.value = null
+    await nextTick()
+    expect(document.querySelector('[role="toolbar"]')?.getAttribute('aria-label')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('navigates a Toolbar mounted in an iframe document', async () => {
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument!
+    const host = doc.createElement('div')
+    doc.body.appendChild(host)
+    const app = createApp({
+      setup() {
+        return () => h(Toolbar, {'aria-label': 'Frame'}, {
+          default: () => [h('button', {type: 'button'}, 'One'), h('button', {type: 'button'}, 'Two')],
+        })
+      },
+    })
+    app.mount(host)
+    const buttons = [...host.querySelectorAll('button')]
+    expect(buttons).toHaveLength(2)
+    const nodeView = buttons[0].ownerDocument.defaultView!
+    buttons[0].focus()
+    const right = new nodeView.KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true, cancelable: true})
+    buttons[0].dispatchEvent(right)
+    expect(right.defaultPrevented).toBe(true)
+    expect(buttons[0].ownerDocument.activeElement).toBe(buttons[1])
+    app.unmount()
   })
 
   it('calls context and local listeners once and preserves empty classes and merged styles', async () => {
