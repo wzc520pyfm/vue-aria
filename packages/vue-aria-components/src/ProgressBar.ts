@@ -16,7 +16,6 @@ import {
   onUpdated,
   provide,
   ref,
-  watch,
   type InjectionKey,
   type PropType,
 } from 'vue'
@@ -29,7 +28,6 @@ import {
   clamp,
   defineLive,
   domFrom,
-  hasLabelNode,
   localClassValue,
   mergeClassNames,
   mergeRenderStyle,
@@ -37,6 +35,7 @@ import {
   readAriaProp,
   readNumber,
   readSlotContext,
+  useImplicitLabelPresence,
 } from './progressDom'
 
 export const ProgressBarContextKey: InjectionKey<Record<string, any> | null> = Symbol('vue-aria-components.ProgressBarContext')
@@ -99,18 +98,18 @@ export const ProgressBar = defineComponent({
     const ctxSource = inject(ProgressBarContextKey, null)
     const slotValue = () => (props.slot !== undefined ? props.slot : (attrs.slot as string | null | undefined))
     const resolved = () => readSlotContext(ctxSource, slotValue())
-    const hasLabel = ref(false)
     const rootEl = ref<Element | null>(null)
     const labelRef = ref<Element | null>(null)
+    const hasLabel = useImplicitLabelPresence(
+      () => Boolean(
+        readAriaProp(props, attrs as Record<string, any>, resolved(), 'aria-label')
+        || readAriaProp(props, attrs as Record<string, any>, resolved(), 'aria-labelledby'),
+      ),
+      labelRef,
+    )
     let mountedEl: Element | null = null
     let boundContextRef: unknown
     let boundContextEl: Element | null = null
-
-    // Register the real label element, like official `useSlot`, instead of
-    // trusting the child vnode's component name alone.
-    watch(labelRef, (el) => {
-      hasLabel.value = !!el
-    })
 
     const aria = useProgressBar({
       value: () => pick(props.value, resolved(), 'value'),
@@ -184,8 +183,6 @@ export const ProgressBar = defineComponent({
         isIndeterminate,
       }
       const children = slots.default?.(values)
-      const labelled = hasLabelNode(children) || labelRef.value != null
-      if (hasLabel.value !== labelled) hasLabel.value = labelled
       const className = mergeClassNames(
         ctx?.className,
         localClassValue(props, attrs as Record<string, any>),

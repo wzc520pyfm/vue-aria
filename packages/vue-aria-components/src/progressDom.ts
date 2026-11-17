@@ -1,4 +1,4 @@
-import {Fragment, isVNode, type VNode, type VNodeChild} from 'vue'
+import {onMounted, ref, watch, type Ref} from 'vue'
 import {filterDOMProps} from '../../vue-aria/src/utils/filterDOMProps'
 
 export function defineLive(target: object, key: string, get: () => unknown) {
@@ -23,34 +23,24 @@ export function assignRefIfCurrent(target: unknown, el: unknown, current: unknow
   assignRef(target, el)
 }
 
-function vnodeChildren(vnode: VNode): VNodeChild {
-  const children = vnode.children as any
-  if (children == null || typeof children === 'string' || typeof children === 'number') return null
-  if (typeof children === 'function') return children()
-  if (Array.isArray(children)) return children
-  if (typeof children === 'object' && children && 'default' in children) {
-    const slot = children.default
-    return typeof slot === 'function' ? slot() : slot
-  }
-  return children as VNodeChild
-}
-
-function flatten(input: VNodeChild): VNode[] {
-  if (input == null || typeof input === 'boolean' || typeof input === 'string' || typeof input === 'number') return []
-  if (Array.isArray(input)) return input.flatMap((child) => flatten(child as VNodeChild))
-  if (!isVNode(input)) return []
-  if (input.type === Fragment || typeof input.type === 'string') return flatten(vnodeChildren(input))
-  return [input]
-}
-
-function componentName(vnode: VNode) {
-  const type = vnode.type as {name?: string; __name?: string} | string
-  if (!type || typeof type === 'string') return null
-  return type.name || type.__name || null
-}
-
-export function hasLabelNode(input: VNodeChild): boolean {
-  return flatten(input).some((node) => componentName(node) === 'Label')
+/**
+ * Official `useSlot(!aria-label && !aria-labelledby)`:
+ * the initial presence is true when no explicit ARIA name is set, the label
+ * ref updates it from the real element, and a post-mount check clears it only
+ * when that ref never ran. SSR does not run the post-mount check, so a Label
+ * wrapped by another component still receives an id.
+ */
+export function useImplicitLabelPresence(hasExplicitName: () => boolean, labelRef: Ref<Element | null>) {
+  const hasLabel = ref(!hasExplicitName())
+  let slotRefRan = false
+  watch(labelRef, (el) => {
+    slotRefRan = true
+    hasLabel.value = !!el
+  })
+  onMounted(() => {
+    if (!slotRefRan && labelRef.value == null) hasLabel.value = false
+  })
+  return hasLabel
 }
 
 function resolveClass(source: unknown, values: unknown) {
