@@ -212,13 +212,13 @@ export const ToggleButton = defineComponent({
         emit('change', value)
       },
     })
-    // Official `useToggleState` does `useState(isSelected)` once. Capture the
-    // group's initial membership here, not on the first getter read and not
-    // again when `id` later changes.
-    const initialGroupId = itemId()
-    const initialGroupDefault = groupState != null && initialGroupId != null
-      ? groupState.selectedKeys.has(initialGroupId)
-      : undefined
+    // One `useState(isSelected)` for this instance. The first value follows
+    // the membership at setup and is not recaptured when id or membership
+    // changes, or on the first read.
+    const initialId = itemId()
+    const initialValue = groupState != null && initialId != null
+      ? groupState.selectedKeys.has(initialId)
+      : standalone.isSelected
     const viewState: ToggleState = {
       get isSelected() {
         const id = itemId()
@@ -226,13 +226,14 @@ export const ToggleButton = defineComponent({
         return standalone.isSelected
       },
       get defaultSelected() {
-        // Official ToggleButton gives useToggleState only the group
-        // selection. The button's own defaultSelected is not an input, so
-        // the setup snapshot stays for this instance, including after the
-        // id leaves the group. An explicit value applies only on the
-        // standalone state below.
-        if (initialGroupDefault !== undefined) return initialGroupDefault
-        return standalone.defaultSelected
+        // Current membership chooses the props object. Inside the group the
+        // button defaultSelected is omitted, so the captured value is used.
+        // Standalone publishes the current explicit value, or that same
+        // initial value when none is set.
+        if (groupState != null && itemId() != null) return initialValue
+        const explicit = pick(props.defaultSelected, resolved(), 'defaultSelected')
+        if (explicit !== undefined) return Boolean(explicit)
+        return initialValue
       },
       setSelected(value) {
         const id = itemId()
