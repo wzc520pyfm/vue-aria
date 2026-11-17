@@ -2,6 +2,23 @@ import {computed, defineComponent, h, inject, onBeforeUnmount, watch, type PropT
 import {mergeProps, toHeroDataAttrs} from 'vue-aria'
 import {DialogTitlePropsKey, HeadingContextKey} from './context'
 
+/**
+ * Props accepted by the Vue `Heading`. Companion type for the Disclosure entry.
+ * The component implementation is unchanged.
+ */
+export interface HeadingProps {
+  /** The heading level. @default 3 */
+  level?: 1 | 2 | 3 | 4 | 5 | 6
+  /** Official RAC slot name. `"title"` wires the heading into a parent Dialog. */
+  slot?: string
+  id?: string
+  'data-slot'?: string
+  dataSlot?: string
+  class?: any
+  style?: any
+  'aria-label'?: string
+}
+
 export const Heading = defineComponent({
   name: 'Heading',
   inheritAttrs: false,

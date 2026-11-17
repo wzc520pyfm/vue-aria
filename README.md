@@ -113,6 +113,14 @@ This Checkbox / Radio / Switch slice adds the toggle-family components and hooks
 
 Scope: Checkbox / CheckboxGroup / Radio / RadioGroup / Switch only. Because Vue setup cannot conditionally call `useCheckbox` vs `useCheckboxGroupItem`, the field/wrapper components split into inner components that each call exactly one hook set; group items register per-item validity through the group state and roving tabIndex with arrow-key navigation (RTL-aware) follows the official radio group. `*Props` and contexts are plain objects with live getters; `data-*` booleans render the string `"true"` or are omitted; change events are lowercase Vue `change`; `isRequired` with the component-default `'native'` validationBehavior renders `required` (not `aria-required`) while the hook default stays `'aria'`. Form, `FieldError`, and their context stubs remain deferred and are not exported; `FieldErrorContext` is not backfilled into existing field components, and RAC cases that rely on `FieldError` are covered with native validity + `Text slot="errorMessage"` / `isInvalid` instead.
 
+This Disclosure slice adds `Disclosure` / `DisclosureGroup` / `DisclosurePanel`:
+
+- `vue-stately`: `useDisclosureState`, `useDisclosureGroupState` (live `allowsMultipleExpanded` / `isDisabled` / `expandedKeys`, plus `toggleKey` / `setExpandedKeys`)
+- `vue-aria`: `useDisclosure` (`buttonProps` / `panelProps` are plain objects with live getters; `buttonProps` are behavior options for `Button` / `useButton`, not DOM `onPress` bindings)
+- `vue-aria-components`: `Disclosure`, `DisclosurePanel`, `DisclosureGroup`, `DisclosureContext`, `DisclosureStateContext`, `DisclosureGroupStateContext`
+
+Scope: Disclosure only. Standalone and grouped disclosures support controlled and uncontrolled expansion, single-expand accordions that may collapse fully, `allowsMultipleExpanded`, numeric keys, and nested isolation. Disabled blocks user input only. The trigger toggles on pointer `press` and keyboard `pressstart` (release does not toggle twice; arrow keys do not navigate). Panels use `hidden="until-found"` (not `display: none`), including `beforematch`, the SSR boolean `hidden`, and the no-WAAPI / measure-then-auto / hidden-after-collapse lifecycle. `data-focus-visible-within` follows descendant focus via local `focusin` / `focusout`. The component event is lowercase `expandedchange`; the hook option remains `onExpandedChange`. There is no `DisclosurePanel` subpath, no `useDisclosureGroup`, and no `DisclosureGroupContext`. Form, `FieldError`, ToggleButton, Toolbar, Tabs, and Slider remain deferred.
+
 Form, `FieldError`, calendar month/year pickers and heading components, a public `useEvent`, the remaining i18n formatters/packs and SSR I18nProvider, Sheet, Storybook, and Netlify remain deferred.
 
 Versions are `0.0.1`. Packages are not published to npm yet.

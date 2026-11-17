@@ -1,8 +1,21 @@
-import {defineComponent} from 'vue'
+import {defineComponent, h} from 'vue'
 import {flushPromises, mount} from '@vue/test-utils'
 import {afterEach, describe, expect, it} from 'vitest'
 import {dispatchKey, dispatchPointer} from '../../../../test/dom-events'
 import {Button} from 'vue-aria-components/Button'
+import type {ButtonProps} from 'vue-aria-components/Button'
+
+type Assert<T extends true> = T
+type _LowercasePressListeners = [
+  Assert<'onPressstart' extends keyof ButtonProps ? true : false>,
+  Assert<'onPressend' extends keyof ButtonProps ? true : false>,
+  Assert<'onPressup' extends keyof ButtonProps ? true : false>,
+  Assert<'onPresschange' extends keyof ButtonProps ? true : false>,
+  Assert<'onPressStart' extends keyof ButtonProps ? false : true>,
+  Assert<'onPressEnd' extends keyof ButtonProps ? false : true>,
+  Assert<'onPressUp' extends keyof ButtonProps ? false : true>,
+  Assert<'onPressChange' extends keyof ButtonProps ? false : true>,
+]
 
 function mountInDoc(...args: Parameters<typeof mount>) {
   const [component, options] = args
@@ -59,6 +72,50 @@ describe('Button', () => {
     expect(wrapper.attributes('disabled')).toBeUndefined()
     expect((wrapper.element as HTMLButtonElement).disabled).toBe(false)
     expect(wrapper.attributes('data-pending')).toBe('true')
+  })
+
+  it('delivers lowercase press listeners and ignores camelCase onPressStart', async () => {
+    const heard: string[] = []
+    const camel: string[] = []
+    const onPressstart: ButtonProps['onPressstart'] = () => heard.push('pressstart')
+    const onPressend: ButtonProps['onPressend'] = () => heard.push('pressend')
+    const onPressup: ButtonProps['onPressup'] = () => heard.push('pressup')
+    const onPresschange: ButtonProps['onPresschange'] = (pressed) => heard.push(pressed ? 'presschange:true' : 'presschange:false')
+    const onPress: ButtonProps['onPress'] = () => heard.push('press')
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Button, {
+          onPress,
+          onPressstart,
+          onPressend,
+          onPressup,
+          onPresschange,
+          onPressStart: () => camel.push('pressstart'),
+          onPressEnd: () => camel.push('pressend'),
+          onPressUp: () => camel.push('pressup'),
+          onPressChange: () => camel.push('presschange'),
+        }, () => 'Press me')
+      },
+    }))
+    dispatchPointer(wrapper.get('button').element, 'pointerdown')
+    await flushPromises()
+    dispatchPointer(wrapper.get('button').element, 'pointerup')
+    await flushPromises()
+    expect(heard).toEqual([
+      'pressstart',
+      'presschange:true',
+      'pressup',
+      'pressend',
+      'presschange:false',
+      'press',
+    ])
+    expect(camel).toEqual([])
+    expect(wrapper.findComponent(Button).emitted('pressstart')).toHaveLength(1)
+    expect(wrapper.findComponent(Button).emitted('pressend')).toHaveLength(1)
+    expect(wrapper.findComponent(Button).emitted('pressup')).toHaveLength(1)
+    expect(wrapper.findComponent(Button).emitted('presschange')).toHaveLength(2)
+    expect(wrapper.findComponent(Button).emitted('press')).toHaveLength(1)
+    wrapper.unmount()
   })
 
   it('accepts a custom data-slot and keeps it during press', async () => {

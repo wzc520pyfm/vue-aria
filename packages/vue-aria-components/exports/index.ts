@@ -10,17 +10,19 @@
  * TextField slice adds `TextField` / `TextArea` / `SearchField`; the
  * Checkbox / Radio / Switch slice adds `CheckboxGroup` / `CheckboxField` /
  * `Checkbox` / `CheckboxButton`, `RadioGroup` / `RadioField` / `Radio` /
- * `RadioButton`, and `SwitchField` / `Switch` / `SwitchButton`. Sheet, Form,
- * and FieldError remain deferred.
+ * `RadioButton`, and `SwitchField` / `Switch` / `SwitchButton`. The
+ * Disclosure slice adds `Disclosure` / `DisclosurePanel` / `DisclosureGroup`.
+ * Sheet, Form, and FieldError remain deferred.
  */
 export {Button} from './Button'
-export type {ButtonType} from './Button'
+export type {ButtonType, ButtonProps, ButtonRenderProps} from './Button'
 
 export {Dialog, DialogTrigger} from './Dialog'
 export {Modal, ModalOverlay} from './Modal'
 export {Popover} from './Popover'
 export {Tooltip, TooltipTrigger} from './Tooltip'
 export {Heading} from './Heading'
+export type {HeadingProps} from './Heading'
 export {OverlayArrow} from './OverlayArrow'
 
 export {ListBox, ListBoxItem, ListBoxSection, ListBoxContext, ListStateContext} from './ListBox'
@@ -155,3 +157,26 @@ export type {
   SwitchFieldRenderProps,
   SwitchButtonRenderProps,
 } from './Switch'
+
+export {
+  Disclosure,
+  DisclosurePanel,
+  DisclosureContext,
+  DisclosureStateContext,
+} from './Disclosure'
+export {
+  DisclosureGroup,
+  DisclosureGroupStateContext,
+} from './DisclosureGroup'
+export type {
+  DisclosureProps,
+  DisclosureRenderProps,
+  DisclosurePanelProps,
+  DisclosurePanelRenderProps,
+} from './Disclosure'
+export type {
+  DisclosureGroupProps,
+  DisclosureGroupRenderProps,
+} from './DisclosureGroup'
+export type {DisclosureState} from 'vue-stately/useDisclosureState'
+export type {DisclosureGroupState} from 'vue-stately/useDisclosureGroupState'

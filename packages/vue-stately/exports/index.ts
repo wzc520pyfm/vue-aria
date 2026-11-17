@@ -5,7 +5,8 @@
  *
  * This batch adds collections/ListBox, Menu, Select, ComboBox, Calendar,
  * RangeCalendar, Date/Time Field, DatePicker, DateRangePicker, NumberField,
- * SearchField state, and the Checkbox / Radio / Switch toggle state slice on
+ * SearchField state, the Checkbox / Radio / Switch toggle state slice, and
+ * the Disclosure slice (`useDisclosureState`, `useDisclosureGroupState`) on
  * top of the interaction hooks and Hero UI Vue behavior contract.
  */
 export {useOverlayTriggerState} from './useOverlayTriggerState'
@@ -109,3 +110,9 @@ export type {CheckboxGroupProps, CheckboxGroupState} from './useCheckboxGroupSta
 
 export {useRadioGroupState} from './useRadioGroupState'
 export type {RadioGroupProps, RadioGroupState} from './useRadioGroupState'
+
+export {useDisclosureState} from './useDisclosureState'
+export type {DisclosureProps, DisclosureState} from './useDisclosureState'
+
+export {useDisclosureGroupState} from './useDisclosureGroupState'
+export type {DisclosureGroupProps, DisclosureGroupState} from './useDisclosureGroupState'
