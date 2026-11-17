@@ -72,9 +72,9 @@ export function useToggleGroupState(props: ToggleGroupProps = {}): ToggleGroupSt
   let defaultReady = false
   function ensureDefault() {
     if (defaultReady) return
-    defaultReady = true
     const source = toValue(props.defaultSelectedKeys)
     if (source != null) internal.value = new Set(source)
+    defaultReady = true
   }
   let controlledSource: Iterable<Key> | undefined
   let controlledSet: Set<Key> | undefined

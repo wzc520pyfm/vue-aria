@@ -187,7 +187,9 @@ export const ToggleButton = defineComponent({
       isSelected: () => (inGroup() ? undefined : pick(props.isSelected, resolved(), 'isSelected')),
       defaultSelected: () => (inGroup() ? undefined : pick(props.defaultSelected, resolved(), 'defaultSelected')),
       onChange: (value) => {
-        if (!inGroup()) emit('change', value)
+        if (inGroup()) return
+        callDistinct([resolved()?.onChange], value)
+        emit('change', value)
       },
     })
     const viewState: ToggleState = {

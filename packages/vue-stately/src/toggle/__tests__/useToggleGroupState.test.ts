@@ -254,6 +254,31 @@ describe('useToggleGroupState', () => {
     stop()
   })
 
+  it('retries defaultSelectedKeys when the first read throws', () => {
+    let fail = true
+    const {state, stop} = harness({
+      get defaultSelectedKeys() {
+        if (fail) throw new Error('slot')
+        return ['a']
+      },
+    })
+    expect(() => state.selectedKeys).toThrow('slot')
+    fail = false
+    expect([...state.selectedKeys]).toEqual(['a'])
+    stop()
+  })
+
+  it('keeps the cached controlled set when the parent mutates that same iterable', () => {
+    const selected = new Set<Key>(['a'])
+    const {state, stop} = harness({selectedKeys: () => selected})
+    const base = state.selectedKeys
+    selected.add('b')
+    expect(state.selectedKeys).toBe(base)
+    expect([...state.selectedKeys]).toEqual(['a'])
+    expect([...selected].sort()).toEqual(['a', 'b'])
+    stop()
+  })
+
   it('does not call onSelectionChange when setSelectedKeys receives the same set', () => {
     const seen: number[] = []
     const {state, stop} = harness({onSelectionChange: () => seen.push(1)})

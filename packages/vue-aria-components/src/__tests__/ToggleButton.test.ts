@@ -286,6 +286,42 @@ describe('ToggleButton', () => {
     wrapper.unmount()
   })
 
+  it('calls a standalone context onChange and ignores it inside a group', async () => {
+    const selected = ref(false)
+    const contextSeen: boolean[] = []
+    const localSeen: boolean[] = []
+    const groupedSeen: boolean[] = []
+    const ctx: Record<string, any> = {
+      onChange: (value: boolean) => {
+        contextSeen.push(value)
+        selected.value = value
+      },
+    }
+    Object.defineProperty(ctx, 'isSelected', {enumerable: true, get: () => selected.value})
+    const wrapper = mountInDoc(() => {
+      provide(ToggleButtonContext, ctx)
+      return () => h('div', [
+        h(ToggleButton, {onChange: (value: boolean) => localSeen.push(value)}, () => 'Solo'),
+        h(ToggleButtonGroup, {'aria-label': 'Format'}, () => h(ToggleButton, {
+          id: 'item',
+          onChange: (value: boolean) => groupedSeen.push(value),
+        }, () => 'Item')),
+      ])
+    })
+    await nextTick()
+    const solo = [...document.querySelectorAll('button')].find((node) => node.textContent === 'Solo')!
+    const item = [...document.querySelectorAll('button')].find((node) => node.textContent === 'Item')!
+    pointerClick(solo)
+    pointerClick(item)
+    await nextTick()
+    expect(contextSeen).toEqual([true])
+    expect(localSeen).toEqual([true])
+    expect(groupedSeen).toEqual([])
+    expect(solo.getAttribute('aria-pressed')).toBe('true')
+    expect(item.getAttribute('aria-checked')).toBe('true')
+    wrapper.unmount()
+  })
+
   it('opts out of props context with slot null without leaving the group', async () => {
     const slot = ref<string | null | undefined>(null)
     const ctx = {
