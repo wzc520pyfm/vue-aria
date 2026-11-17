@@ -16,6 +16,8 @@
  * `SliderThumb` / `SliderFill`. The ProgressBar / Meter slice adds
  * `ProgressBar` / `ProgressBarContext` and `Meter` / `MeterContext`.
  * The Toolbar slice adds `Toolbar` / `ToolbarContext`.
+ * The ToggleButton slice adds `ToggleButton`, `ToggleButtonGroup`, and their
+ * contexts. `SelectionIndicator` is not exported.
  * Sheet, Form, and FieldError remain deferred.
  */
 export {Button} from './Button'
@@ -219,3 +221,10 @@ export type {MeterProps, MeterRenderProps} from './Meter'
 export {Toolbar, ToolbarContext} from './Toolbar'
 export type {ToolbarProps, ToolbarRenderProps} from './Toolbar'
 export {DEFAULT_SLOT} from '../src/defaultSlot'
+
+export {ToggleButton, ToggleButtonContext} from './ToggleButton'
+export type {ToggleButtonProps, ToggleButtonRenderProps} from './ToggleButton'
+export {ToggleButtonGroup, ToggleButtonGroupContext, ToggleGroupStateContext} from './ToggleButtonGroup'
+export type {ToggleButtonGroupProps, ToggleButtonGroupRenderProps} from './ToggleButtonGroup'
+export type {ToggleGroupState} from 'vue-stately/useToggleGroupState'
+export type {Key} from 'vue-stately/useListState'

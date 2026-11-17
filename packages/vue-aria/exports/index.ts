@@ -9,7 +9,9 @@
  * Checkbox / Radio / Switch hooks, the Disclosure hook
  * (`useDisclosure`), the Slider hooks (`useSlider`, `useSliderThumb`),
  * and the ProgressBar / Meter hooks (`useProgressBar`, `useMeter`),
- * and the Toolbar hook (`useToolbar`)
+ * and the Toolbar hook (`useToolbar`),
+ * and the ToggleButton hooks (`useToggleButton`, `useToggleButtonGroup`,
+ * `useToggleButtonGroupItem`)
  * on top of the interaction hooks and Hero UI Vue behavior contract.
  */
 export {usePress} from './usePress'
@@ -211,3 +213,19 @@ export type {MeterProps, AriaMeterProps, MeterAria} from './useMeter'
 
 export {useToolbar} from './useToolbar'
 export type {AriaToolbarProps, ToolbarAria} from './useToolbar'
+
+export {useToggleButton} from './useToggleButton'
+export type {
+  ToggleButtonProps,
+  AriaToggleButtonProps,
+  AriaToggleButtonOptions,
+  ToggleButtonAria,
+} from './useToggleButton'
+
+export {useToggleButtonGroup, useToggleButtonGroupItem} from './useToggleButtonGroup'
+export type {
+  AriaToggleButtonGroupProps,
+  ToggleButtonGroupAria,
+  AriaToggleButtonGroupItemProps,
+  AriaToggleButtonGroupItemOptions,
+} from './useToggleButtonGroup'

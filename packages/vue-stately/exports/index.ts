@@ -106,6 +106,9 @@ export type {SearchFieldProps, SearchFieldState} from './useSearchFieldState'
 export {useToggleState} from './useToggleState'
 export type {ToggleProps, ToggleState, ToggleStateOptions} from './useToggleState'
 
+export {useToggleGroupState} from './useToggleGroupState'
+export type {ToggleGroupProps, ToggleGroupState} from './useToggleGroupState'
+
 export {useCheckboxGroupState} from './useCheckboxGroupState'
 export type {CheckboxGroupProps, CheckboxGroupState} from './useCheckboxGroupState'
 
