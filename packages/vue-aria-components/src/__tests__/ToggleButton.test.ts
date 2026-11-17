@@ -437,6 +437,147 @@ describe('ToggleButton', () => {
     wrapper.unmount()
   })
 
+  it('keeps the group setup snapshot when local defaultSelected is explicit', async () => {
+    const localDefault = ref(false)
+    const id = ref<Key | null>('a')
+    let held: ToggleButtonRenderProps['state'] | undefined
+    const wrapper = mountInDoc(() => h(ToggleButtonGroup, {
+      defaultSelectedKeys: ['a'],
+      'aria-label': 'Format',
+    }, () => h(ToggleButton, {
+      id: id.value,
+      defaultSelected: localDefault.value,
+    }, {
+      default: ({state}: ToggleButtonRenderProps) => {
+        held = state
+        return 'a'
+      },
+    })))
+    await nextTick()
+    expect(held!.isSelected).toBe(true)
+    expect(held!.defaultSelected).toBe(true)
+    const selected = [...document.querySelectorAll('button')].find((node) => node.textContent === 'a')!
+    pointerClick(selected)
+    await nextTick()
+    expect(held!.isSelected).toBe(false)
+    expect(held!.defaultSelected).toBe(true)
+    localDefault.value = true
+    await nextTick()
+    expect(held!.defaultSelected).toBe(true)
+    id.value = 'b'
+    await nextTick()
+    expect(held!.defaultSelected).toBe(true)
+    id.value = null
+    await nextTick()
+    expect(held!.isSelected).toBe(false)
+    expect(held!.defaultSelected).toBe(true)
+    localDefault.value = false
+    await nextTick()
+    expect(held!.defaultSelected).toBe(true)
+    id.value = 'a'
+    await nextTick()
+    expect(held!.defaultSelected).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('keeps the group setup snapshot when context defaultSelected changes', async () => {
+    const contextDefault = ref(false)
+    let selectedState: ToggleButtonRenderProps['state'] | undefined
+    let other: ToggleButtonRenderProps['state'] | undefined
+    const ctx: Record<string, any> = {}
+    Object.defineProperty(ctx, 'defaultSelected', {enumerable: true, get: () => contextDefault.value})
+    const wrapper = mountInDoc(() => {
+      provide(ToggleButtonContext, ctx)
+      return () => h(ToggleButtonGroup, {
+        defaultSelectedKeys: ['a'],
+        'aria-label': 'Format',
+      }, () => [
+        h(ToggleButton, {id: 'a'}, {
+          default: ({state}: ToggleButtonRenderProps) => {
+            selectedState = state
+            return 'a'
+          },
+        }),
+        h(ToggleButton, {id: 'b'}, {
+          default: ({state}: ToggleButtonRenderProps) => {
+            other = state
+            return 'b'
+          },
+        }),
+      ])
+    })
+    await nextTick()
+    expect(selectedState!.isSelected).toBe(true)
+    expect(selectedState!.defaultSelected).toBe(true)
+    expect(other!.isSelected).toBe(false)
+    expect(other!.defaultSelected).toBe(false)
+    contextDefault.value = true
+    await nextTick()
+    expect(selectedState!.defaultSelected).toBe(true)
+    expect(other!.defaultSelected).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('applies an explicit defaultSelected only while the button stays standalone', async () => {
+    const localDefault = ref<boolean | undefined>(false)
+    const contextDefault = ref(true)
+    const id = ref<Key | null>(null)
+    let held: ToggleButtonRenderProps['state'] | undefined
+    let solo: ToggleButtonRenderProps['state'] | undefined
+    const ctx: Record<string, any> = {}
+    Object.defineProperty(ctx, 'defaultSelected', {enumerable: true, get: () => contextDefault.value})
+    const wrapper = mountInDoc(() => {
+      provide(ToggleButtonContext, ctx)
+      return () => h('div', [
+        h(ToggleButtonGroup, {
+          defaultSelectedKeys: ['a'],
+          'aria-label': 'Format',
+        }, () => h(ToggleButton, {
+          id: id.value,
+          defaultSelected: localDefault.value,
+        }, {
+          default: ({state}: ToggleButtonRenderProps) => {
+            held = state
+            return 'late'
+          },
+        })),
+        h(ToggleButton, {}, {
+          default: ({state}: ToggleButtonRenderProps) => {
+            solo = state
+            return 'solo'
+          },
+        }),
+      ])
+    })
+    await nextTick()
+    expect(held!.isSelected).toBe(false)
+    expect(held!.defaultSelected).toBe(false)
+    expect(solo!.isSelected).toBe(true)
+    expect(solo!.defaultSelected).toBe(true)
+    localDefault.value = true
+    await nextTick()
+    expect(held!.isSelected).toBe(false)
+    expect(held!.defaultSelected).toBe(true)
+    id.value = 'a'
+    await nextTick()
+    expect(held!.isSelected).toBe(true)
+    expect(held!.defaultSelected).toBe(false)
+    localDefault.value = true
+    await nextTick()
+    expect(held!.defaultSelected).toBe(false)
+    localDefault.value = undefined
+    id.value = null
+    await nextTick()
+    expect(held!.isSelected).toBe(false)
+    expect(held!.defaultSelected).toBe(true)
+    contextDefault.value = false
+    await nextTick()
+    expect(held!.defaultSelected).toBe(false)
+    expect(solo!.isSelected).toBe(true)
+    expect(solo!.defaultSelected).toBe(false)
+    wrapper.unmount()
+  })
+
   it('runs each lowercase hover listener once', async () => {
     const counts = {start: 0, end: 0, change: 0}
     const hoverListeners: ToggleButtonProps = {

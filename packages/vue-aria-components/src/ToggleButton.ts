@@ -226,10 +226,11 @@ export const ToggleButton = defineComponent({
         return standalone.isSelected
       },
       get defaultSelected() {
-        // One initial value for the instance. Leaving the group must not
-        // switch to the standalone state's separate initial `false`.
-        const explicit = pick(props.defaultSelected, resolved(), 'defaultSelected')
-        if (explicit !== undefined) return Boolean(explicit)
+        // Official ToggleButton gives useToggleState only the group
+        // selection. The button's own defaultSelected is not an input, so
+        // the setup snapshot stays for this instance, including after the
+        // id leaves the group. An explicit value applies only on the
+        // standalone state below.
         if (initialGroupDefault !== undefined) return initialGroupDefault
         return standalone.defaultSelected
       },
