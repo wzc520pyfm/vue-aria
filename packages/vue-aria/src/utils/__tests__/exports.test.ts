@@ -36,6 +36,7 @@ import {
   useSelect,
   useSelectable,
   useSwitch,
+  useToolbar,
   useTooltip,
   useTooltipTrigger,
 } from 'vue-aria'
@@ -44,10 +45,17 @@ import type {
   AriaHiddenSelectProps,
   AriaSelectOptions,
   AriaSelectProps,
+  AriaToolbarProps,
   HiddenSelectAria,
   HiddenSelectProps,
   SelectAria,
+  ToolbarAria,
 } from 'vue-aria'
+import type {ToolbarProps, ToolbarRenderProps} from 'vue-aria-components'
+import {useToolbar as useToolbarSubpath} from 'vue-aria/useToolbar'
+import {Toolbar as ToolbarSubpath, ToolbarContext as ToolbarContextSubpath} from 'vue-aria-components/Toolbar'
+import {DEFAULT_SLOT} from 'vue-aria-components'
+import * as ToolbarEntry from 'vue-aria-components/Toolbar'
 import * as vueAriaRoot from 'vue-aria'
 import * as vueAriaComponentsRoot from 'vue-aria-components'
 import * as vueStatelyRoot from 'vue-stately'
@@ -103,6 +111,29 @@ describe('vue-aria main entry', () => {
       _hiddenAria: HiddenSelectAria | null,
     ) => [_selectProps, _selectOptions, _selectAria, _hiddenProps, _hiddenOptions, _hiddenPropsFull, _hiddenAria]
     expect(typeof typeProbe).toBe('function')
+    expect(typeof useToolbar).toBe('function')
+    expect(useToolbarSubpath).toBe(useToolbar)
+    expect(ToolbarSubpath).toBe((vueAriaComponentsRoot as Record<string, unknown>).Toolbar)
+    expect(ToolbarContextSubpath).toBe((vueAriaComponentsRoot as Record<string, unknown>).ToolbarContext)
+    const toolbarOptions: AriaToolbarProps = {orientation: 'vertical', 'aria-label': 'Tools'}
+    const toolbarStyle: ToolbarProps = {
+      orientation: 'horizontal',
+      className: (values) => values.defaultClassName ?? values.orientation,
+      style: (values) => values.defaultStyle,
+    }
+    const toolbarRender: ToolbarRenderProps = {orientation: 'vertical'}
+    const toolbarProbe = (_aria: ToolbarAria | null, _props: ToolbarProps | null) => toolbarRender.orientation
+    expect(toolbarStyle.className).toBeTypeOf('function')
+    expect(toolbarStyle.style).toBeTypeOf('function')
+    expect(toolbarOptions.orientation).toBe('vertical')
+    expect(toolbarOptions['aria-label']).toBe('Tools')
+    expect(toolbarProbe(null, toolbarStyle)).toBe('vertical')
+    expect(typeof DEFAULT_SLOT).toBe('symbol')
+    expect(vueAriaComponentsRoot.DEFAULT_SLOT).toBe(DEFAULT_SLOT)
+    expect(ToolbarEntry).not.toHaveProperty('DEFAULT_SLOT')
+    expect(ToolbarEntry).not.toHaveProperty('Provider')
+    expect(ToolbarEntry).not.toHaveProperty('useContextProps')
+    expect(ToolbarEntry).not.toHaveProperty('useSlottedContext')
   })
 
   it('keeps all three interaction *Props objects unwrapped', () => {
@@ -282,8 +313,28 @@ describe('vue-aria main entry', () => {
       'SelectionIndicator',
       'SharedElementTransition',
       'getFocusableTreeWalker',
+      'createFocusManager',
+      'isFocusable',
+      'isElementVisible',
+      'isTabbable',
+      'ShadowTreeWalker',
+      'createShadowTreeWalker',
+      'focusableNext',
+      'focusablePrevious',
+      'focusableFirst',
+      'focusableLast',
       'ToggleButton',
       'ToggleButtonGroup',
+      'Tabs',
+      'TabList',
+      'TabPanel',
+      'Link',
+      'Breadcrumbs',
+      'useMove',
+      'DEFAULT_SLOT',
+      'Provider',
+      'useContextProps',
+      'useSlottedContext',
     ]
     for (const name of vueAriaAbsent) {
       expect(vueAriaRoot as Record<string, unknown>, name).not.toHaveProperty(name)
@@ -311,8 +362,26 @@ describe('vue-aria main entry', () => {
       'SelectionIndicator',
       'SharedElementTransition',
       'getFocusableTreeWalker',
+      'createFocusManager',
+      'isFocusable',
+      'isElementVisible',
+      'ShadowTreeWalker',
+      'createShadowTreeWalker',
+      'focusableNext',
       'ToggleButton',
       'ToggleButtonGroup',
+      'Tabs',
+      'TabList',
+      'TabPanel',
+      'Link',
+      'Breadcrumbs',
+      'useMove',
+      'useToolbar',
+      'Provider',
+      'useContextProps',
+      'useSlottedContext',
+      'composeRenderProps',
+      'useRenderProps',
     ]
     for (const name of componentsAbsent) {
       expect(vueAriaComponentsRoot as Record<string, unknown>, name).not.toHaveProperty(name)

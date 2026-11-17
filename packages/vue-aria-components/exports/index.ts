@@ -15,6 +15,7 @@
  * The Slider slice adds `Slider` / `SliderOutput` / `SliderTrack` /
  * `SliderThumb` / `SliderFill`. The ProgressBar / Meter slice adds
  * `ProgressBar` / `ProgressBarContext` and `Meter` / `MeterContext`.
+ * The Toolbar slice adds `Toolbar` / `ToolbarContext`.
  * Sheet, Form, and FieldError remain deferred.
  */
 export {Button} from './Button'
@@ -214,3 +215,7 @@ export type {ProgressBarProps, ProgressBarRenderProps} from './ProgressBar'
 export {Meter} from './Meter'
 export {MeterContext} from '../src/Meter'
 export type {MeterProps, MeterRenderProps} from './Meter'
+
+export {Toolbar, ToolbarContext} from './Toolbar'
+export type {ToolbarProps, ToolbarRenderProps} from './Toolbar'
+export {DEFAULT_SLOT} from '../src/defaultSlot'
