@@ -405,14 +405,17 @@ export const SliderTrack = defineComponent({
     const {hoverProps, isHovered} = useHover({
       isDisabled: () => state.isDisabled,
       onHoverStart: (event) => {
+        if (typeof ctx?.onHoverStart === 'function') ctx.onHoverStart(event)
         props.onHoverStart?.(event)
         emit('hoverstart', event)
       },
       onHoverEnd: (event) => {
+        if (typeof ctx?.onHoverEnd === 'function') ctx.onHoverEnd(event)
         props.onHoverEnd?.(event)
         emit('hoverend', event)
       },
       onHoverChange: (value) => {
+        if (typeof ctx?.onHoverChange === 'function') ctx.onHoverChange(value)
         props.onHoverChange?.(value)
         emit('hoverchange', value)
       },
@@ -601,6 +604,9 @@ export interface SliderThumbProps {
   'aria-labelledby'?: string
   'aria-describedby'?: string
   'aria-details'?: string
+  'aria-errormessage'?: string
+  isRequired?: boolean
+  isInvalid?: boolean
   onKeyDown?: (event: KeyboardEvent) => void
   onKeyUp?: (event: KeyboardEvent) => void
   onHoverStart?: (event: any) => void
@@ -634,14 +640,17 @@ export const SliderFill = defineComponent({
     const {hoverProps, isHovered} = useHover({
       isDisabled: () => state.isDisabled,
       onHoverStart: (event) => {
+        if (typeof ctx?.onHoverStart === 'function') ctx.onHoverStart(event)
         props.onHoverStart?.(event)
         emit('hoverstart', event)
       },
       onHoverEnd: (event) => {
+        if (typeof ctx?.onHoverEnd === 'function') ctx.onHoverEnd(event)
         props.onHoverEnd?.(event)
         emit('hoverend', event)
       },
       onHoverChange: (value) => {
+        if (typeof ctx?.onHoverChange === 'function') ctx.onHoverChange(value)
         props.onHoverChange?.(value)
         emit('hoverchange', value)
       },

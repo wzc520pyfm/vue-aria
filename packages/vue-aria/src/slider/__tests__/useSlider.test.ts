@@ -264,8 +264,9 @@ describe('useSlider', () => {
     onChangeEnd.mockClear()
     const host = document.querySelector('[data-testid="swap-host"]') as HTMLElement
     host.style.userSelect = 'text'
-    pointer('pointerdown', host, {clientX: 10, pageX: 10})
+    pointer('pointerdown', host, {clientX: 10, pageX: 10, pointerId: 1})
     expect(swapState.isThumbDragging(0)).toBe(true)
+    expect(swapState.values).toEqual([10])
     which.value = 1
     await nextTick()
     expect(host.style.userSelect).toBe('text')
@@ -273,12 +274,102 @@ describe('useSlider', () => {
     expect(onChangeEnd).toHaveBeenCalledTimes(1)
     const nextHost = document.querySelector('[data-testid="swap-host"]') as HTMLElement
     expect(nextHost).not.toBe(host)
-    pointer('pointerdown', nextHost, {clientX: 40, pageX: 40})
-    pointer('pointermove', window, {clientX: 55, pageX: 55})
+    pointer('pointermove', window, {clientX: 90, pageX: 90, pointerId: 1})
+    pointer('pointerup', window, {clientX: 90, pageX: 90, pointerId: 1})
+    pointer('pointercancel', window, {clientX: 90, pageX: 90, pointerId: 1})
+    expect(swapState.values).toEqual([10])
+    expect(swapState.isThumbDragging(0)).toBe(false)
+    expect(onChangeEnd).toHaveBeenCalledTimes(1)
+    pointer('pointerdown', nextHost, {clientX: 40, pageX: 40, pointerId: 2})
+    pointer('pointermove', window, {clientX: 55, pageX: 55, pointerId: 2})
     expect(swapState.isThumbDragging(0)).toBe(true)
-    pointer('pointerup', window, {clientX: 55, pageX: 55})
+    expect(swapState.values).toEqual([25])
+    pointer('pointermove', window, {clientX: 90, pageX: 90, pointerId: 1})
+    pointer('pointerup', window, {clientX: 90, pageX: 90, pointerId: 1})
+    pointer('pointercancel', window, {clientX: 90, pageX: 90, pointerId: 1})
+    expect(swapState.values).toEqual([25])
+    expect(onChangeEnd).toHaveBeenCalledTimes(1)
+    pointer('pointerup', window, {clientX: 55, pageX: 55, pointerId: 2})
+    expect(swapState.values).toEqual([25])
     expect(onChangeEnd).toHaveBeenCalledTimes(2)
     swap.unmount()
+    stub.mockRestore()
+  })
+
+  it('cancels a track move session when the same hook swaps hosts', async () => {
+    const onChange = vi.fn()
+    const onChangeEnd = vi.fn()
+    const stub = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => rect() as DOMRect)
+    const which = ref(0)
+    let state!: ReturnType<typeof useSliderState>
+    const wrapper = mount(defineComponent({
+      setup() {
+        state = useSliderState({numberFormatter: formatter, defaultValue: [10], onChange, onChangeEnd, 'aria-label': 'Slider'})
+        const trackRef = ref<HTMLElement | null>(null)
+        const aria = useSlider({'aria-label': 'Slider'}, state, trackRef)
+        return () => h('div', {key: which.value, ref: trackRef, 'data-testid': 'swap-track', ...aria.trackProps})
+      },
+    }), {attachTo: document.body})
+    const track = document.querySelector('[data-testid="swap-track"]') as HTMLElement
+    track.style.userSelect = 'text'
+    pointer('pointerdown', track, {clientX: 10, pageX: 10, pointerId: 1})
+    expect(state.values).toEqual([10])
+    expect(state.isThumbDragging(0)).toBe(true)
+    which.value = 1
+    await nextTick()
+    expect(track.style.userSelect).toBe('text')
+    expect(state.isThumbDragging(0)).toBe(false)
+    expect(onChangeEnd).toHaveBeenCalledTimes(1)
+    const nextTrack = document.querySelector('[data-testid="swap-track"]') as HTMLElement
+    expect(nextTrack).not.toBe(track)
+    pointer('pointerdown', nextTrack, {clientX: 40, pageX: 40, pointerId: 2})
+    expect(state.values).toEqual([40])
+    pointer('pointermove', window, {clientX: 55, pageX: 55, pointerId: 2})
+    expect(state.values).toEqual([55])
+    expect(state.isThumbDragging(0)).toBe(true)
+    pointer('pointermove', window, {clientX: 90, pageX: 90, pointerId: 1})
+    pointer('pointerup', window, {clientX: 90, pageX: 90, pointerId: 1})
+    pointer('pointercancel', window, {clientX: 90, pageX: 90, pointerId: 1})
+    expect(state.values).toEqual([55])
+    expect(onChangeEnd).toHaveBeenCalledTimes(1)
+    pointer('pointerup', window, {clientX: 55, pageX: 55, pointerId: 2})
+    expect(state.values).toEqual([55])
+    expect(onChangeEnd).toHaveBeenCalledTimes(2)
+    wrapper.unmount()
+    stub.mockRestore()
+  })
+
+  it('repeats ArrowRight from the controlled value when the parent rejects the proposal', () => {
+    const value = ref(20)
+    const onChange = vi.fn()
+    const onChangeEnd = vi.fn()
+    const stub = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => rect() as DOMRect)
+    const wrapper = mount(defineComponent({
+      setup() {
+        const state = useSliderState({
+          numberFormatter: formatter,
+          value: () => value.value,
+          onChange,
+          onChangeEnd,
+          'aria-label': 'Slider',
+        })
+        const trackRef = ref<HTMLElement | null>(null)
+        const inputRef = ref<HTMLInputElement | null>(null)
+        const slider = useSlider({'aria-label': 'Slider'}, state, trackRef)
+        const thumb = useSliderThumb({index: 0, trackRef, inputRef, 'aria-label': 'Thumb'}, state)
+        return () => h('div', {ref: trackRef, ...slider.trackProps}, [
+          h('div', {...thumb.thumbProps}, [h('input', {ref: inputRef, ...thumb.inputProps})]),
+        ])
+      },
+    }), {attachTo: document.body})
+    const input = document.querySelector('input') as HTMLInputElement
+    input.focus()
+    input.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true, cancelable: true}))
+    input.dispatchEvent(new KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true, cancelable: true}))
+    expect(value.value).toBe(20)
+    expect(onChange.mock.calls.map((call) => call[0])).toEqual([21, 21])
+    expect(onChangeEnd.mock.calls.map((call) => call[0])).toEqual([21, 21])
+    wrapper.unmount()
     stub.mockRestore()
   })
 

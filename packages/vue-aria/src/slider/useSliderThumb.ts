@@ -126,7 +126,7 @@ export function useSliderThumb(opts: AriaSliderThumbOptions, state: SliderState)
     isDisabled: () => isDisabled(),
   })
 
-  const {moveProps} = useMove({
+  const {moveProps, cancel: cancelMove} = useMove({
     onMoveStart() {
       currentPosition = null
       state.setThumbDragging(index(), true)
@@ -196,6 +196,7 @@ export function useSliderThumb(opts: AriaSliderThumbOptions, state: SliderState)
     return currentPointer == null ? touches[0].identifier : undefined
   }
   function finishThumb() {
+    cancelMove()
     const thumbIndex = index()
     if (pressedEl) restoreTextSelection(pressedEl)
     pressedEl = null

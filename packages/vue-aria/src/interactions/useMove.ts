@@ -7,7 +7,8 @@
  * DOM listeners use the Vue event names that actually fire (`onPointerdown`,
  * `onKeydown`). When `PointerEvent` exists, mouse compatibility listeners are
  * not installed. Selection styles are restored on pointerup, pointercancel,
- * unmount, and when the drag target changes.
+ * unmount, and when the drag target changes. `cancel` drops a live session
+ * without `onMoveEnd`, so a same-hook host swap can finish the gesture once.
  */
 
 import {onScopeDispose} from 'vue'
@@ -53,7 +54,18 @@ export function useMove(props: MoveEvents) {
     id: null as number | null,
   }
   let selectionTarget: Element | undefined
+  let detachSession: (() => void) | null = null
   const {addGlobalListener, removeGlobalListener} = useGlobalListeners()
+
+  function cancel() {
+    restoreTextSelection(selectionTarget)
+    selectionTarget = undefined
+    detachSession?.()
+    detachSession = null
+    state.didMove = false
+    state.lastPosition = null
+    state.id = null
+  }
 
   function move(originalEvent: EventBase, pointerType: string, deltaX: number, deltaY: number) {
     if (deltaX === 0 && deltaY === 0) return
@@ -115,9 +127,9 @@ export function useMove(props: MoveEvents) {
     const onMouseUp = (e: MouseEvent) => {
       if (e.button !== 0) return
       end(e, 'mouse')
-      const ownerWindow = getOwnerWindow(getEventTarget(e) as Element)
-      removeGlobalListener(ownerWindow, 'mousemove', onMouseMove as EventListener, false)
-      removeGlobalListener(ownerWindow, 'mouseup', onMouseUp as EventListener, false)
+      detachSession?.()
+      detachSession = null
+      state.id = null
     }
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 0) return
@@ -126,6 +138,10 @@ export function useMove(props: MoveEvents) {
       e.preventDefault()
       state.lastPosition = pagePoint(e)
       const ownerWindow = getOwnerWindow(getEventTarget(e) as Element)
+      detachSession = () => {
+        removeGlobalListener(ownerWindow, 'mousemove', onMouseMove as EventListener, false)
+        removeGlobalListener(ownerWindow, 'mouseup', onMouseUp as EventListener, false)
+      }
       addGlobalListener(ownerWindow, 'mousemove', onMouseMove as EventListener, false)
       addGlobalListener(ownerWindow, 'mouseup', onMouseUp as EventListener, false)
     }
@@ -143,11 +159,9 @@ export function useMove(props: MoveEvents) {
       const touch = [...e.changedTouches].findIndex(({identifier}) => identifier === state.id)
       if (touch < 0) return
       end(e, 'touch')
+      detachSession?.()
+      detachSession = null
       state.id = null
-      const ownerWindow = getOwnerWindow(getEventTarget(e) as Element)
-      removeGlobalListener(ownerWindow, 'touchmove', onTouchMove as EventListener, false)
-      removeGlobalListener(ownerWindow, 'touchend', onTouchEnd as EventListener, false)
-      removeGlobalListener(ownerWindow, 'touchcancel', onTouchEnd as EventListener, false)
     }
     const onTouchStart = (e: TouchEvent) => {
       if (e.changedTouches.length === 0 || state.id != null) return
@@ -158,6 +172,11 @@ export function useMove(props: MoveEvents) {
       state.lastPosition = pagePoint(touch)
       state.id = touch.identifier
       const ownerWindow = getOwnerWindow(getEventTarget(e) as Element)
+      detachSession = () => {
+        removeGlobalListener(ownerWindow, 'touchmove', onTouchMove as EventListener, false)
+        removeGlobalListener(ownerWindow, 'touchend', onTouchEnd as EventListener, false)
+        removeGlobalListener(ownerWindow, 'touchcancel', onTouchEnd as EventListener, false)
+      }
       addGlobalListener(ownerWindow, 'touchmove', onTouchMove as EventListener, false)
       addGlobalListener(ownerWindow, 'touchend', onTouchEnd as EventListener, false)
       addGlobalListener(ownerWindow, 'touchcancel', onTouchEnd as EventListener, false)
@@ -175,11 +194,9 @@ export function useMove(props: MoveEvents) {
     const onPointerUp = (e: PointerEvent) => {
       if (e.pointerId !== state.id) return
       end(e, e.pointerType || 'mouse')
+      detachSession?.()
+      detachSession = null
       state.id = null
-      const ownerWindow = getOwnerWindow(getEventTarget(e) as Element)
-      removeGlobalListener(ownerWindow, 'pointermove', onPointerMove as EventListener, false)
-      removeGlobalListener(ownerWindow, 'pointerup', onPointerUp as EventListener, false)
-      removeGlobalListener(ownerWindow, 'pointercancel', onPointerUp as EventListener, false)
     }
     const onPointerDown = (e: PointerEvent) => {
       if (e.button !== 0 || state.id != null) return
@@ -189,6 +206,11 @@ export function useMove(props: MoveEvents) {
       state.lastPosition = pagePoint(e)
       state.id = e.pointerId
       const ownerWindow = getOwnerWindow(getEventTarget(e) as Element)
+      detachSession = () => {
+        removeGlobalListener(ownerWindow, 'pointermove', onPointerMove as EventListener, false)
+        removeGlobalListener(ownerWindow, 'pointerup', onPointerUp as EventListener, false)
+        removeGlobalListener(ownerWindow, 'pointercancel', onPointerUp as EventListener, false)
+      }
       addGlobalListener(ownerWindow, 'pointermove', onPointerMove as EventListener, false)
       addGlobalListener(ownerWindow, 'pointerup', onPointerUp as EventListener, false)
       addGlobalListener(ownerWindow, 'pointercancel', onPointerUp as EventListener, false)
@@ -236,10 +258,7 @@ export function useMove(props: MoveEvents) {
   moveProps.onKeydown = onKeyDown
   moveProps.onKeyDown = onKeyDown
 
-  onScopeDispose(() => {
-    restoreTextSelection(selectionTarget)
-    selectionTarget = undefined
-  })
+  onScopeDispose(cancel)
 
-  return {moveProps}
+  return {moveProps, cancel}
 }

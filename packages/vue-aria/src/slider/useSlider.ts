@@ -77,7 +77,7 @@ export function useSlider<T extends number | number[]>(
   let currentPosition: number | null = null
   let currentPointer: number | null | undefined = undefined
 
-  const {moveProps} = useMove({
+  const {moveProps, cancel: cancelMove} = useMove({
     onMoveStart() {
       currentPosition = null
     },
@@ -116,6 +116,7 @@ export function useSlider<T extends number | number[]>(
   }
 
   function finishTrack() {
+    cancelMove()
     if (realTimeTrackDraggingIndex != null) {
       const index = realTimeTrackDraggingIndex
       realTimeTrackDraggingIndex = null

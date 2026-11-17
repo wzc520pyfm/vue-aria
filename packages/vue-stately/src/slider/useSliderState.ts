@@ -182,26 +182,7 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
   let listFormat: Intl.ListFormat | null = null
 
   /** Public values always follow controlled state. `valuesRef` is only the last proposal. */
-  let seenPublicKey = valuesState.value.join(',')
-  function observeParent() {
-    const current = valuesState.value
-    const key = current.join(',')
-    if (key === seenPublicKey) return
-    const previousKey = seenPublicKey
-    seenPublicKey = key
-    // Adopt a parent update when it is not covering a newer local proposal.
-    if (!isDraggings.value.some(Boolean) || valuesRef.current.join(',') === previousKey) {
-      valuesRef.current = current.slice()
-    }
-  }
-  const publicValues = () => {
-    observeParent()
-    return valuesState.value
-  }
-  const proposalBase = () => {
-    observeParent()
-    return valuesRef.current
-  }
+  const publicValues = () => valuesState.value
 
   function ensureSlots(length: number) {
     while (isDraggings.value.length < length) isDraggings.value.push(false)
@@ -225,17 +206,17 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
 
   function updateValue(index: number, value: number) {
     if (isDisabled() || isEditables[index] === false) return
-    const values = proposalBase()
-    ensureSlots(values.length)
     const shown = publicValues()
+    ensureSlots(Math.max(shown.length, valuesRef.current.length, index + 1))
     const thisMin = index === 0 ? minValue() : shown[index - 1]
     const thisMax = index === shown.length - 1 ? maxValue() : shown[index + 1]
     value = snapValueToStep(value, thisMin, thisMax, step())
-    if (values[index] === value) {
-      valuesRef.current = values.slice()
-      return
-    }
-    const next = values.slice()
+    // The proposal array is whatever this gesture started from. A repeated key
+    // starts a new gesture from the public value, so a rejected 21 does not
+    // become the base for 22.
+    const base = valuesRef.current
+    if (base[index] === value) return
+    const next = base.slice()
     next[index] = value
     setValues(next)
   }
@@ -247,8 +228,9 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
     if (dragging && (isDisabled() || isEditables[index] === false)) return
     const values = valuesState.value
     ensureSlots(Math.max(values.length, index + 1))
-    if (dragging) observeParent()
     const wasDragging = isDraggings.value[index]
+    // Match the pin: a gesture starts from the public values, not the previous proposal.
+    if (dragging && !wasDragging) valuesRef.current = values.slice()
     if (isDraggings.value[index] === dragging) {
       if (!dragging && wasDragging && !isDraggings.value.some(Boolean)) emitChangeEnd(valuesRef.current.slice())
       return
@@ -338,11 +320,13 @@ export function useSliderState<T extends number | number[]>(props: SliderStateOp
     },
     incrementThumb(index, stepSize = 1) {
       const amount = Math.max(stepSize, step())
-      updateValue(index, snapValueToStep(proposalBase()[index] + amount, minValue(), maxValue(), step()))
+      const current = publicValues()[index]
+      updateValue(index, snapValueToStep(current + amount, minValue(), maxValue(), step()))
     },
     decrementThumb(index, stepSize = 1) {
       const amount = Math.max(stepSize, step())
-      updateValue(index, snapValueToStep(proposalBase()[index] - amount, minValue(), maxValue(), step()))
+      const current = publicValues()[index]
+      updateValue(index, snapValueToStep(current - amount, minValue(), maxValue(), step()))
     },
     get step() {
       return step()

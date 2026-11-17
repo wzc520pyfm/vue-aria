@@ -210,6 +210,32 @@ describe('useSliderState', () => {
     expect(transformedState!.values).toEqual([25])
     transformedState!.setThumbDragging(0, false)
     expect(onChangeEnd).toHaveBeenLastCalledWith(30)
+
+    const rejected = ref(20)
+    const rejectedChange = vi.fn()
+    const rejectedEnd = vi.fn()
+    let rejectedState: SliderState | undefined
+    mount(defineComponent({
+      setup() {
+        rejectedState = useSliderState({
+          numberFormatter: formatter,
+          value: () => rejected.value,
+          onChange: rejectedChange,
+          onChangeEnd: rejectedEnd,
+        })
+        return () => null
+      },
+    }))
+    rejectedState!.setThumbDragging(0, true)
+    rejectedState!.incrementThumb(0)
+    rejectedState!.setThumbDragging(0, false)
+    rejectedState!.setThumbDragging(0, true)
+    rejectedState!.incrementThumb(0)
+    rejectedState!.setThumbDragging(0, false)
+    expect(rejected.value).toBe(20)
+    expect(rejectedState!.values).toEqual([20])
+    expect(rejectedChange.mock.calls.map((call) => call[0])).toEqual([21, 21])
+    expect(rejectedEnd.mock.calls.map((call) => call[0])).toEqual([21, 21])
   })
 
   it('formats two thumbs with formatRange and three with a unit list', () => {

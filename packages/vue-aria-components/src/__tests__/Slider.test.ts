@@ -745,11 +745,98 @@ describe('Slider', () => {
     child.unmount()
   })
 
+  it('calls context and local hover callbacks once, then only the replacement', async () => {
+    const trackContext = vi.fn()
+    const trackLocal = vi.fn()
+    const trackEmit = vi.fn()
+    const trackDecoy = vi.fn()
+    const trackNext = vi.fn()
+    const trackEnd = vi.fn()
+    const trackChange = vi.fn()
+    const fillContext = vi.fn()
+    const fillLocal = vi.fn()
+    const fillEmit = vi.fn()
+    const fillNext = vi.fn()
+    const fillEnd = vi.fn()
+    const fillChange = vi.fn()
+    let trackHandler = trackContext
+    let fillHandler = fillContext
+    const trackCtx: Record<string, any> = {onHoverstart: trackDecoy}
+    const fillCtx: Record<string, any> = {}
+    Object.defineProperty(trackCtx, 'onHoverStart', {enumerable: true, get: () => trackHandler})
+    Object.defineProperty(trackCtx, 'onHoverEnd', {enumerable: true, get: () => trackEnd})
+    Object.defineProperty(trackCtx, 'onHoverChange', {enumerable: true, get: () => trackChange})
+    Object.defineProperty(fillCtx, 'onHoverStart', {enumerable: true, get: () => fillHandler})
+    Object.defineProperty(fillCtx, 'onHoverEnd', {enumerable: true, get: () => fillEnd})
+    Object.defineProperty(fillCtx, 'onHoverChange', {enumerable: true, get: () => fillChange})
+    const ProvideTrack = defineComponent({
+      setup(_, {slots}) {
+        provide(SliderTrackContext, trackCtx)
+        return () => slots.default?.()
+      },
+    })
+    const ProvideFill = defineComponent({
+      setup(_, {slots}) {
+        provide(SliderFillContext, fillCtx)
+        return () => slots.default?.()
+      },
+    })
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Slider, {'aria-label': 'Hover'}, {
+          default: () => h(ProvideTrack, {}, {
+            default: () => h(SliderTrack, {onHoverStart: trackLocal, onHoverstart: trackEmit}, {
+              default: () => h(ProvideFill, {}, {
+                default: () => h(SliderFill, {onHoverStart: fillLocal, onHoverstart: fillEmit}),
+              }),
+            }),
+          }),
+        })
+      },
+    }))
+    await nextTick()
+    const track = document.querySelector('.react-aria-SliderTrack') as HTMLElement
+    const fill = document.querySelector('.react-aria-SliderFill') as HTMLElement
+    track.dispatchEvent(new PointerEvent('pointerenter', {bubbles: true, pointerType: 'mouse'}))
+    fill.dispatchEvent(new PointerEvent('pointerenter', {bubbles: true, pointerType: 'mouse'}))
+    expect(trackContext).toHaveBeenCalledTimes(1)
+    expect(trackLocal).toHaveBeenCalledTimes(1)
+    expect(trackEmit).toHaveBeenCalledTimes(1)
+    expect(trackDecoy).not.toHaveBeenCalled()
+    expect(trackChange).toHaveBeenCalledTimes(1)
+    expect(trackChange).toHaveBeenLastCalledWith(true)
+    expect(fillContext).toHaveBeenCalledTimes(1)
+    expect(fillLocal).toHaveBeenCalledTimes(1)
+    expect(fillEmit).toHaveBeenCalledTimes(1)
+    expect(fillChange).toHaveBeenLastCalledWith(true)
+    trackHandler = trackNext
+    fillHandler = fillNext
+    track.dispatchEvent(new PointerEvent('pointerleave', {bubbles: true, pointerType: 'mouse'}))
+    fill.dispatchEvent(new PointerEvent('pointerleave', {bubbles: true, pointerType: 'mouse'}))
+    track.dispatchEvent(new PointerEvent('pointerenter', {bubbles: true, pointerType: 'mouse'}))
+    fill.dispatchEvent(new PointerEvent('pointerenter', {bubbles: true, pointerType: 'mouse'}))
+    expect(trackContext).toHaveBeenCalledTimes(1)
+    expect(trackNext).toHaveBeenCalledTimes(1)
+    expect(trackLocal).toHaveBeenCalledTimes(2)
+    expect(trackDecoy).not.toHaveBeenCalled()
+    expect(trackEnd).toHaveBeenCalledTimes(1)
+    expect(trackChange).toHaveBeenLastCalledWith(true)
+    expect(fillContext).toHaveBeenCalledTimes(1)
+    expect(fillNext).toHaveBeenCalledTimes(1)
+    expect(fillLocal).toHaveBeenCalledTimes(2)
+    expect(fillEnd).toHaveBeenCalledTimes(1)
+    expect(fillChange).toHaveBeenLastCalledWith(true)
+    wrapper.unmount()
+  })
+
   it('focuses autoFocus and forwards a thumb keydown callback', async () => {
     const onKeyDown = vi.fn()
     const onHoverend = vi.fn()
     const assignment: SliderThumbProps = {
       autoFocus: true,
+      isRequired: true,
+      isInvalid: false,
+      'aria-errormessage': 'err',
       onKeyDown,
       onKeyUp: () => {},
       onHoverstart: () => {},
@@ -768,6 +855,8 @@ describe('Slider', () => {
       onHoverChange: () => {},
     }
     expect(assignment.autoFocus).toBe(true)
+    expect(assignment.isRequired).toBe(true)
+    expect(assignment['aria-errormessage']).toBe('err')
     expect(fillAssignment.offset).toBe(0)
     const wrapper = mountInDoc(defineComponent({
       setup() {
