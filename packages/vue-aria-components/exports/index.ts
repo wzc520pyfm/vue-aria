@@ -12,7 +12,8 @@
  * `Checkbox` / `CheckboxButton`, `RadioGroup` / `RadioField` / `Radio` /
  * `RadioButton`, and `SwitchField` / `Switch` / `SwitchButton`. The
  * Disclosure slice adds `Disclosure` / `DisclosurePanel` / `DisclosureGroup`.
- * Sheet, Form, and FieldError remain deferred.
+ * The Slider slice adds `Slider` / `SliderOutput` / `SliderTrack` /
+ * `SliderThumb` / `SliderFill`. Sheet, Form, and FieldError remain deferred.
  */
 export {Button} from './Button'
 export type {ButtonType, ButtonProps, ButtonRenderProps} from './Button'
@@ -180,3 +181,28 @@ export type {
 } from './DisclosureGroup'
 export type {DisclosureState} from 'vue-stately/useDisclosureState'
 export type {DisclosureGroupState} from 'vue-stately/useDisclosureGroupState'
+
+export {
+  Slider,
+  SliderOutput,
+  SliderTrack,
+  SliderThumb,
+  SliderFill,
+  SliderContext,
+  SliderOutputContext,
+  SliderTrackContext,
+  SliderFillContext,
+  SliderStateContext,
+} from './Slider'
+export type {
+  SliderProps,
+  SliderRenderProps,
+  SliderOutputProps,
+  SliderTrackProps,
+  SliderTrackRenderProps,
+  SliderThumbProps,
+  SliderThumbRenderProps,
+  SliderFillProps,
+  SliderFillRenderProps,
+} from './Slider'
+export type {SliderState} from 'vue-stately/useSliderState'
