@@ -402,6 +402,46 @@ describe('useToggleButton', () => {
     expect(spanSeen).toEqual([true])
     expect(root.getAttribute('role')).toBe('button')
     spanMount.unmount()
+
+    const fieldHost = ref<HTMLElement | null>(null)
+    const fieldSeen: boolean[] = []
+    const clicks: MouseEvent[] = []
+    class FieldClick extends MouseEvent {
+      #nativeButton = 0
+      get button() {
+        return this.#nativeButton
+      }
+    }
+    const fieldMount = mount(defineComponent({
+      setup() {
+        const state = useToggleState({onChange: (value: boolean) => fieldSeen.push(value)})
+        const api = useToggleButton({
+          onClick: (event: MouseEvent) => clicks.push(event),
+        }, state, fieldHost)
+        return () => {
+          const button = doc.createElement('button')
+          const child = doc.createElement('span')
+          child.dataset.field = 'span'
+          button.appendChild(child)
+          doc.body.appendChild(button)
+          fieldHost.value = button
+          bindForeign(button, api.buttonProps)
+          return h('b')
+        }
+      },
+    }), {attachTo: document.body})
+    const fieldChild = doc.querySelector('[data-field="span"]')!
+    const fieldEvent = new FieldClick('click', {bubbles: true, cancelable: true})
+    fieldChild.dispatchEvent(fieldEvent)
+    expect(fieldEvent.button).toBe(0)
+    expect(fieldSeen).toEqual([true])
+    expect(clicks).toHaveLength(1)
+    expect(clicks[0]).toBe(fieldEvent)
+    expect(clicks[0].target).toBe(fieldChild)
+    expect(typeof clicks[0].preventDefault).toBe('function')
+    clicks[0].preventDefault()
+    expect(fieldEvent.defaultPrevented).toBe(true)
+    fieldMount.unmount()
     iframe.remove()
   })
 

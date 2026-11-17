@@ -112,9 +112,11 @@ function foreignChildRejected(event: Event): boolean {
 function retargetToRoot(event: Event): Event {
   const root = event.currentTarget
   return new Proxy(event, {
-    get(obj, key, receiver) {
+    get(obj, key) {
       if (key === 'target') return root
-      const value = Reflect.get(obj, key, receiver)
+      // Accessors that read private fields require the original event as `this`.
+      // The proxy is only the press-facing view; it is not the public event.
+      const value = Reflect.get(obj, key, obj)
       return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(obj) : value
     },
   })

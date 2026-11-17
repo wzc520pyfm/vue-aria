@@ -412,6 +412,31 @@ describe('ToggleButton', () => {
     wrapper.unmount()
   })
 
+  it('keeps the setup defaultSelected while the same button leaves and rejoins the group', async () => {
+    const id = ref<Key | null>('a')
+    let held: ToggleButtonRenderProps['state'] | undefined
+    const wrapper = mountInDoc(() => h(ToggleButtonGroup, {
+      defaultSelectedKeys: ['a'],
+      'aria-label': 'Format',
+    }, () => h(ToggleButton, {id: id.value}, {
+      default: ({state}: ToggleButtonRenderProps) => {
+        held = state
+        return 'item'
+      },
+    })))
+    await nextTick()
+    expect(held!.defaultSelected).toBe(true)
+    id.value = null
+    await nextTick()
+    expect(held!.isSelected).toBe(false)
+    expect(held!.defaultSelected).toBe(true)
+    id.value = 'a'
+    await nextTick()
+    expect(held!.isSelected).toBe(true)
+    expect(held!.defaultSelected).toBe(true)
+    wrapper.unmount()
+  })
+
   it('runs each lowercase hover listener once', async () => {
     const counts = {start: 0, end: 0, change: 0}
     const hoverListeners: ToggleButtonProps = {

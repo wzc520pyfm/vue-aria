@@ -226,7 +226,11 @@ export const ToggleButton = defineComponent({
         return standalone.isSelected
       },
       get defaultSelected() {
-        if (groupState && itemId() != null && initialGroupDefault !== undefined) return initialGroupDefault
+        // One initial value for the instance. Leaving the group must not
+        // switch to the standalone state's separate initial `false`.
+        const explicit = pick(props.defaultSelected, resolved(), 'defaultSelected')
+        if (explicit !== undefined) return Boolean(explicit)
+        if (initialGroupDefault !== undefined) return initialGroupDefault
         return standalone.defaultSelected
       },
       setSelected(value) {
