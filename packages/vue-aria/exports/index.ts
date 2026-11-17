@@ -6,9 +6,9 @@
  * This batch adds overlay, dialog, tooltip, focus-scope, dismiss,
  * ListBox, Menu, Select, ComboBox, I18n primitives, the Calendar hooks
  * slice, the DatePicker slice, the DateRangePicker hook, and the
- * Checkbox / Radio / Switch hooks, and the Disclosure hook
- * (`useDisclosure`) on top of the interaction hooks and Hero UI Vue
- * behavior contract.
+ * Checkbox / Radio / Switch hooks, the Disclosure hook
+ * (`useDisclosure`), and the Slider hooks (`useSlider`, `useSliderThumb`)
+ * on top of the interaction hooks and Hero UI Vue behavior contract.
  */
 export {usePress} from './usePress'
 export type {PressEvent, PressEvents, PressProps, PressPropsEl, UsePressOptions, UsePressReturn, PointerType} from './usePress'
@@ -183,3 +183,14 @@ export type {SwitchProps, AriaSwitchProps, SwitchAria} from './useSwitch'
 
 export {useDisclosure} from './useDisclosure'
 export type {DisclosureAria, AriaDisclosureProps} from './useDisclosure'
+
+export {useSlider, useSliderThumb} from './useSlider'
+export type {
+  AriaSliderProps,
+  SliderAria,
+  SliderThumbProps,
+  AriaSliderThumbProps,
+  AriaSliderThumbOptions,
+  SliderThumbAria,
+  Orientation,
+} from './useSlider'
