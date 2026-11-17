@@ -385,6 +385,65 @@ describe('ToggleButton', () => {
     wrapper.unmount()
   })
 
+  it('captures defaultSelected at setup, before any read and across an id change', async () => {
+    const id = ref<Key>('a')
+    let held: ToggleButtonRenderProps['state'] | undefined
+    const wrapper = mountInDoc(() => h(ToggleButtonGroup, {
+      defaultSelectedKeys: ['a'],
+      'aria-label': 'Format',
+    }, () => h(ToggleButton, {id: id.value}, {
+      default: ({state, isSelected}: ToggleButtonRenderProps) => {
+        held = state
+        return isSelected ? 'on' : 'off'
+      },
+    })))
+    await nextTick()
+    const button = document.querySelector('button') as HTMLButtonElement
+    expect(button.textContent).toBe('on')
+    expect(held!.isSelected).toBe(true)
+    pointerClick(button)
+    await nextTick()
+    expect(held!.isSelected).toBe(false)
+    expect(held!.defaultSelected).toBe(true)
+    id.value = 'b'
+    await nextTick()
+    expect(held!.isSelected).toBe(false)
+    expect(held!.defaultSelected).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('runs each lowercase hover listener once', async () => {
+    const counts = {start: 0, end: 0, change: 0}
+    const hoverListeners: ToggleButtonProps = {
+      onHoverstart: (event) => {
+        counts.start += event.type === 'hoverstart' ? 1 : 0
+      },
+      onHoverend: (event) => {
+        counts.end += event.type === 'hoverend' ? 1 : 0
+      },
+      onHoverchange: () => {
+        counts.change += 1
+      },
+    }
+    type NoUpperHover = 'onHoverStart' extends keyof ToggleButtonProps ? never : true
+    const upperAbsent: NoUpperHover = true
+    expect(upperAbsent).toBe(true)
+    expect(hoverListeners.onHoverstart).toBeTypeOf('function')
+    expect(hoverListeners.onHoverend).toBeTypeOf('function')
+    expect(hoverListeners.onHoverchange).toBeTypeOf('function')
+    const wrapper = mountInDoc(() => h(ToggleButton, {
+      onHoverstart: hoverListeners.onHoverstart,
+      onHoverend: hoverListeners.onHoverend,
+      onHoverchange: hoverListeners.onHoverchange,
+    }, () => 'Item'))
+    await nextTick()
+    const button = document.querySelector('button') as HTMLButtonElement
+    button.dispatchEvent(new PointerEvent('pointerenter', {bubbles: true, pointerType: 'mouse'}))
+    button.dispatchEvent(new PointerEvent('pointerleave', {bubbles: true, pointerType: 'mouse'}))
+    expect(counts).toEqual({start: 1, end: 1, change: 2})
+    wrapper.unmount()
+  })
+
   it('exposes the initial group selection as defaultSelected and keeps it after the selection changes', async () => {
     const wrapper = mountInDoc(() => h(ToggleButtonGroup, {
       defaultSelectedKeys: ['a'],

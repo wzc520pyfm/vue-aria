@@ -94,12 +94,11 @@ export interface ToggleButtonProps {
   onKeyDown?: (event: KeyboardEvent) => void
   onKeyUp?: (event: KeyboardEvent) => void
   onClick?: (event: MouseEvent) => void
-  onHoverStart?: (event: HoverEvent) => void
-  /** Vue listener for the lowercase `hoverstart` emit, including context. */
+  /** Vue listener for the lowercase `hoverstart` emit. */
   onHoverstart?: (event: HoverEvent) => void
-  onHoverEnd?: (event: HoverEvent) => void
+  /** Vue listener for the lowercase `hoverend` emit. */
   onHoverend?: (event: HoverEvent) => void
-  onHoverChange?: (isHovered: boolean) => void
+  /** Vue listener for the lowercase `hoverchange` emit. */
   onHoverchange?: (isHovered: boolean) => void
 }
 
@@ -179,8 +178,8 @@ export const ToggleButton = defineComponent({
     pressend: (_event: PressEvent) => true,
     pressup: (_event: PressEvent) => true,
     presschange: (_isPressed: boolean) => true,
-    hoverstart: (_event: unknown) => true,
-    hoverend: (_event: unknown) => true,
+    hoverstart: (_event: HoverEvent) => true,
+    hoverend: (_event: HoverEvent) => true,
     hoverchange: (_isHovered: boolean) => true,
   },
   setup(props, {slots, attrs, emit}) {
@@ -213,8 +212,13 @@ export const ToggleButton = defineComponent({
         emit('change', value)
       },
     })
-    let groupDefault: boolean | undefined
-    let groupDefaultFor: Key | null | undefined
+    // Official `useToggleState` does `useState(isSelected)` once. Capture the
+    // group's initial membership here, not on the first getter read and not
+    // again when `id` later changes.
+    const initialGroupId = itemId()
+    const initialGroupDefault = groupState != null && initialGroupId != null
+      ? groupState.selectedKeys.has(initialGroupId)
+      : undefined
     const viewState: ToggleState = {
       get isSelected() {
         const id = itemId()
@@ -222,16 +226,7 @@ export const ToggleButton = defineComponent({
         return standalone.isSelected
       },
       get defaultSelected() {
-        const id = itemId()
-        if (groupState && id != null) {
-          // Official `useToggleState` snapshots the first controlled value.
-          // Later selection changes do not rewrite `defaultSelected`.
-          if (groupDefault === undefined || groupDefaultFor !== id) {
-            groupDefaultFor = id
-            groupDefault = groupState.selectedKeys.has(id)
-          }
-          return groupDefault
-        }
+        if (groupState && itemId() != null && initialGroupDefault !== undefined) return initialGroupDefault
         return standalone.defaultSelected
       },
       setSelected(value) {

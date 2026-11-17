@@ -337,12 +337,18 @@ describe('useToggleButton', () => {
     const host = ref<HTMLElement | null>(null)
     const seen: boolean[] = []
     const keys: string[] = []
+    const clickTargets: Array<EventTarget | null> = []
+    const keyTargets: Array<EventTarget | null> = []
     const wrapper = mount(defineComponent({
       setup() {
         const state = useToggleState({onChange: (value: boolean) => seen.push(value)})
         const api = useToggleButton({
           elementType: 'button',
-          onKeyDown: (event: KeyboardEvent) => keys.push(event.key),
+          onClick: (event: MouseEvent) => clickTargets.push(event.target),
+          onKeyDown: (event: KeyboardEvent) => {
+            keys.push(event.key)
+            keyTargets.push(event.target)
+          },
         }, state, host)
         return () => {
           const button = doc.createElement('button')
@@ -362,8 +368,12 @@ describe('useToggleButton', () => {
     child.dispatchEvent(new PointerEvt('pointerdown', {bubbles: true, button: 0, pointerId: 1, pointerType: 'mouse'}))
     child.dispatchEvent(new PointerEvt('pointerup', {bubbles: true, button: 0, pointerId: 1, pointerType: 'mouse'}))
     expect(seen).toEqual([true])
-    button.dispatchEvent(new view.KeyboardEvent('keydown', {key: 'Escape', bubbles: true}))
+    child.dispatchEvent(new view.MouseEvent('click', {bubbles: true, button: 0, detail: 1}))
+    expect(clickTargets).toEqual([child])
+    expect(seen).toEqual([true])
+    child.dispatchEvent(new view.KeyboardEvent('keydown', {key: 'Escape', bubbles: true}))
     expect(keys).toEqual(['Escape'])
+    expect(keyTargets).toEqual([child])
     wrapper.unmount()
 
     const spanHost = ref<HTMLElement | null>(null)

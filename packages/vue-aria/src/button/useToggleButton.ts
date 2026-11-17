@@ -89,6 +89,26 @@ function nodeContains(root: EventTarget, node: EventTarget): boolean {
   }
 }
 
+function eventTargetInside(event: Event): boolean {
+  const root = event.currentTarget
+  const target = event.target
+  if (!root || !target) return false
+  if (root === target) return true
+  return nodeContains(root, target)
+}
+
+function foreignContainedChild(event: Event): boolean {
+  const root = event.currentTarget
+  const target = event.target
+  return !!(root && target && root !== target && isForeignNode(root) && nodeContains(root, target))
+}
+
+function foreignChildRejected(event: Event): boolean {
+  const root = event.currentTarget
+  const target = event.target
+  return !!(root && target && root !== target && isForeignNode(root) && !nodeContains(root, target))
+}
+
 function retargetToRoot(event: Event): Event {
   const root = event.currentTarget
   return new Proxy(event, {
@@ -134,7 +154,6 @@ export function useToggleButton(
     onPressEnd: (event) => props.onPressEnd?.(event),
     onPressUp: (event) => props.onPressUp?.(event),
     onPressChange: (pressed) => props.onPressChange?.(pressed),
-    onClick: (event) => props.onClick?.(event),
   })
 
   const {focusableProps} = useFocusable({
@@ -148,6 +167,19 @@ export function useToggleButton(
     onKeyUp: (event) => props.onKeyUp?.(event),
   }, domRef as Ref<HTMLElement | null>)
 
+  // Frozen `usePress` rejects a child target when `instanceof Element` uses the
+  // main realm. Adapt only the press handlers. Public click, focus, and
+  // keyboard callbacks keep the original event and its real target.
+  const pressHandlers = pressProps as Record<string, ((event: Event) => void) | undefined>
+  for (const key of Object.keys(pressHandlers)) {
+    const handler = pressHandlers[key]
+    if (typeof handler !== 'function') continue
+    pressHandlers[key] = (event: Event) => {
+      if (foreignChildRejected(event)) return
+      handler(foreignContainedChild(event) ? retargetToRoot(event) : event)
+    }
+  }
+
   const buttonProps = mergeProps(focusableProps, pressProps)
   const tabIndex = Object.getOwnPropertyDescriptor(focusableProps, 'tabIndex')
   if (tabIndex && !Object.prototype.hasOwnProperty.call(buttonProps, 'tabIndex')) {
@@ -159,24 +191,12 @@ export function useToggleButton(
     if (toValue(props.preventFocusOnPress)) event.preventDefault()
     pointerDown?.(event)
   }
-  // Frozen `usePress` rejects a child target when `instanceof Element` uses the
-  // main realm. Iframe nodes fail that check even when `Node.contains` is true.
-  // Retarget only those foreign children onto the root before press sees them.
-  for (const key of Object.keys(buttonProps)) {
-    const handler = buttonProps[key]
-    if (typeof handler !== 'function' || !key.startsWith('on')) continue
-    buttonProps[key] = (event: Event) => {
-      if (event && typeof event === 'object' && 'currentTarget' in event) {
-        const root = event.currentTarget
-        const target = event.target
-        if (root && target && root !== target && isForeignNode(root)) {
-          if (!nodeContains(root, target)) return
-          handler(retargetToRoot(event))
-          return
-        }
-      }
-      handler(event)
-    }
+  const pressClick = buttonProps.onClick as ((event: MouseEvent) => void) | undefined
+  buttonProps.onClick = (event: MouseEvent) => {
+    if (!eventTargetInside(event)) return
+    pressClick?.(event)
+    if (isDisabled()) return
+    props.onClick?.(event)
   }
 
   // `isPressed` is only the visible press. Pointer leave ends that flag while
