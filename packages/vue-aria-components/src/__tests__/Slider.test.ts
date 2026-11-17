@@ -9,15 +9,35 @@ import {
   SliderOutput,
   SliderThumb,
   SliderTrack,
-  type SliderRenderProps,
-  type SliderThumbRenderProps,
 } from '../Slider'
 import * as stately from 'vue-stately'
 import * as aria from 'vue-aria'
 import * as components from 'vue-aria-components'
-import type {AriaSliderProps, AriaSliderThumbOptions, Orientation, SliderAria, SliderThumbAria} from 'vue-aria'
+import type {
+  AriaSliderProps,
+  AriaSliderThumbOptions,
+  AriaSliderThumbProps,
+  Orientation,
+  SliderAria,
+  SliderThumbAria,
+  SliderThumbProps as AriaThumbProps,
+} from 'vue-aria'
 import type {SliderProps as StatelySliderProps, SliderState, SliderStateOptions} from 'vue-stately'
-import type {LabelProps, SliderFillProps, SliderOutputProps, SliderProps, SliderThumbProps, SliderTrackProps} from 'vue-aria-components'
+import type {
+  LabelProps,
+  SliderFillProps,
+  SliderFillRenderProps,
+  SliderOutputProps,
+  SliderProps,
+  SliderRenderProps,
+  SliderThumbProps,
+  SliderThumbRenderProps,
+  SliderTrackProps,
+  SliderTrackRenderProps,
+} from 'vue-aria-components'
+
+type Expect<T extends true> = T
+type HasNo<T, K extends PropertyKey> = K extends keyof T ? false : true
 
 function mountInDoc(component: any) {
   return mount(component, {attachTo: document.body})
@@ -302,6 +322,276 @@ describe('Slider', () => {
     expect(inputs[0].value).toBe('20')
     wrapper.unmount()
   })
+
+  it('keeps native range inputs in DOM focus order', async () => {
+    // jsdom does not implement sequential focus navigation. A dispatched Tab
+    // KeyboardEvent does not move document.activeElement the way a browser
+    // does, so this test does not claim that pressing Tab walks the thumbs.
+    // It checks that the native range inputs are reachable, not disabled, and
+    // ordered in the document. Browser Tab traversal is still unverified here.
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h('div', [
+          h('input', {'data-testid': 'before', type: 'text'}),
+          h(Slider, {defaultValue: [20, 80], 'aria-label': 'Range'}, {
+            default: () => h(SliderTrack, {}, {
+              default: () => [
+                h(SliderThumb, {index: 0, 'aria-label': 'Start'}),
+                h(SliderThumb, {index: 1, 'aria-label': 'End'}),
+              ],
+            }),
+          }),
+          h('input', {'data-testid': 'after', type: 'text'}),
+        ])
+      },
+    }))
+    await nextTick()
+    const before = document.querySelector('[data-testid="before"]') as HTMLInputElement
+    const after = document.querySelector('[data-testid="after"]') as HTMLInputElement
+    const ranges = [...document.querySelectorAll('input[type="range"]')] as HTMLInputElement[]
+    expect(ranges).toHaveLength(2)
+    expect(ranges.every((input) => input.tabIndex === 0 && !input.disabled)).toBe(true)
+    expect(before.compareDocumentPosition(ranges[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(ranges[0].compareDocumentPosition(ranges[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(ranges[1].compareDocumentPosition(after) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    ranges[0].focus()
+    expect(document.activeElement).toBe(ranges[0])
+    ranges[1].focus()
+    expect(document.activeElement).toBe(ranges[1])
+    after.focus()
+    expect(document.activeElement).toBe(after)
+    wrapper.unmount()
+  })
+
+  it('updates range min, max, and aria-valuetext when the slider props change', async () => {
+    const value = ref<number | number[]>([20, 40])
+    const minValue = ref(0)
+    const maxValue = ref(100)
+    const formatOptions = ref<Intl.NumberFormatOptions | undefined>(undefined)
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Slider, {
+          'aria-label': 'Dynamic',
+          value: value.value,
+          minValue: minValue.value,
+          maxValue: maxValue.value,
+          formatOptions: formatOptions.value,
+        }, {
+          default: ({state}: SliderRenderProps) => h(SliderTrack, {}, {
+            default: () => state.values.map((_, index) => h(SliderThumb, {index, key: index})),
+          }),
+        })
+      },
+    }))
+    await nextTick()
+    const read = () => [...document.querySelectorAll('input[type="range"]')] as HTMLInputElement[]
+    expect(read().map((input) => [input.min, input.max, input.getAttribute('aria-valuetext')])).toEqual([
+      ['0', '40', '20'],
+      ['20', '100', '40'],
+    ])
+    value.value = [15, 25]
+    minValue.value = 5
+    maxValue.value = 50
+    formatOptions.value = {style: 'currency', currency: 'USD'}
+    await nextTick()
+    expect(read().map((input) => [input.min, input.max, input.value, input.getAttribute('aria-valuetext')])).toEqual([
+      ['5', '25', '15', '$15.00'],
+      ['15', '50', '25', '$25.00'],
+    ])
+    wrapper.unmount()
+  })
+
+  it('updates scoped slot, className, and style on all five slider parts', async () => {
+    const value = ref(10)
+    const disabled = ref(false)
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Slider, {
+          'aria-label': 'Parts',
+          value: value.value,
+          onChange: (next: number | number[]) => {
+            value.value = next as number
+          },
+          isDisabled: disabled.value,
+          className: ({isDisabled}: SliderRenderProps) => (isDisabled ? 'root-off' : 'root-on'),
+          style: 'color: red',
+        }, {
+          default: ({state}: SliderRenderProps) => [
+            h(SliderOutput, {
+              className: ({orientation, isDisabled}: SliderRenderProps) => `out-${orientation}${isDisabled ? '-off' : ''}`,
+              style: 'font-weight: 700',
+            }, {default: ({state: outputState}: SliderRenderProps) => outputState.getFormattedValue()}),
+            h(SliderTrack, {
+              className: ({isHovered}: SliderTrackRenderProps) => (isHovered ? 'track-hot' : 'track-cold'),
+              style: 'outline: 1px solid blue',
+            }, {
+              default: ({state: trackState}: SliderTrackRenderProps) => [
+                h('span', {'data-testid': 'track-slot'}, String(trackState.values[0])),
+                h(SliderFill, {
+                  className: ({isDisabled}: SliderFillRenderProps) => (isDisabled ? 'fill-off' : 'fill-on'),
+                  style: 'background: black',
+                }),
+                h(SliderThumb, {
+                  className: ({isDragging}: SliderThumbRenderProps) => (isDragging ? 'drag' : 'idle'),
+                  style: 'outline: 1px solid green',
+                }, {default: ({isDragging}: SliderThumbRenderProps) => h('span', {'data-testid': 'thumb-slot'}, isDragging ? 'dragging' : 'rest')}),
+              ],
+            }),
+          ],
+        })
+      },
+    }))
+    await nextTick()
+    const group = document.querySelector('[role="group"]') as HTMLElement
+    const output = group.querySelector('output') as HTMLElement
+    const track = group.querySelector('.track-cold') as HTMLElement
+    const fill = group.querySelector('.fill-on') as HTMLElement
+    const thumb = group.querySelector('.idle') as HTMLElement
+    expect(group.className).toContain('root-on')
+    expect(group.style.color).toBe('red')
+    expect(output.className).toContain('out-horizontal')
+    expect(output.style.fontWeight).toBe('700')
+    expect(output.textContent).toBe('10')
+    expect(track.className).toContain('track-cold')
+    expect(track.style.outline).toContain('blue')
+    expect(track.style.position).toBe('relative')
+    expect(document.querySelector('[data-testid="track-slot"]')!.textContent).toBe('10')
+    expect(fill.className).toContain('fill-on')
+    expect(fill.style.background).toContain('black')
+    expect(fill.style.width).toBe('10%')
+    expect(thumb.className).toContain('idle')
+    expect(thumb.style.outline).toContain('green')
+    expect(thumb.style.position).toBe('absolute')
+    expect(document.querySelector('[data-testid="thumb-slot"]')!.textContent).toBe('rest')
+
+    value.value = 40
+    disabled.value = true
+    await nextTick()
+    expect(group.className).toContain('root-off')
+    expect(group.style.color).toBe('red')
+    expect(output.className).toContain('out-horizontal-off')
+    expect(output.style.fontWeight).toBe('700')
+    expect(output.textContent).toBe('40')
+    expect(document.querySelector('[data-testid="track-slot"]')!.textContent).toBe('40')
+    expect(fill.className).toContain('fill-off')
+    expect(fill.style.background).toContain('black')
+    expect(fill.style.width).toBe('40%')
+    expect(thumb.style.left).toBe('40%')
+    expect(thumb.style.outline).toContain('green')
+    expect(track.style.position).toBe('relative')
+    expect(track.style.outline).toContain('blue')
+    wrapper.unmount()
+
+    const hover = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Slider, {'aria-label': 'Hover'}, {
+          default: () => h(SliderTrack, {
+            className: ({isHovered}: SliderTrackRenderProps) => (isHovered ? 'track-hot' : 'track-cold'),
+          }, {default: () => h(SliderThumb)}),
+        })
+      },
+    }))
+    await nextTick()
+    const hoverTrack = document.querySelector('.track-cold') as HTMLElement
+    hoverTrack.dispatchEvent(new PointerEvent('pointerenter', {bubbles: false, pointerType: 'mouse'}))
+    await nextTick()
+    expect(hoverTrack.className).toContain('track-hot')
+    hover.unmount()
+  })
+
+  it('removes the shared up listeners and restores selection when the slider unmounts', async () => {
+    const stub = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => rect() as DOMRect)
+    const added: Array<{type: string; fn: EventListener}> = []
+    const removed: Array<{type: string; fn: EventListener}> = []
+    const origAdd = window.addEventListener.bind(window)
+    const origRemove = window.removeEventListener.bind(window)
+    const addSpy = vi.spyOn(window, 'addEventListener').mockImplementation((type, listener, options) => {
+      added.push({type: String(type), fn: listener as EventListener})
+      origAdd(type, listener as EventListener, options)
+    })
+    const removeSpy = vi.spyOn(window, 'removeEventListener').mockImplementation((type, listener, options) => {
+      removed.push({type: String(type), fn: listener as EventListener})
+      origRemove(type, listener as EventListener, options)
+    })
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Slider, {defaultValue: 10, 'aria-label': 'Cleanup'}, {
+          default: () => h(SliderTrack, {}, {default: () => h(SliderThumb)}),
+        })
+      },
+    }))
+    await nextTick()
+    const thumb = document.querySelector('.react-aria-SliderThumb') as HTMLElement
+    thumb.style.userSelect = 'text'
+    pointer('pointerdown', thumb, {clientX: 10, pageX: 10})
+    expect(thumb.style.userSelect).toBe('none')
+    const shared = added.filter((entry) => entry.type === 'mouseup').map((entry) => entry.fn)
+    expect(shared.length).toBeGreaterThan(0)
+    const onUp = shared[0]
+    expect(added.some((entry) => entry.type === 'touchend' && entry.fn === onUp)).toBe(true)
+    expect(added.some((entry) => entry.type === 'pointerup' && entry.fn === onUp)).toBe(true)
+    wrapper.unmount()
+    expect(thumb.style.userSelect).toBe('text')
+    for (const type of ['mouseup', 'touchend', 'pointerup']) {
+      expect(removed.some((entry) => entry.type === type && entry.fn === onUp)).toBe(true)
+    }
+    const calls = removed.filter((entry) => entry.fn === onUp).length
+    pointer('pointermove', window, {clientX: 80, pageX: 80})
+    pointer('pointerup', window, {clientX: 80, pageX: 80})
+    window.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}))
+    window.dispatchEvent(new Event('touchend'))
+    expect(removed.filter((entry) => entry.fn === onUp).length).toBe(calls)
+    addSpy.mockRestore()
+    removeSpy.mockRestore()
+    stub.mockRestore()
+  })
+
+  it('restores selection and drops drag listeners when the thumb element is replaced', async () => {
+    const stub = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => rect() as DOMRect)
+    const removed: Array<{type: string; fn: EventListener}> = []
+    const added: Array<{type: string; fn: EventListener}> = []
+    const origAdd = window.addEventListener.bind(window)
+    const origRemove = window.removeEventListener.bind(window)
+    const addSpy = vi.spyOn(window, 'addEventListener').mockImplementation((type, listener, options) => {
+      added.push({type: String(type), fn: listener as EventListener})
+      origAdd(type, listener as EventListener, options)
+    })
+    const removeSpy = vi.spyOn(window, 'removeEventListener').mockImplementation((type, listener, options) => {
+      removed.push({type: String(type), fn: listener as EventListener})
+      origRemove(type, listener as EventListener, options)
+    })
+    const onChange = vi.fn()
+    const thumbKey = ref('a')
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        return () => h(Slider, {defaultValue: 10, onChange, 'aria-label': 'Swap'}, {
+          default: () => h(SliderTrack, {}, {
+            default: () => h(SliderThumb, {key: thumbKey.value}),
+          }),
+        })
+      },
+    }))
+    await nextTick()
+    const thumb = document.querySelector('.react-aria-SliderThumb') as HTMLElement
+    thumb.style.userSelect = 'text'
+    pointer('pointerdown', thumb, {clientX: 10, pageX: 10})
+    expect(thumb.style.userSelect).toBe('none')
+    const onUp = added.find((entry) => entry.type === 'mouseup')!.fn
+    thumbKey.value = 'b'
+    await nextTick()
+    expect(thumb.style.userSelect).toBe('text')
+    expect(document.querySelector('.react-aria-SliderThumb')).not.toBe(thumb)
+    for (const type of ['mouseup', 'touchend', 'pointerup', 'pointermove']) {
+      expect(removed.some((entry) => entry.type === type && (entry.fn === onUp || entry.type === 'pointermove'))).toBe(true)
+    }
+    onChange.mockClear()
+    pointer('pointermove', window, {clientX: 90, pageX: 90})
+    expect(onChange).not.toHaveBeenCalled()
+    addSpy.mockRestore()
+    removeSpy.mockRestore()
+    stub.mockRestore()
+    wrapper.unmount()
+  })
 })
 
 describe('Slider public exports', () => {
@@ -323,6 +613,12 @@ describe('Slider public exports', () => {
     expect((aria as any).useMove).toBeUndefined()
     expect((aria as any).sliderData).toBeUndefined()
     expect((aria as any).useGlobalListeners).toBeUndefined()
+    expect((aria as any).disableTextSelection).toBeUndefined()
+    expect((aria as any).restoreTextSelection).toBeUndefined()
+    expect((aria as any).textSelection).toBeUndefined()
+    expect((stately as any).disableTextSelection).toBeUndefined()
+    expect((components as any).disableTextSelection).toBeUndefined()
+    expect((components as any).isReadOnly).toBeUndefined()
 
     const stateEntry = await import('vue-stately/useSliderState')
     const ariaEntry = await import('vue-aria/useSlider')
@@ -346,14 +642,48 @@ describe('Slider public exports', () => {
       _aria: SliderAria | null,
       _thumbOptions: AriaSliderThumbOptions | null,
       _thumbAria: SliderThumbAria | null,
+      _ariaThumb: AriaSliderThumbProps | null,
+      _ariaThumbProps: AriaThumbProps | null,
       _orientation: Orientation | null,
       _component: SliderProps | null,
+      _render: SliderRenderProps | null,
       _output: SliderOutputProps | null,
       _track: SliderTrackProps | null,
+      _trackRender: SliderTrackRenderProps | null,
       _thumb: SliderThumbProps | null,
+      _thumbRender: SliderThumbRenderProps | null,
       _fill: SliderFillProps | null,
+      _fillRender: SliderFillRenderProps | null,
       _label: LabelProps | null,
-    ) => _props ?? _options ?? _state ?? _ariaProps ?? _aria ?? _thumbOptions ?? _thumbAria ?? _orientation ?? _component ?? _output ?? _track ?? _thumb ?? _fill ?? _label
+    ) => _props ?? _options ?? _state ?? _ariaProps ?? _aria ?? _thumbOptions ?? _thumbAria ?? _ariaThumb ?? _ariaThumbProps ?? _orientation ?? _component ?? _render ?? _output ?? _track ?? _trackRender ?? _thumb ?? _thumbRender ?? _fill ?? _fillRender ?? _label
+    const _renderFields = (
+      root: SliderRenderProps,
+      track: SliderTrackRenderProps,
+      thumb: SliderThumbRenderProps,
+      fill: SliderFillRenderProps,
+      ariaThumb: AriaSliderThumbProps,
+    ) => [
+      root.orientation,
+      root.isDisabled,
+      root.state.values,
+      track.isHovered,
+      thumb.isDragging,
+      thumb.isFocused,
+      thumb.isFocusVisible,
+      fill.isHovered,
+      ariaThumb['aria-label'],
+      ariaThumb['aria-describedby'],
+    ]
+    const _noReadOnly = [
+      true as Expect<HasNo<SliderProps, 'isReadOnly'>>,
+      true as Expect<HasNo<AriaSliderProps, 'isReadOnly'>>,
+      true as Expect<HasNo<AriaSliderThumbProps, 'isReadOnly'>>,
+      true as Expect<HasNo<SliderThumbProps, 'isReadOnly'>>,
+      true as Expect<HasNo<SliderRenderProps, 'isReadOnly'>>,
+      true as Expect<HasNo<SliderThumbRenderProps, 'isReadOnly'>>,
+    ]
     expect(typeof typeProbe).toBe('function')
+    expect(typeof _renderFields).toBe('function')
+    expect(_noReadOnly.every(Boolean)).toBe(true)
   })
 })

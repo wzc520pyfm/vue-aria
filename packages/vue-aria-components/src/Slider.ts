@@ -169,6 +169,21 @@ function boolAttr(value: boolean) {
   return value ? 'true' : undefined
 }
 
+/**
+ * Copy a prop bag into a plain object. Hook objects keep live getters, but a
+ * native vnode must store the values read during this render. If both the
+ * previous and next vnodes share those getters, Vue's patch reads the current
+ * value from both sides and skips min, max, and aria-valuetext updates.
+ */
+function bindDom(props: Record<string, any>) {
+  const out: Record<string, any> = {}
+  for (const key of Object.keys(props)) {
+    const value = props[key]
+    if (value !== undefined) out[key] = value
+  }
+  return out
+}
+
 const sliderPropDefs = {
   value: {type: null as unknown as PropType<number | number[] | undefined>, default: undefined},
   defaultValue: {type: null as unknown as PropType<number | number[] | undefined>, default: undefined},
@@ -270,7 +285,7 @@ export const Slider = defineComponent({
       const style = mergeRenderStyle(ctx?.style, props.style ?? (attrs as any).style, values as unknown as Record<string, unknown>)
       return h(
         'div',
-        mergeProps(domFrom(ctx), domFrom(attrs as Record<string, any>), aria.groupProps, {
+        bindDom(mergeProps(domFrom(ctx), domFrom(attrs as Record<string, any>), aria.groupProps, {
           ref: (el: Element | null) => {
             assignRef(ctx?.ref, el)
             assignRef((attrs as any).ref, el)
@@ -280,7 +295,7 @@ export const Slider = defineComponent({
           style,
           'data-orientation': state.orientation,
           'data-disabled': boolAttr(state.isDisabled),
-        }),
+        })),
         children,
       )
     }
@@ -333,13 +348,13 @@ export const SliderOutput = defineComponent({
       const content = slots.default?.(values)
       return h(
         'output',
-        mergeProps(ctx ?? {}, domFrom(attrs as Record<string, any>), {
+        bindDom(mergeProps(ctx ?? {}, domFrom(attrs as Record<string, any>), {
           class: className ?? 'react-aria-SliderOutput',
           style,
           for: ctx?.htmlFor,
           'data-orientation': state.orientation,
           'data-disabled': boolAttr(state.isDisabled),
-        }),
+        })),
         content ?? state.getFormattedValue(),
       )
     }
@@ -392,7 +407,7 @@ export const SliderTrack = defineComponent({
       const userStyle = mergeRenderStyle(undefined, props.style ?? (attrs as any).style, values as unknown as Record<string, unknown>)
       return h(
         'div',
-        mergeProps(domFrom(ctx), hoverProps, domFrom(attrs as Record<string, any>), {
+        bindDom(mergeProps(domFrom(ctx), hoverProps, domFrom(attrs as Record<string, any>), {
           ref: (el: Element | null) => {
             assignRef(ctx?.ref, el)
             assignRef((attrs as any).ref, el)
@@ -402,7 +417,7 @@ export const SliderTrack = defineComponent({
           'data-hovered': boolAttr(isHovered.value),
           'data-orientation': state.orientation,
           'data-disabled': boolAttr(state.isDisabled),
-        }),
+        })),
         slots.default?.(values),
       )
     }
@@ -510,7 +525,7 @@ export const SliderThumb = defineComponent({
       const userStyle = mergeRenderStyle(undefined, props.style ?? (attrs as any).style, values as unknown as Record<string, unknown>)
       return h(
         'div',
-        mergeProps(domFrom(attrs as Record<string, any>), thumb.thumbProps, hoverProps, {
+        bindDom(mergeProps(domFrom(attrs as Record<string, any>), thumb.thumbProps, hoverProps, {
           class: className ?? 'react-aria-SliderThumb',
           style: layerStyle(thumb.thumbProps.style ?? {}, userStyle),
           'data-hovered': boolAttr(values.isHovered),
@@ -518,9 +533,9 @@ export const SliderThumb = defineComponent({
           'data-focused': boolAttr(values.isFocused),
           'data-focus-visible': boolAttr(values.isFocusVisible),
           'data-disabled': boolAttr(values.isDisabled),
-        }),
+        })),
         [
-          h(VisuallyHidden, () => h('input', mergeProps(thumb.inputProps, focusProps, {ref: inputRef}))),
+          h(VisuallyHidden, () => h('input', bindDom(mergeProps(thumb.inputProps, focusProps, {ref: inputRef})))),
           slots.default?.(values),
         ],
       )
@@ -599,14 +614,14 @@ export const SliderFill = defineComponent({
       const userStyle = mergeRenderStyle(ctx?.style, props.style ?? (attrs as any).style, {...values, defaultStyle: position} as unknown as Record<string, unknown>)
       return h(
         'div',
-        mergeProps(domFrom(ctx), hoverProps, domFrom(attrs as Record<string, any>), {
+        bindDom(mergeProps(domFrom(ctx), hoverProps, domFrom(attrs as Record<string, any>), {
           ref: (el: Element | null) => assignRef(ctx?.ref, el),
           class: className ?? 'react-aria-SliderFill',
           style: layerStyle(position, userStyle),
           'data-hovered': boolAttr(isHovered.value),
           'data-orientation': state.orientation,
           'data-disabled': boolAttr(state.isDisabled),
-        }),
+        })),
         slots.default?.(values),
       )
     }

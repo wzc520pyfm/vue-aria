@@ -6,7 +6,7 @@
  */
 import {createSSRApp, h} from 'vue'
 import {describe, expect, it} from 'vitest'
-import {Label, Slider, SliderOutput, SliderThumb, SliderTrack} from 'vue-aria-components'
+import {Label, Slider, SliderFill, SliderOutput, SliderThumb, SliderTrack} from 'vue-aria-components'
 
 const nodeModule = 'node:module'
 const {createRequire} = (await import(nodeModule)) as {
@@ -31,7 +31,7 @@ function app(label: string) {
         default: () => [
           h(Label, {}, {default: () => label}),
           h(SliderOutput),
-          h(SliderTrack, {}, {default: () => h(SliderThumb)}),
+          h(SliderTrack, {}, {default: () => [h(SliderFill), h(SliderThumb)]}),
         ],
       })
     },
@@ -51,5 +51,15 @@ describe('Slider renderToString', () => {
     const secondIds = [...second.matchAll(/id="([^"]+)"/g)].map((match) => match[1])
     expect(ids.length).toBeGreaterThan(0)
     expect(secondIds.some((id) => ids.includes(id))).toBe(false)
+  })
+
+  it('renders SliderFill positioning for a real range without window', async () => {
+    expect(typeof window).toBe('undefined')
+    const html = await renderToString(app('Fill'))
+    expect(html).toContain('react-aria-SliderFill')
+    expect(html).toMatch(/width:\s*25%/)
+    expect(html).toMatch(/inset-inline-start:\s*0%/)
+    expect(html).toContain('react-aria-SliderThumb')
+    expect(html).toContain('type="range"')
   })
 })

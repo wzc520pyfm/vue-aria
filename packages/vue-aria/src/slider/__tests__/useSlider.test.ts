@@ -118,6 +118,59 @@ describe('useSlider', () => {
     stub.mockRestore()
   })
 
+  it('does not run a second mouse drag while PointerEvent is available', () => {
+    const onChange = vi.fn()
+    const stub = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => rect() as DOMRect)
+    const added: string[] = []
+    const original = window.addEventListener.bind(window)
+    const spy = vi.spyOn(window, 'addEventListener').mockImplementation((type, listener, options) => {
+      added.push(String(type))
+      original(type, listener as EventListener, options)
+    })
+    const {state, wrapper} = mountSlider({defaultValue: [10, 80], onChange, 'aria-label': 'Slider'})
+    const track = document.querySelector('[data-testid="track"]') as HTMLElement
+    pointer('pointerdown', track, {clientX: 20, pageX: 20})
+    const duringPointer = added.slice()
+    expect(duringPointer.filter((type) => type === 'mousemove')).toEqual([])
+    const mouseDown = new MouseEvent('mousedown', {bubbles: true, cancelable: true, button: 0, clientX: 40})
+    Object.defineProperty(mouseDown, 'pageX', {value: 40})
+    track.dispatchEvent(mouseDown)
+    const mouseMove = new MouseEvent('mousemove', {bubbles: true, cancelable: true, button: 0, clientX: 70})
+    Object.defineProperty(mouseMove, 'pageX', {value: 70})
+    window.dispatchEvent(mouseMove)
+    expect(onChange.mock.calls.filter((call) => call[0]?.[0] !== 20)).toEqual([])
+    expect(state.values).toEqual([20, 80])
+    pointer('pointerup', window, {clientX: 20, pageX: 20})
+    wrapper.unmount()
+
+    const saved = window.PointerEvent
+    try {
+      // @ts-expect-error compatibility branch is chosen when PointerEvent is absent
+      delete window.PointerEvent
+      added.length = 0
+      const mouseOnly = mountSlider({defaultValue: [10], 'aria-label': 'Slider'})
+      const mouseTrack = document.querySelector('[data-testid="track"]') as HTMLElement
+      const down = new MouseEvent('mousedown', {bubbles: true, cancelable: true, button: 0, clientX: 10})
+      Object.defineProperty(down, 'pageX', {value: 10})
+      mouseTrack.dispatchEvent(down)
+      expect(added.filter((type) => type === 'pointermove')).toEqual([])
+      const move = new MouseEvent('mousemove', {bubbles: true, cancelable: true, button: 0, clientX: 30})
+      Object.defineProperty(move, 'pageX', {value: 30})
+      window.dispatchEvent(move)
+      expect(mouseOnly.state.values).toEqual([30])
+      const up = new MouseEvent('mouseup', {bubbles: true, cancelable: true, button: 0, clientX: 30})
+      Object.defineProperty(up, 'pageX', {value: 30})
+      window.dispatchEvent(up)
+      window.dispatchEvent(move)
+      expect(mouseOnly.state.values).toEqual([30])
+      mouseOnly.wrapper.unmount()
+    } finally {
+      window.PointerEvent = saved
+      spy.mockRestore()
+      stub.mockRestore()
+    }
+  })
+
   it('inverts vertical and RTL track clicks', async () => {
     const stub = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => rect() as DOMRect)
     const vertical = mountSlider({defaultValue: [10, 80], orientation: 'vertical', 'aria-label': 'Slider'})
