@@ -71,6 +71,35 @@ function defineLive(target: object, key: string, get: () => unknown) {
   Object.defineProperty(target, key, {get, enumerable: true, configurable: true})
 }
 
+function isForeignNode(node: EventTarget | null): boolean {
+  return !!node
+    && typeof node === 'object'
+    && 'nodeType' in node
+    && typeof (node as Node).nodeType === 'number'
+    && !(node instanceof Element)
+}
+
+function nodeContains(root: EventTarget, node: EventTarget): boolean {
+  const contains = (root as Node).contains
+  if (typeof contains !== 'function') return false
+  try {
+    return contains.call(root as Node, node as Node)
+  } catch {
+    return false
+  }
+}
+
+function retargetToRoot(event: Event): Event {
+  const root = event.currentTarget
+  return new Proxy(event, {
+    get(obj, key, receiver) {
+      if (key === 'target') return root
+      const value = Reflect.get(obj, key, receiver)
+      return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(obj) : value
+    },
+  })
+}
+
 /**
  * Provides the behavior and accessibility implementation for a toggle button component.
  * Toggle buttons allow users to toggle a selection on or off, for example switching between two states or modes.
@@ -130,17 +159,38 @@ export function useToggleButton(
     if (toValue(props.preventFocusOnPress)) event.preventDefault()
     pointerDown?.(event)
   }
+  // Frozen `usePress` rejects a child target when `instanceof Element` uses the
+  // main realm. Iframe nodes fail that check even when `Node.contains` is true.
+  // Retarget only those foreign children onto the root before press sees them.
+  for (const key of Object.keys(buttonProps)) {
+    const handler = buttonProps[key]
+    if (typeof handler !== 'function' || !key.startsWith('on')) continue
+    buttonProps[key] = (event: Event) => {
+      if (event && typeof event === 'object' && 'currentTarget' in event) {
+        const root = event.currentTarget
+        const target = event.target
+        if (root && target && root !== target && isForeignNode(root)) {
+          if (!nodeContains(root, target)) return
+          handler(retargetToRoot(event))
+          return
+        }
+      }
+      handler(event)
+    }
+  }
 
-  function cancelPress(target: EventTarget | null) {
-    if (!isPressed.value) return
+  // `isPressed` is only the visible press. Pointer leave ends that flag while
+  // the press session stays armed, so host replacement and disable must end
+  // the session through press's own blur cancel.
+  function endSession(target: EventTarget | null) {
     pressProps.onBlur?.({currentTarget: target, target} as FocusEvent)
   }
 
   watch(domRef, (el, prev) => {
-    if (prev && prev !== el) cancelPress(prev)
+    if (prev && prev !== el) endSession(prev)
   })
   watch(isDisabled, (disabled, previous) => {
-    if (disabled && previous === false) cancelPress(domRef.value)
+    if (disabled && previous === false) endSession(domRef.value)
   })
 
   defineLive(buttonProps, 'id', () => {

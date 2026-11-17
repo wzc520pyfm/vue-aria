@@ -11,6 +11,7 @@ import {afterEach, describe, expect, it} from 'vitest'
 import {I18nProvider} from '../../i18n/I18nProvider'
 import {useToggleGroupState} from '../../../../vue-stately/src/toggle/useToggleGroupState'
 import {useToggleButtonGroup, useToggleButtonGroupItem} from '../useToggleButtonGroup'
+import type {AriaToggleButtonGroupItemOptions} from '../useToggleButtonGroup'
 import type {ToggleGroupState} from '../../../../vue-stately/src/toggle/useToggleGroupState'
 
 afterEach(() => {
@@ -191,6 +192,44 @@ describe('useToggleButtonGroup', () => {
     view.state.toggleKey('foo')
     expect([...view.state.selectedKeys]).toEqual(['foo'])
     view.wrapper.unmount()
+  })
+
+  it('forwards a changed aria-label and a replaced press callback independently', async () => {
+    const label = ref('before')
+    const presses: string[] = []
+    let currentPress = () => presses.push('first')
+    const itemProps: Record<string, any> = {id: 'a'}
+    Object.defineProperty(itemProps, 'aria-label', {enumerable: true, get: () => label.value})
+    Object.defineProperty(itemProps, 'onPress', {enumerable: true, get: () => currentPress})
+    const host = ref<HTMLElement | null>(null)
+    const item = ref<HTMLElement | null>(null)
+    const tick = ref(0)
+    const wrapper = mount(defineComponent({
+      setup() {
+        const state = useToggleGroupState({selectionMode: 'multiple'})
+        const group = useToggleButtonGroup({'aria-label': 'Align'}, state, host)
+        const button = useToggleButtonGroupItem(itemProps as AriaToggleButtonGroupItemOptions, state, item)
+        return () => h('div', {'data-tick': tick.value, ...domProps(group.groupProps, (el) => {
+          host.value = el as HTMLElement | null
+        })}, [
+          h('button', domProps(button.buttonProps, (el) => { item.value = el as HTMLElement | null }), 'A'),
+        ])
+      },
+    }), {attachTo: document.body})
+    await nextTick()
+    const button = item.value!
+    expect(button.getAttribute('aria-label')).toBe('before')
+    label.value = 'after'
+    tick.value++
+    await nextTick()
+    expect(button.getAttribute('aria-label')).toBe('after')
+    button.click()
+    expect(presses).toEqual(['first'])
+    currentPress = () => presses.push('second')
+    button.click()
+    expect(presses).toEqual(['first', 'second'])
+    expect(button.getAttribute('aria-label')).toBe('after')
+    wrapper.unmount()
   })
 
   it('checks a numeric id without writing it as a DOM id', async () => {

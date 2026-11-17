@@ -118,8 +118,36 @@ export function useToggleButtonGroupItem(
     },
   }
 
+  const read = <T>(key: keyof AriaToggleButtonGroupItemOptions) =>
+    toValue(props[key] as MaybeRefOrGetter<T | undefined>)
   const result = useToggleButton({
-    ...props,
+    elementType: () => read<string>('elementType'),
+    autoFocus: () => read<boolean>('autoFocus'),
+    excludeFromTabOrder: () => read<boolean>('excludeFromTabOrder'),
+    preventFocusOnPress: () => read<boolean>('preventFocusOnPress'),
+    href: () => read<string>('href'),
+    target: () => read<string>('target'),
+    rel: () => read<string>('rel'),
+    'aria-label': () => read<string>('aria-label'),
+    'aria-labelledby': () => read<string>('aria-labelledby'),
+    'aria-describedby': () => read<string>('aria-describedby'),
+    'aria-details': () => read<string>('aria-details'),
+    'aria-haspopup': () => read<boolean | string>('aria-haspopup'),
+    'aria-expanded': () => read<boolean | 'true' | 'false'>('aria-expanded'),
+    'aria-controls': () => read<string>('aria-controls'),
+    'aria-current': () => read<boolean | string>('aria-current'),
+    'aria-disabled': () => read<boolean | 'true' | 'false'>('aria-disabled'),
+    onPress: (event) => props.onPress?.(event),
+    onPressStart: (event) => props.onPressStart?.(event),
+    onPressEnd: (event) => props.onPressEnd?.(event),
+    onPressUp: (event) => props.onPressUp?.(event),
+    onPressChange: (value) => props.onPressChange?.(value),
+    onClick: (event) => props.onClick?.(event),
+    onFocus: (event) => props.onFocus?.(event),
+    onBlur: (event) => props.onBlur?.(event),
+    onFocusChange: (value) => props.onFocusChange?.(value),
+    onKeyDown: (event) => props.onKeyDown?.(event),
+    onKeyUp: (event) => props.onKeyUp?.(event),
     id: undefined,
     isDisabled: () => Boolean(toValue(props.isDisabled) || state.isDisabled),
   }, toggleState, ref)

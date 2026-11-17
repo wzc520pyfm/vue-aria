@@ -55,6 +55,22 @@ function mountToggle(props: Record<string, any> = {}, tag?: string) {
   }
 }
 
+function bindForeign(el: Element, source: Record<string, any>) {
+  const types = new Set<string>()
+  for (const key of Object.keys(source)) {
+    const value = source[key]
+    if (typeof value !== 'function' || !key.startsWith('on')) continue
+    const type = key.slice(2).toLowerCase()
+    if (types.has(type)) continue
+    types.add(type)
+    el.addEventListener(type, value as EventListener)
+  }
+  for (const key of ['role', 'tabindex', 'aria-pressed', 'type']) {
+    const value = key === 'tabindex' ? source.tabIndex : source[key]
+    if (value != null) el.setAttribute(key, String(value))
+  }
+}
+
 function pointerClick(el: Element) {
   el.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, cancelable: true, button: 0, pointerId: 1, pointerType: 'mouse'}))
   el.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, cancelable: true, button: 0, pointerId: 1, pointerType: 'mouse'}))
@@ -234,6 +250,149 @@ describe('useToggleButton', () => {
     keyToggle(disabled.el, 'Enter')
     expect(disabled.state.isSelected).toBe(false)
     disabled.wrapper.unmount()
+  })
+
+  it('selects again after a pointer leaves and the host changes or disable toggles, even when the button no longer looks pressed', async () => {
+    for (const tag of ['button', 'div'] as const) {
+      const seen: boolean[] = []
+      const which = ref<'a' | 'b'>('a')
+      const host = ref<HTMLElement | null>(null)
+      const wrapper = mount(defineComponent({
+        setup() {
+          const state = useToggleState({onChange: (value: boolean) => seen.push(value)})
+          const api = useToggleButton({elementType: tag}, state, host)
+          return () => h(tag, {...bindProps(api.buttonProps, host), key: which.value}, [
+            h('span', {class: 'child'}, which.value),
+          ])
+        },
+      }), {attachTo: document.body})
+      const first = host.value!
+      const child = first.querySelector('.child')!
+      child.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, button: 0, pointerId: 1, pointerType: 'mouse'}))
+      child.dispatchEvent(new PointerEvent('pointerleave', {bubbles: true, button: 0, pointerId: 1, pointerType: 'mouse'}))
+      expect(seen).toEqual([])
+      which.value = 'b'
+      await nextTick()
+      const second = host.value!
+      expect(second).not.toBe(first)
+      const nextChild = second.querySelector('.child')!
+      nextChild.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, button: 0, pointerId: 2, pointerType: 'mouse'}))
+      nextChild.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, button: 0, pointerId: 2, pointerType: 'mouse'}))
+      expect(seen).toEqual([true])
+      wrapper.unmount()
+      seen.length = 0
+
+      const disabled = ref(false)
+      const again = ref<HTMLElement | null>(null)
+      const secondMount = mount(defineComponent({
+        setup() {
+          const state = useToggleState({onChange: (value: boolean) => seen.push(value)})
+          const api = useToggleButton({elementType: tag, isDisabled: () => disabled.value}, state, again)
+          return () => h(tag, bindProps(api.buttonProps, again), [
+            h('span', {class: 'child'}, 'X'),
+          ])
+        },
+      }), {attachTo: document.body})
+      const node = again.value!
+      const inner = node.querySelector('.child')!
+      inner.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, button: 0, pointerId: 3, pointerType: 'mouse'}))
+      inner.dispatchEvent(new PointerEvent('pointerleave', {bubbles: true, button: 0, pointerId: 3, pointerType: 'mouse'}))
+      disabled.value = true
+      await nextTick()
+      disabled.value = false
+      await nextTick()
+      inner.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, button: 0, pointerId: 4, pointerType: 'mouse'}))
+      inner.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, button: 0, pointerId: 4, pointerType: 'mouse'}))
+      expect(seen).toEqual([true])
+      secondMount.unmount()
+    }
+  })
+
+  it('does not select when a latent press is cancelled or the host unmounts after pointer leave', () => {
+    const seen: boolean[] = []
+    const view = mountToggle({onChange: (value: boolean) => seen.push(value)})
+    view.el.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, button: 0, pointerId: 5, pointerType: 'mouse'}))
+    view.el.dispatchEvent(new PointerEvent('pointerleave', {bubbles: true, button: 0, pointerId: 5, pointerType: 'mouse'}))
+    view.el.dispatchEvent(new PointerEvent('pointercancel', {bubbles: true, pointerId: 5, pointerType: 'mouse'}))
+    view.el.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, button: 0, pointerId: 6, pointerType: 'mouse'}))
+    view.el.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, button: 0, pointerId: 6, pointerType: 'mouse'}))
+    expect(seen).toEqual([true])
+    view.wrapper.unmount()
+
+    const late: boolean[] = []
+    const lateView = mountToggle({onChange: (value: boolean) => late.push(value)})
+    const node = lateView.el
+    node.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true, button: 0, pointerId: 7, pointerType: 'mouse'}))
+    node.dispatchEvent(new PointerEvent('pointerleave', {bubbles: true, button: 0, pointerId: 7, pointerType: 'mouse'}))
+    lateView.wrapper.unmount()
+    node.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, button: 0, pointerId: 7, pointerType: 'mouse'}))
+    expect(late).toEqual([])
+  })
+
+  it('selects from a child created in an iframe document for a native button and a non-native span', () => {
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument!
+    const view = iframe.contentWindow as Window & typeof globalThis
+    const host = ref<HTMLElement | null>(null)
+    const seen: boolean[] = []
+    const keys: string[] = []
+    const wrapper = mount(defineComponent({
+      setup() {
+        const state = useToggleState({onChange: (value: boolean) => seen.push(value)})
+        const api = useToggleButton({
+          elementType: 'button',
+          onKeyDown: (event: KeyboardEvent) => keys.push(event.key),
+        }, state, host)
+        return () => {
+          const button = doc.createElement('button')
+          const child = doc.createElement('span')
+          child.textContent = 'In'
+          button.appendChild(child)
+          doc.body.appendChild(button)
+          host.value = button
+          bindForeign(button, api.buttonProps)
+          return h('span', {style: 'display:none'}, 'anchor')
+        }
+      },
+    }), {attachTo: document.body})
+    const button = doc.querySelector('button')!
+    const child = button.querySelector('span')!
+    const PointerEvt = typeof view.PointerEvent === 'function' ? view.PointerEvent : PointerEvent
+    child.dispatchEvent(new PointerEvt('pointerdown', {bubbles: true, button: 0, pointerId: 1, pointerType: 'mouse'}))
+    child.dispatchEvent(new PointerEvt('pointerup', {bubbles: true, button: 0, pointerId: 1, pointerType: 'mouse'}))
+    expect(seen).toEqual([true])
+    button.dispatchEvent(new view.KeyboardEvent('keydown', {key: 'Escape', bubbles: true}))
+    expect(keys).toEqual(['Escape'])
+    wrapper.unmount()
+
+    const spanHost = ref<HTMLElement | null>(null)
+    const spanSeen: boolean[] = []
+    const spanMount = mount(defineComponent({
+      setup() {
+        const state = useToggleState({onChange: (value: boolean) => spanSeen.push(value)})
+        const api = useToggleButton({elementType: 'span'}, state, spanHost)
+        return () => {
+          const root = doc.createElement('span')
+          root.dataset.root = 'span'
+          const inner = doc.createElement('span')
+          inner.textContent = 'Child'
+          root.appendChild(inner)
+          doc.body.appendChild(root)
+          spanHost.value = root
+          bindForeign(root, api.buttonProps)
+          return h('i')
+        }
+      },
+    }), {attachTo: document.body})
+    const root = doc.querySelector('[data-root="span"]')!
+    const target = root.firstElementChild!
+    target.dispatchEvent(new PointerEvt('pointerdown', {bubbles: true, button: 0, pointerId: 9, pointerType: 'mouse'}))
+    target.dispatchEvent(new PointerEvt('pointerup', {bubbles: true, button: 0, pointerId: 9, pointerType: 'mouse'}))
+    expect(spanSeen).toEqual([true])
+    expect(root.getAttribute('role')).toBe('button')
+    spanMount.unmount()
+    iframe.remove()
   })
 
   it('updates aria-pressed from setSelected without a press', async () => {

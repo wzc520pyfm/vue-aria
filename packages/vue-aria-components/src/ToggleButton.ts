@@ -19,7 +19,7 @@ import {
   ref,
   type PropType,
 } from 'vue'
-import {mergeProps, useFocusVisible, useHover, useToggleButton, type PressEvent} from 'vue-aria'
+import {mergeProps, useFocusVisible, useHover, useToggleButton, type HoverEvent, type PressEvent} from 'vue-aria'
 import {useToggleState, type ToggleState} from 'vue-stately/useToggleState'
 import type {Key} from 'vue-stately/useListState'
 import type {ButtonRenderProps} from './Button'
@@ -65,6 +65,10 @@ export interface ToggleButtonProps {
   defaultSelected?: boolean
   isDisabled?: boolean
   autoFocus?: boolean
+  /** Pointer press does not move focus. A local `false` wins over context. */
+  preventFocusOnPress?: boolean
+  /** Removes the button from the tab order. A local `false` wins over context. */
+  excludeFromTabOrder?: boolean
   slot?: string | null
   className?: string | ((values: ToggleButtonRenderProps & {defaultClassName?: string}) => string)
   style?: ToggleButtonStyle
@@ -72,6 +76,10 @@ export interface ToggleButtonProps {
   'aria-labelledby'?: string | null
   'aria-describedby'?: string | null
   'aria-details'?: string | null
+  'aria-haspopup'?: boolean | string | null
+  'aria-expanded'?: boolean | 'true' | 'false' | null
+  'aria-controls'?: string | null
+  'aria-disabled'?: boolean | 'true' | 'false' | null
   /** Vue listener for the lowercase `change` emit. */
   onChange?: (isSelected: boolean) => void
   onPress?: (event: PressEvent) => void
@@ -86,6 +94,13 @@ export interface ToggleButtonProps {
   onKeyDown?: (event: KeyboardEvent) => void
   onKeyUp?: (event: KeyboardEvent) => void
   onClick?: (event: MouseEvent) => void
+  onHoverStart?: (event: HoverEvent) => void
+  /** Vue listener for the lowercase `hoverstart` emit, including context. */
+  onHoverstart?: (event: HoverEvent) => void
+  onHoverEnd?: (event: HoverEvent) => void
+  onHoverend?: (event: HoverEvent) => void
+  onHoverChange?: (isHovered: boolean) => void
+  onHoverchange?: (isHovered: boolean) => void
 }
 
 function readDesc(desc: PropertyDescriptor | undefined) {
@@ -138,6 +153,8 @@ const propDefs = {
   defaultSelected: {type: Boolean, default: undefined},
   isDisabled: {type: Boolean, default: undefined},
   autoFocus: {type: Boolean, default: undefined},
+  preventFocusOnPress: {type: Boolean, default: undefined},
+  excludeFromTabOrder: {type: Boolean, default: undefined},
   slot: {type: String as PropType<string | null | undefined>, default: undefined},
   className: {type: null as unknown as PropType<ToggleButtonProps['className']>, default: undefined},
   style: {type: null as unknown as PropType<ToggleButtonStyle>, default: undefined},
@@ -145,6 +162,10 @@ const propDefs = {
   'aria-labelledby': {type: String as PropType<string | null | undefined>, default: undefined},
   'aria-describedby': {type: String as PropType<string | null | undefined>, default: undefined},
   'aria-details': {type: String as PropType<string | null | undefined>, default: undefined},
+  'aria-haspopup': {type: null as unknown as PropType<boolean | string | null | undefined>, default: undefined},
+  'aria-expanded': {type: null as unknown as PropType<boolean | 'true' | 'false' | null | undefined>, default: undefined},
+  'aria-controls': {type: String as PropType<string | null | undefined>, default: undefined},
+  'aria-disabled': {type: null as unknown as PropType<boolean | 'true' | 'false' | null | undefined>, default: undefined},
 }
 
 export const ToggleButton = defineComponent({
@@ -192,6 +213,8 @@ export const ToggleButton = defineComponent({
         emit('change', value)
       },
     })
+    let groupDefault: boolean | undefined
+    let groupDefaultFor: Key | null | undefined
     const viewState: ToggleState = {
       get isSelected() {
         const id = itemId()
@@ -199,7 +222,17 @@ export const ToggleButton = defineComponent({
         return standalone.isSelected
       },
       get defaultSelected() {
-        return inGroup() ? false : standalone.defaultSelected
+        const id = itemId()
+        if (groupState && id != null) {
+          // Official `useToggleState` snapshots the first controlled value.
+          // Later selection changes do not rewrite `defaultSelected`.
+          if (groupDefault === undefined || groupDefaultFor !== id) {
+            groupDefaultFor = id
+            groupDefault = groupState.selectedKeys.has(id)
+          }
+          return groupDefault
+        }
+        return standalone.defaultSelected
       },
       setSelected(value) {
         const id = itemId()
@@ -219,6 +252,22 @@ export const ToggleButton = defineComponent({
     let boundContextEl: Element | null = null
     const aria = (name: 'aria-label' | 'aria-labelledby' | 'aria-describedby' | 'aria-details') =>
       readAriaProp(props, attrs as Record<string, any>, resolved(), name)
+    const extraAria = (name: 'aria-haspopup' | 'aria-expanded' | 'aria-controls' | 'aria-disabled') => {
+      const camel = name === 'aria-haspopup'
+        ? 'ariaHaspopup'
+        : name === 'aria-expanded'
+          ? 'ariaExpanded'
+          : name === 'aria-controls'
+            ? 'ariaControls'
+            : 'ariaDisabled'
+      const sources = [props as Record<string, any>, attrs as Record<string, any>, resolved()]
+      for (const source of sources) {
+        if (!source) continue
+        if (source[camel] !== undefined) return source[camel]
+        if (source[name] !== undefined) return source[name]
+      }
+      return undefined
+    }
 
     const button = useToggleButton({
       id: () => {
@@ -228,6 +277,12 @@ export const ToggleButton = defineComponent({
       },
       isDisabled: () => Boolean(localDisabled() || (inGroup() && groupState!.isDisabled)),
       autoFocus: () => Boolean(pick(props.autoFocus, resolved(), 'autoFocus')),
+      preventFocusOnPress: () => pick(props.preventFocusOnPress, resolved(), 'preventFocusOnPress'),
+      excludeFromTabOrder: () => pick(props.excludeFromTabOrder, resolved(), 'excludeFromTabOrder'),
+      'aria-haspopup': () => extraAria('aria-haspopup'),
+      'aria-expanded': () => extraAria('aria-expanded'),
+      'aria-controls': () => extraAria('aria-controls'),
+      'aria-disabled': () => extraAria('aria-disabled'),
       'aria-label': () => aria('aria-label'),
       'aria-labelledby': () => aria('aria-labelledby'),
       'aria-describedby': () => aria('aria-describedby'),
@@ -277,15 +332,15 @@ export const ToggleButton = defineComponent({
     const hover = useHover({
       isDisabled: () => button.isDisabled,
       onHoverStart: (event) => {
-        callDistinct([resolved()?.onHoverStart], event)
+        callDistinct([resolved()?.onHoverStart, resolved()?.onHoverstart], event)
         emit('hoverstart', event)
       },
       onHoverEnd: (event) => {
-        callDistinct([resolved()?.onHoverEnd], event)
+        callDistinct([resolved()?.onHoverEnd, resolved()?.onHoverend], event)
         emit('hoverend', event)
       },
       onHoverChange: (value) => {
-        callDistinct([resolved()?.onHoverChange], value)
+        callDistinct([resolved()?.onHoverChange, resolved()?.onHoverchange], value)
         emit('hoverchange', value)
       },
     })

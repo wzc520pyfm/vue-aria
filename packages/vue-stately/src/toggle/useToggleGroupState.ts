@@ -83,7 +83,11 @@ export function useToggleGroupState(props: ToggleGroupProps = {}): ToggleGroupSt
   // controlled value return that same set, which is the base for the next toggle.
   function controlledKeys(): Set<Key> | undefined {
     const source = toValue(props.selectedKeys)
-    if (source == null) return undefined
+    if (source == null) {
+      controlledSource = undefined
+      controlledSet = undefined
+      return undefined
+    }
     if (source !== controlledSource || controlledSet == null) {
       controlledSource = source
       controlledSet = new Set(source)

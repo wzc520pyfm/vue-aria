@@ -58,10 +58,11 @@ describe('ToggleButton renderToString', () => {
           ]),
           h(Toolbar, {'aria-label': 'Tools'}, () => h(ToggleButtonGroup, {
             selectionMode: 'multiple',
+            defaultSelectedKeys: ['bold'],
             'aria-labelledby': 'tools-label',
             className: 'multi',
           }, () => [
-            h(ToggleButton, {id: 'bold', defaultSelected: true}, () => 'B'),
+            h(ToggleButton, {id: 'bold'}, () => 'B'),
             h(ToggleButton, {id: 'italic'}, () => 'I'),
           ])),
         ])
@@ -82,7 +83,8 @@ describe('ToggleButton renderToString', () => {
     expect(tree).toContain('aria-checked="false"')
     expect(tree).toContain('>Left<')
     expect(tree).toContain('>Right<')
-    expect(tree).not.toContain('aria-pressed="true"')
+    expect(tree).toContain('aria-pressed="true"')
+    expect(tree).toContain('aria-pressed="false"')
     expect(tree.match(/role="toolbar"/g)?.length).toBe(2)
     expect(tree).toContain('aria-labelledby="tools-label"')
     expect(tree).toContain('class="multi"')

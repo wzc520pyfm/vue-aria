@@ -322,6 +322,101 @@ describe('ToggleButton', () => {
     wrapper.unmount()
   })
 
+  it('forwards focus, popup, and hover props from context, with a local false winning', async () => {
+    const exclude = ref(true)
+    const prevent = ref(true)
+    const popup = ref<string | boolean>('menu')
+    const expanded = ref<boolean | undefined>(true)
+    const controls = ref('panel')
+    const ariaDisabled = ref<boolean | undefined>(undefined)
+    let hoverStart: (event: unknown) => void = () => hoverSeen.push('start-a')
+    let hoverEnd: (event: unknown) => void = () => hoverSeen.push('end-a')
+    let hoverChange: (value: boolean) => void = (value) => hoverSeen.push(value ? 'change-a' : 'change-a-off')
+    const hoverSeen: string[] = []
+    const ctx: Record<string, any> = {}
+    Object.defineProperty(ctx, 'excludeFromTabOrder', {enumerable: true, get: () => exclude.value})
+    Object.defineProperty(ctx, 'preventFocusOnPress', {enumerable: true, get: () => prevent.value})
+    Object.defineProperty(ctx, 'aria-haspopup', {enumerable: true, get: () => popup.value})
+    Object.defineProperty(ctx, 'aria-expanded', {enumerable: true, get: () => expanded.value})
+    Object.defineProperty(ctx, 'aria-controls', {enumerable: true, get: () => controls.value})
+    Object.defineProperty(ctx, 'aria-disabled', {enumerable: true, get: () => ariaDisabled.value})
+    Object.defineProperty(ctx, 'onHoverstart', {enumerable: true, get: () => hoverStart})
+    Object.defineProperty(ctx, 'onHoverend', {enumerable: true, get: () => hoverEnd})
+    Object.defineProperty(ctx, 'onHoverchange', {enumerable: true, get: () => hoverChange})
+    const localExclude = ref<boolean | undefined>(undefined)
+    const wrapper = mountInDoc(() => {
+      provide(ToggleButtonContext, ctx)
+      return () => h(ToggleButton, {excludeFromTabOrder: localExclude.value}, () => 'Item')
+    })
+    await nextTick()
+    let button = document.querySelector('button') as HTMLButtonElement
+    expect(button.getAttribute('tabindex')).toBe('-1')
+    expect(button.getAttribute('aria-haspopup')).toBe('menu')
+    expect(button.getAttribute('aria-expanded')).toBe('true')
+    expect(button.getAttribute('aria-controls')).toBe('panel')
+    const down = new PointerEvent('pointerdown', {bubbles: true, cancelable: true, button: 0, pointerId: 1, pointerType: 'mouse'})
+    button.dispatchEvent(down)
+    expect(down.defaultPrevented).toBe(true)
+    button.dispatchEvent(new PointerEvent('pointerup', {bubbles: true, button: 0, pointerId: 1, pointerType: 'mouse'}))
+
+    popup.value = 'dialog'
+    await nextTick()
+    expect(button.getAttribute('aria-haspopup')).toBe('dialog')
+    expect(button.getAttribute('tabindex')).toBe('-1')
+
+    localExclude.value = false
+    await nextTick()
+    expect(button.getAttribute('tabindex')).toBe('0')
+    expect(button.getAttribute('aria-haspopup')).toBe('dialog')
+
+    prevent.value = false
+    await nextTick()
+    const later = new PointerEvent('pointerdown', {bubbles: true, cancelable: true, button: 0, pointerId: 2, pointerType: 'mouse'})
+    button.dispatchEvent(later)
+    expect(later.defaultPrevented).toBe(false)
+
+    button.dispatchEvent(new PointerEvent('pointerenter', {bubbles: true, pointerType: 'mouse'}))
+    expect(hoverSeen).toContain('start-a')
+    hoverStart = () => hoverSeen.push('start-b')
+    button.dispatchEvent(new PointerEvent('pointerleave', {bubbles: true, pointerType: 'mouse'}))
+    button.dispatchEvent(new PointerEvent('pointerenter', {bubbles: true, pointerType: 'mouse'}))
+    expect(hoverSeen).toContain('start-b')
+    expect(hoverSeen.filter((item) => item === 'start-a')).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('exposes the initial group selection as defaultSelected and keeps it after the selection changes', async () => {
+    const wrapper = mountInDoc(() => h(ToggleButtonGroup, {
+      defaultSelectedKeys: ['a'],
+      'aria-label': 'Format',
+    }, {
+      default: () => [
+        h(ToggleButton, {
+          id: 'a',
+          className: ({state}: ToggleButtonRenderProps) => state.defaultSelected ? 'was-default' : 'not-default',
+          style: ({state}: ToggleButtonRenderProps) => ({color: state.defaultSelected ? 'green' : 'red'}),
+        }, {
+          default: ({state}: ToggleButtonRenderProps) => String(state.defaultSelected),
+        }),
+        h(ToggleButton, {id: 'b'}, {
+          default: ({state}: ToggleButtonRenderProps) => `b:${String(state.defaultSelected)}`,
+        }),
+      ],
+    }))
+    await nextTick()
+    const selected = [...document.querySelectorAll('button')].find((node) => node.textContent === 'true')!
+    const other = [...document.querySelectorAll('button')].find((node) => node.textContent === 'b:false')!
+    expect(selected.className).toContain('was-default')
+    expect(selected.style.color).toBe('green')
+    expect(other.textContent).toBe('b:false')
+    pointerClick(selected)
+    await nextTick()
+    expect(selected.textContent).toBe('true')
+    expect(selected.className).toContain('was-default')
+    expect(selected.getAttribute('aria-checked')).toBe('false')
+    wrapper.unmount()
+  })
+
   it('opts out of props context with slot null without leaving the group', async () => {
     const slot = ref<string | null | undefined>(null)
     const ctx = {
@@ -365,6 +460,38 @@ describe('ToggleButton', () => {
     button = document.querySelector('button') as HTMLButtonElement
     expect(button.getAttribute('aria-label')).toBeNull()
     expect(button.getAttribute('aria-checked')).toBe('true')
+    wrapper.unmount()
+  })
+
+  it('refreshes a context selection set after the group opts out and the same set is edited', async () => {
+    const keys = new Set<Key>(['a'])
+    const slot = ref<string | null | undefined>(undefined)
+    const wrapper = mountInDoc(() => {
+      provide(ToggleButtonGroupContext, {
+        slots: {
+          [DEFAULT_SLOT]: {selectedKeys: keys, 'aria-label': 'Format'},
+        },
+      })
+      return () => h(ToggleButtonGroup, {slot: slot.value}, () => [
+        h(ToggleButton, {id: 'a'}, () => 'A'),
+        h(ToggleButton, {id: 'b'}, () => 'B'),
+      ])
+    })
+    await nextTick()
+    let a = [...document.querySelectorAll('button')].find((node) => node.textContent === 'A')!
+    expect(a.getAttribute('aria-checked')).toBe('true')
+    slot.value = null
+    await nextTick()
+    a = [...document.querySelectorAll('button')].find((node) => node.textContent === 'A')!
+    expect(a.getAttribute('aria-checked')).toBe('false')
+    keys.delete('a')
+    keys.add('b')
+    slot.value = undefined
+    await nextTick()
+    const b = [...document.querySelectorAll('button')].find((node) => node.textContent === 'B')!
+    a = [...document.querySelectorAll('button')].find((node) => node.textContent === 'A')!
+    expect(b.getAttribute('aria-checked')).toBe('true')
+    expect(a.getAttribute('aria-checked')).toBe('false')
     wrapper.unmount()
   })
 

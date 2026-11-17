@@ -268,6 +268,26 @@ describe('useToggleGroupState', () => {
     stop()
   })
 
+  it('copies a controlled set again after the value is absent, and keeps the cache while it stays present', () => {
+    const source = new Set<Key>(['a'])
+    const selected = ref<Iterable<Key> | undefined>(source)
+    const {state, stop} = harness({selectedKeys: () => selected.value})
+    expect([...state.selectedKeys]).toEqual(['a'])
+    const cached = state.selectedKeys
+    source.add('z')
+    expect(state.selectedKeys).toBe(cached)
+    expect([...state.selectedKeys]).toEqual(['a'])
+    selected.value = undefined
+    expect([...state.selectedKeys]).toEqual([])
+    source.delete('a')
+    source.delete('z')
+    source.add('b')
+    selected.value = source
+    expect([...state.selectedKeys]).toEqual(['b'])
+    expect(state.selectedKeys).not.toBe(cached)
+    stop()
+  })
+
   it('keeps the cached controlled set when the parent mutates that same iterable', () => {
     const selected = new Set<Key>(['a'])
     const {state, stop} = harness({selectedKeys: () => selected})
