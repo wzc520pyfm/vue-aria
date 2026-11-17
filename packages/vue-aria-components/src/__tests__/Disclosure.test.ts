@@ -443,6 +443,48 @@ describe('Disclosure', () => {
     overridden.unmount()
   })
 
+  it('overrides context isDisabled true with local false at mount and when the local value changes', async () => {
+    const contextDisabled = ref(true)
+    const localDisabled = ref(false)
+    const ctx: Record<string, any> = {'aria-label': 'From context', 'data-scope': 'ctx'}
+    Object.defineProperty(ctx, 'isDisabled', {
+      enumerable: true,
+      configurable: true,
+      get: () => contextDisabled.value,
+    })
+    const wrapper = mountInDoc(defineComponent({
+      setup() {
+        provide(DisclosureContext, ctx)
+        return () => h(Disclosure, {
+          'data-testid': 'disclosure',
+          isDisabled: localDisabled.value,
+        }, {
+          default: () => h(Button, {slot: 'trigger'}, {default: () => 'Trigger'}),
+        })
+      },
+    }))
+    await tick()
+    const root = document.querySelector('[data-testid="disclosure"]') as HTMLElement
+    const button = root.querySelector('button') as HTMLButtonElement
+    expect(contextDisabled.value).toBe(true)
+    expect(localDisabled.value).toBe(false)
+    expect(root.hasAttribute('data-disabled')).toBe(false)
+    expect(button.hasAttribute('disabled')).toBe(false)
+    expect(root.getAttribute('data-scope')).toBe('ctx')
+    expect(root.hasAttribute('aria-label')).toBe(false)
+    localDisabled.value = true
+    await tick()
+    expect(contextDisabled.value).toBe(true)
+    expect(root.getAttribute('data-disabled')).toBe('true')
+    expect(button.hasAttribute('disabled')).toBe(true)
+    localDisabled.value = false
+    await tick()
+    expect(contextDisabled.value).toBe(true)
+    expect(root.hasAttribute('data-disabled')).toBe(false)
+    expect(button.hasAttribute('disabled')).toBe(false)
+    wrapper.unmount()
+  })
+
   it('keeps a disabled group forced when the disclosure sets isDisabled false', async () => {
     const wrapper = mountInDoc(defineComponent({
       setup() {

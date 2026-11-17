@@ -40,10 +40,17 @@ export interface ButtonProps {
   class?: any
   style?: any
   onPress?: (event: PressEvent) => void
-  onPressStart?: (event: PressEvent) => void
-  onPressEnd?: (event: PressEvent) => void
-  onPressUp?: (event: PressEvent) => void
-  onPressChange?: (isPressed: boolean) => void
+  /**
+   * Vue 3 listener for the lowercase `pressstart` emit (`on` + capitalize
+   * first letter only). This is not the hook option `onPressStart`.
+   */
+  onPressstart?: (event: PressEvent) => void
+  /** Vue 3 listener for the lowercase `pressend` emit. */
+  onPressend?: (event: PressEvent) => void
+  /** Vue 3 listener for the lowercase `pressup` emit. */
+  onPressup?: (event: PressEvent) => void
+  /** Vue 3 listener for the lowercase `presschange` emit. */
+  onPresschange?: (isPressed: boolean) => void
   onClick?: (event: MouseEvent) => void
 }
 

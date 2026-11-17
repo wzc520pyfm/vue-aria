@@ -305,7 +305,9 @@ function contextDomProps(ctx: Record<string, any> | null) {
     }
     copy[key] = ctx[key]
   }
-  return filterDOMProps(copy, {global: true, labelable: true, events: true})
+  // Official Disclosure root uses `filterDOMProps(otherProps, {global: true})`.
+  // Labelable ARIA props stay off this root, matching `domAttrs(..., false)`.
+  return filterDOMProps(copy, {global: true, labelable: false, events: true})
 }
 
 /**
